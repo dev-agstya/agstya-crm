@@ -1,0 +1,72 @@
+# Python / backend
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Secrets & Environment variables
+.env
+.env.*
+*.env
+*.env.*
+!.env.example
+!*.env.example
+
+# Node / frontend
+node_modules/
+dist/
+dist-ssr/
+.vite/
+coverage/
+*.local
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# AI / Assistant tools
+.claude/
+.agents/
+
+# Local databases & logs
+*.sqlite
+*.sqlite3
+*.db
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Excluded project folders
+extras/
+sample/
+reffer/
+
+# Local email-template previews (python preview_emails.py)
+server/.email_preview/
+
+# Local notes & scratch files
+changes.txt
+findings.txt
+claude.md
+prompt.md
+questions.txt
+ui.md
+# Archived copies of an answered questions.txt, kept locally for reference.
+questions_*.txt
+
+# TypeScript's incremental-build state. These were TRACKED, so every build
+# rewrote them and they showed up as modified in every `git status` — noise in
+# every diff, and one more thing to accidentally commit. (`dist/` above already
+# covers the build output itself.)
+*.tsbuildinfo

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% from "_button.html" import table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">{{ period_label }} is closed</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hello {{ name }}, here is the full business report for {{ period_label }} —
+  {% if attached %}attached as an Excel workbook{% else %}ready to download{% endif %}.
+  It covers every policy with its reward rate and what that rate was applied
+  to, every transaction and expense, rewards and TDS, partner payouts and
+  ledgers, per-party summaries, what is outstanding, where the money sits, next
+  month's renewals and the month's leads.
+</p>
+{{ table_open() }}
+{{ row("Policies booked", policies, strong=True, first=True) }}
+{{ row("Transactions recorded", transactions) }}
+{{ row("Net profit (cash basis)", "Rs " ~ net_profit, strong=True) }}
+{{ table_close() }}
+{% if not attached %}
+<p style="margin:18px 0 0;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  The workbook was too large to attach to an email. Open
+  <a href="{{ reports_url }}" style="color:#111111;font-weight:600;">Finance Reports</a>
+  and use "Download the full report" to get it.
+</p>
+{% else %}
+<p style="margin:18px 0 0;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  You can also regenerate this — or any other period — from
+  <a href="{{ reports_url }}" style="color:#111111;font-weight:600;">Finance Reports</a>.
+</p>
+{% endif %}
+{% endblock %}
+{% block footer_note %}
+  You are receiving this because you own the {{ app_name }} account.
+{% endblock %}

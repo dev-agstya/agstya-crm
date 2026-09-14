@@ -1,0 +1,138 @@
+# Render Blueprint for AgastyaCRM backend (FastAPI).
+# Optional: you can either import this file as a Blueprint (Render Dashboard ->
+# "New +" -> "Blueprint") OR configure the service manually (see
+# extras/deploy_guide.txt, "Option B"). If you use the Blueprint, fill in the
+# secret env vars in the "agastyacrm-secrets" group after the first sync.
+#
+# The frontend (web/) is NOT here — it deploys separately on Vercel.
+
+services:
+  # --- FastAPI backend (web service) ---
+  - type: web
+    name: agastyacrm-api
+    runtime: python
+    plan: starter            # "free" also works; free spins down after 15 min idle
+    rootDir: server
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - fromGroup: agastyacrm-secrets
+
+  # --- Renewal reminders (daily) ---
+  - type: cron
+    name: agastyacrm-reminders
+    runtime: python
+    plan: starter
+    rootDir: server
+    schedule: "30 2 * * *"   # 08:00 IST (02:30 UTC), daily
+    buildCommand: pip install -r requirements.txt
+    startCommand: python send_reminders.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - fromGroup: agastyacrm-secrets
+
+  # --- "You have not clocked in today" (Workplace HR, 2026-08-20) ---
+  # Its OWN schedule rather than riding the 08:00 job above, purely because of
+  # the time: the shift starts at 10:00 IST, so a nudge from the 08:00 run would
+  # land two hours before anybody was due, and a prompt that arrives early is a
+  # prompt people learn to dismiss.
+  #
+  # De-duplicated per person per IST day against the notification rows
+  # themselves, so running it more than once sends nothing twice. Set the
+  # schedule to ~30 minutes past whatever shift start is configured in
+  # Settings -> Attendance & leave. Safe to delete this block if the nudge is
+  # not wanted — nothing else depends on it.
+  - type: cron
+    name: agastyacrm-hr-nudge
+    runtime: python
+    plan: starter
+    rootDir: server
+    schedule: "0 5 * * *"    # 10:30 IST (05:00 UTC), daily
+    buildCommand: pip install -r requirements.txt
+    startCommand: python send_hr_nudges.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - fromGroup: agastyacrm-secrets
+
+  # --- Monthly report pack to the owner (self-guards to the 1st, IST) ---
+  - type: cron
+    name: agastyacrm-month-pack
+    runtime: python
+    plan: starter
+    rootDir: server
+    schedule: "0 3 * * *"    # 08:30 IST (03:00 UTC), daily; no-ops except the 1st
+    buildCommand: pip install -r requirements.txt
+    startCommand: python send_month_pack.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - fromGroup: agastyacrm-secrets
+
+  # --- Monthly channel-partner statements (self-guards to last working day) ---
+  # v1 launch scope pauses the partner PORTAL, but staff still record partner
+  # finance, so these statements remain useful. Remove this block if not needed.
+  - type: cron
+    name: agastyacrm-partner-statements
+    runtime: python
+    plan: starter
+    rootDir: server
+    schedule: "30 17 * * *"  # 23:00 IST (17:30 UTC), daily; job no-ops except last working day
+    buildCommand: pip install -r requirements.txt
+    startCommand: python send_partner_statements.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11.9"
+      - fromGroup: agastyacrm-secrets
+
+# Shared secrets/config. Values left blank must be filled in the Render Dashboard
+# (Environment -> Environment Groups -> agastyacrm-secrets). Never commit real
+# secrets here.
+envVarGroups:
+  - name: agastyacrm-secrets
+    envVars:
+      - key: SECRET_VALUE
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRE_HOURS
+        value: "3"
+      - key: MONGO_URI
+        sync: false
+      - key: MONGO_DB_NAME
+        value: agastyacrm
+      - key: GMAIL_USERNAME
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: GMAIL_APP_PWD
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_REGION
+        value: eu-north-1
+      - key: AWS_BUCKET_NAME
+        sync: false
+      # Set these two to your deployed Vercel URL (no trailing slash).
+      - key: CORS_ORIGINS
+        sync: false
+      - key: FRONTEND_BASE_URL
+        sync: false
+      # Optional / dormant integrations — leave blank to keep disabled.
+      - key: DATA_ENCRYPTION_KEY
+        sync: false
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: WHATSAPP_TEST_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_BUSINESS_ACCOUNT_ID
+        sync: false

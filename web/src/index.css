@@ -1,0 +1,658 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  THE DESIGN SYSTEM.
+
+  Every visual decision lives in this file or tailwind.config.js. A page that
+  needs a new button tone, a new card, a new table style adds it HERE — pages
+  that hand-roll their own are how eight screens end up with eight different
+  filter bars, which is the thing this system exists to prevent.
+
+  Load-bearing, not taste: money is green in / red out, dates are day-first,
+  the theme is light-only, and there are no emoji.
+
+  Rebuilt 2026-08-05 (owner: "make it match the latest level of modern UI",
+  references Notion + Stripe). What changed, and why:
+
+    * Inter is actually LOADED now (index.html). It was specified here all
+      along and never fetched, so every screen rendered in the OS default.
+    * `slate` was redefined to a true neutral in the Tailwind config, so the
+      blue cast is gone app-wide without touching a page.
+    * Density went COMFORTABLE — bigger padding, more air. Volume is handled
+      by sticky headers and pagination, not by squashing rows.
+    * Hierarchy now comes from TYPE and SPACE, because the palette is
+      monochrome and has nothing else to spend (owner Q1: the colours are
+      fine, the layouts were not).
+*/
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-canvas text-slate-800;
+    font-size: 14px;
+    line-height: 1.5;
+    /*
+      Inter's character variants. cv11 gives the single-storey `a`, ss01 the
+      more geometric shapes, cv02/03/04 tidy the g/l/i. This tuning is what
+      Linear, Stripe and Vercel use and it is most of the difference between
+      "Inter" and "Inter, set well".
+    */
+    font-feature-settings: "cv02" 1, "cv03" 1, "cv04" 1, "cv11" 1, "ss01" 1;
+  }
+
+  /* Figures line up in columns only if the digits are the same width. Applied
+     to the elements that hold numbers rather than globally, so prose keeps
+     proportional digits. */
+  th, td, input[type="number"], .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+    TWO focus treatments, deliberately, because they answer different questions.
+
+    Anything you ACTIVATE (button, link, tab, row) gets an offset halo: it has
+    to read against the canvas from across the screen, and it only appears for
+    keyboard users, who are the ones who need to know where they are.
+
+    Anything you TYPE INTO gets a tight inner ring instead (see `.input`) and
+    gets it on mouse focus too — clicking into a field and seeing nothing happen
+    is the single most common "is this thing broken" moment in a form.
+
+    This file used to claim there was one treatment and then quietly define the
+    second in the components layer, which is where the artefact came from: a
+    keyboard-focused input inherited `ring-offset-2` from here and `ring-1` from
+    there, and drew a white gap with a hairline outside it. `.input` now zeroes
+    the offset explicitly.
+  */
+  :focus-visible {
+    @apply outline-none ring-2 ring-ink/60 ring-offset-2 ring-offset-white;
+  }
+
+  ::selection {
+    @apply bg-ink/10;
+  }
+
+  /*
+    EVERY table inside a card, whether it uses the shared <Table> component or
+    hand-rolled markup.
+
+    Twenty pages wrote their own <table> with their own padding, header casing
+    and divider colour, which is why no two lists looked alike. Styling the
+    ELEMENT rather than a class fixes all of them at once and without touching
+    them — and because element selectors are weaker than utility classes, a
+    page that genuinely needs a different alignment, width or colour on a cell
+    still wins by putting a class on it.
+
+    Scoped to .card so tables in emails, PDF previews and one-off layouts are
+    left alone.
+  */
+  .card table {
+    @apply w-full border-collapse text-sm;
+  }
+  .card table thead th {
+    @apply whitespace-nowrap border-b border-line bg-white px-5 py-3 text-left
+      align-middle text-caption uppercase text-slate-500;
+  }
+  /* 16px vertical, on the 4px grid. It was 14px, which is off-grid and was the
+     one measurement in the system that could not be derived from anything. */
+  .card table tbody td {
+    @apply border-b border-line-soft px-5 py-4 align-middle text-slate-700;
+  }
+  .card table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  /*
+    EVERY row gets a hover, not just the clickable ones.
+
+    This used to be `tr.cursor-pointer:hover` only, so the balance sheet,
+    the statements, TDS and every report — the widest tables in the app, the
+    ones where you are tracking a figure across twelve columns — had no row
+    feedback whatever. Your eye had nothing to hold on to.
+
+    So: a barely-there tint on any row, and a stronger one plus the pointer on
+    rows that actually navigate. The quiet one is deliberately weaker than the
+    interactive one, or "you can click this" stops meaning anything.
+  */
+  .card table tbody tr {
+    @apply transition-colors duration-100;
+  }
+  .card table tbody tr:hover {
+    @apply bg-slate-50/60;
+  }
+  .card table tbody tr.cursor-pointer:hover,
+  .card table tbody tr.row-link:hover {
+    @apply bg-slate-50;
+  }
+}
+
+/* Custom scrollbars that match the black / white / grey theme. Plain rules
+   (not @layer) so the ::-webkit pseudo-elements are emitted verbatim. */
+.scrollbar-dark {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.22) transparent;
+}
+.scrollbar-dark::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-dark::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.18);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.32);
+}
+
+.scrollbar-light {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(24, 24, 27, 0.2) transparent;
+}
+.scrollbar-light::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.scrollbar-light::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-light::-webkit-scrollbar-thumb {
+  background-color: rgba(24, 24, 27, 0.16);
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.scrollbar-light::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(24, 24, 27, 0.28);
+}
+/* The app is LIGHT-ONLY (see store/theme.ts, which strips any persisted `dark`
+   class on boot). The former ~120-line `.dark` remap and every `dark:` utility
+   were dead code and have been removed — do not reintroduce them without also
+   restoring a real theme toggle. */
+
+@layer components {
+  /* ---------------------------------------------------------------- buttons */
+  /* One height (h-9 / 36px) so a row of mixed buttons cannot look ragged.
+     Every page used to pick its own py-1.5 / py-2 / px-3 / px-4. */
+  .btn {
+    @apply inline-flex h-9 shrink-0 items-center justify-center gap-1.5
+      whitespace-nowrap rounded-control px-3.5 text-sm font-medium
+      transition-all duration-100 focus:outline-none focus-visible:ring-2
+      focus-visible:ring-ink/60 focus-visible:ring-offset-2
+      disabled:pointer-events-none disabled:opacity-40;
+  }
+  .btn-primary {
+    @apply btn bg-ink text-white shadow-card hover:bg-ink-hover
+      active:scale-[.98];
+  }
+  .btn-secondary {
+    @apply btn border border-line bg-white text-slate-700 shadow-card
+      hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900
+      active:scale-[.98];
+  }
+  .btn-danger {
+    @apply btn bg-money-out text-white shadow-card hover:bg-red-700
+      active:scale-[.98];
+  }
+  /* Borderless. For actions that sit inside a card and must not compete with
+     the primary action — "Show done", "Clear filters". */
+  .btn-ghost {
+    @apply btn px-2.5 text-slate-500 hover:bg-slate-100 hover:text-slate-900;
+  }
+  .btn-danger-soft {
+    @apply btn border border-red-200 bg-white text-money-out
+      hover:border-red-300 hover:bg-red-50;
+  }
+  /* Compact variant for dense rows (inside table cells, card footers). */
+  .btn-sm {
+    @apply h-8 gap-1 px-2.5 text-[13px];
+  }
+  /* Thumb-sized, for the partner portal's primary actions on a phone. */
+  .btn-lg {
+    @apply h-11 gap-2 px-5 text-[15px];
+  }
+
+  /* ------------------------------------------------------------------ forms */
+  /* h-10 matches SearchSelect, the date field and the native select, so a
+     filter bar lines up whatever it is built from. */
+  /* `focus:ring-offset-0` is load-bearing, not tidying: without it a
+     keyboard-focused input inherits `ring-offset-2` from the base
+     `:focus-visible` rule and draws a white gap with a hairline outside it,
+     while a mouse-focused one does not — the same control focusing two
+     different ways depending on how you got there. */
+  .input {
+    @apply h-10 w-full rounded-control border border-line bg-white px-3 text-sm
+      text-slate-900 transition-colors placeholder:text-slate-400
+      hover:border-slate-300 focus:border-ink focus:outline-none
+      focus:ring-1 focus:ring-ink focus:ring-offset-0
+      disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500;
+  }
+  /* A textarea is the one control that must not be locked to h-10. */
+  textarea.input {
+    @apply h-auto min-h-[76px] resize-y py-2.5 leading-relaxed;
+  }
+  .input-error {
+    @apply border-money-out focus:border-money-out focus:ring-money-out;
+  }
+  /* Native <select>, styled to match SearchSelect. Browsers draw their own
+     dropdown arrow (different on every OS), which made native selects and the
+     app's searchable picker look like two unrelated controls sitting next to
+     each other. Suppress it and paint the same chevron the picker uses. */
+  .select {
+    @apply input cursor-pointer appearance-none bg-no-repeat pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239d9da5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-position: right 0.75rem center;
+    background-size: 14px 14px;
+  }
+  /* Firefox keeps a focus ring inside the control; drop it for parity. */
+  .select:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 #27272a;
+  }
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-slate-700;
+  }
+  .hint {
+    @apply mt-1.5 text-xs leading-relaxed text-slate-500;
+  }
+  .hint-error {
+    @apply mt-1.5 text-xs font-medium text-money-out;
+  }
+
+  /* ------------------------------------------------------------------ cards */
+  .card {
+    @apply rounded-card border border-line bg-white shadow-card;
+  }
+  /* An interactive card — a tile that navigates. Lifts on hover rather than
+     changing colour, which is the Notion/Stripe idiom and reads as depth
+     instead of as a state change. */
+  .card-link {
+    @apply card block transition-all duration-150 hover:-translate-y-px
+      hover:border-slate-300 hover:shadow-raise active:translate-y-0;
+  }
+  /* The standard head of a card: title on the left, actions on the right. */
+  .card-head {
+    @apply flex flex-wrap items-center justify-between gap-3 border-b
+      border-line px-5 py-4;
+  }
+  .card-title {
+    @apply text-card-title text-slate-900;
+  }
+  /* Standard interior padding, so a card's body and its head line up. */
+  .card-body {
+    @apply px-5 py-4;
+  }
+
+  /* ----------------------------------------------------------------- tables */
+  .table {
+    @apply w-full border-collapse text-sm;
+  }
+  .table thead th {
+    @apply whitespace-nowrap border-b border-line bg-white px-5 py-3 text-left
+      text-caption uppercase text-slate-500;
+  }
+  .table tbody td {
+    @apply border-b border-line-soft px-5 py-3.5 align-middle text-slate-700;
+  }
+  .table tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  .table tbody tr.row-link {
+    @apply cursor-pointer transition-colors hover:bg-slate-50;
+  }
+  .table tbody tr.row-link:focus-visible,
+  .card table tbody tr.row-link:focus-visible {
+    @apply outline-none ring-2 ring-inset ring-brand-400;
+  }
+  /* Money and any other figure: right-aligned, tabular, never wrapped. */
+  .num {
+    @apply whitespace-nowrap text-right tabular-nums;
+  }
+  .table-dense thead th,
+  .table-dense tbody td {
+    @apply px-3.5 py-2.5;
+  }
+  /*
+    A header that survives scrolling. The owner's answer to "what about more
+    data in a year" was to build for it now — so long lists keep their column
+    names on screen instead of making you scroll back up to find out what
+    column four was. Requires a scroll container with a bounded height.
+  */
+  .table-sticky thead th {
+    @apply sticky top-0 z-raised;
+    box-shadow: inset 0 -1px 0 theme("colors.line");
+  }
+  /* The row's leading edge, used to say "this one is urgent" without adding a
+     column. Applied to the first cell so it hugs the card border. */
+  .rail-due   { box-shadow: inset 3px 0 0 theme("colors.due"); }
+  .rail-out   { box-shadow: inset 3px 0 0 theme("colors.money.out"); }
+  .rail-in    { box-shadow: inset 3px 0 0 theme("colors.money.in"); }
+  .rail-ink   { box-shadow: inset 3px 0 0 theme("colors.ink"); }
+
+  /* ===================================================================
+     THE LEDGER (2026-08-07).
+
+     The list surface for the ~20 screens that ARE the daily product.
+
+     The app had been apologising for being a table: it wrapped every list in a
+     card, rounded the corners, softened the shadow, padded it to breathe — and
+     then, because eleven columns still would not fit, let it scroll sideways
+     anyway. That buys the disadvantages of both shapes: less dense than the
+     spreadsheet the user would otherwise be in, less calm than the dashboard it
+     was imitating.
+
+     This is the commitment the system already half-made. Users here read
+     numbers in columns for a living. So:
+
+       1. FIGURES ARE THE TYPOGRAPHY. Money is the largest thing in the row and
+          the only thing allowed to be (`.ledger-figure`). Labels, names, dates
+          and statuses step down to 13px and get out of the way.
+       2. NO BOX. A card border around a list adds a rounded rectangle and
+          takes away the full-width hover. The row IS the object here, so the
+          hover runs the whole width of the content column — which reads far
+          more strongly than a tint inside a rounded box ever did.
+       3. URGENCY IS THE LEFT EDGE. `.rail-due` / `.rail-out` on the first
+          cell, never a badge and never a column. Forty rows where three have
+          an amber edge is instantly readable; forty rows with a chip on every
+          one is not.
+
+     Cards are NOT retired — they stay for tiles, forms, and the partner portal,
+     where a bounded object is the right metaphor. This is for lists only.
+     =================================================================== */
+
+  /*
+     The negative margin is what makes the hover read as full-bleed: cells carry
+     `px-3`, the wrapper pulls back the same 12px, so TEXT still aligns to the
+     content column while the row tint extends past it on both sides.
+
+     NO `overflow-x-auto` HERE, and that is load-bearing (fixed 2026-08-07).
+
+     It used to carry one, which quietly killed the sticky header below.
+     `overflow-x: auto` forces `overflow-y` to compute to `auto` as well, so
+     this element became the nearest scroll container — and `position: sticky`
+     resolves against the nearest scroll container, not the viewport. Since
+     `.ledger-wrap` has no bounded height it never scrolls vertically, so the
+     header had nothing to stick to and simply didn't. On all nine ledger pages
+     the column names scrolled away, which is the exact failure the sticky was
+     added to prevent.
+
+     With no scroller here the page scroller (`<main>` in AppLayout) is the
+     nearest one again, and the header sticks to the top of the content area as
+     intended. The cost is that a ledger can no longer scroll sideways on its
+     own — which is the right pressure: the answer to "eleven columns don't fit"
+     is fewer columns (see the note above), not a horizontal scrollbar. Below
+     `sm:` the phone rendering is cards, so nothing is squeezed.
+  */
+  .ledger-wrap {
+    @apply -mx-3;
+  }
+  .ledger {
+    @apply w-full border-collapse text-sm;
+  }
+  /* Sticky by default — a ledger is long by definition, and a column you have
+     to scroll back up to identify is a column you cannot read. Sits on the
+     canvas, not on white, because there is no card under it any more.
+     `top` clears the sticky top bar (h-14) that the app shell draws. */
+  .ledger thead th {
+    @apply sticky top-14 z-raised whitespace-nowrap bg-canvas px-3 pb-2 pt-3
+      text-left align-bottom text-caption uppercase text-slate-500;
+    box-shadow: inset 0 -1px 0 theme("colors.line");
+  }
+  .ledger tbody td {
+    @apply border-b border-line-soft px-3 py-3 align-middle text-slate-700;
+  }
+  .ledger tbody tr {
+    @apply transition-colors duration-100;
+  }
+  .ledger tbody tr:hover {
+    @apply bg-slate-50;
+  }
+  .ledger tbody tr:last-child td {
+    @apply border-b-0;
+  }
+  /* The two-line primary cell: the thing the row is about, over the context
+     that identifies it. This is what replaced four separate columns —
+     customer, insurer, broker and category were never independent facts, they
+     were details OF the policy, and stacking them says so. */
+  .ledger-primary {
+    @apply block truncate font-medium text-slate-900;
+  }
+  .ledger-sub {
+    @apply mt-0.5 block truncate text-[13px] text-slate-500;
+  }
+  /* The hero figure of the row. `metric-sm` is the third step of the figure
+     ladder and this is the only place in a list it appears. */
+  .ledger-figure {
+    @apply block whitespace-nowrap text-right text-metric-sm tabular-nums
+      text-slate-900;
+  }
+  /* A secondary figure — present, aligned, deliberately quieter. */
+  .ledger-figure-sub {
+    @apply block whitespace-nowrap text-right text-[13px] tabular-nums
+      text-slate-500;
+  }
+  /*
+    The filter row for a ledger page.
+
+    `.filter-bar` lives INSIDE a card, under its head — that rule stands and is
+    still right for every card-based list. A ledger has no card, so it needs
+    its own: same controls, same rhythm, no box, aligned to the content column
+    rather than to a card's interior padding.
+
+    It keeps the bottom rule, because the thing under it is a header row and
+    two adjacent header-ish rows with no divider read as one confused strip.
+  */
+  .ledger-bar {
+    @apply flex flex-wrap items-center gap-2 border-b border-line pb-3;
+  }
+  /* "Showing 12 of 240", an export button — pushed to the right edge. */
+  .ledger-bar-end {
+    @apply ml-auto flex flex-wrap items-center gap-2;
+  }
+  /* Pagination and totals under a ledger. Mirrors `.ledger-bar`. */
+  .ledger-foot {
+    @apply flex flex-wrap items-center justify-between gap-3 border-t
+      border-line pt-3 text-secondary text-slate-500;
+  }
+
+  /*
+    The row's keyboard route.
+
+    Lists used to navigate from `onClick` on a bare <tr>: not focusable, no
+    Enter handler, no middle-click — so a broker could not open two policies in
+    two tabs, and a keyboard user could not open one AT ALL. The fix is a real
+    <Link> on the primary cell (`LedgerCell` in components/ui.tsx) with the row
+    click kept as a mouse convenience. One change buys keyboard access, focus,
+    open-in-new-tab and copy-link.
+  */
+  .ledger-focus {
+    @apply rounded-[3px] focus-visible:outline-none focus-visible:ring-2
+      focus-visible:ring-ink/60 focus-visible:ring-offset-2;
+  }
+
+  /* ------------------------------------------------------------- indicators */
+  /*
+    THE TINT LAYER (2026-08-06).
+
+    The palette had `money-in / money-out / due / info` as single values and
+    nothing softer, so every success panel, warning strip and status chip in the
+    app reached into raw Tailwind for its own tint. The result was 330+
+    off-token utilities and FOUR greens, THREE reds and FOUR ambers in
+    circulation — which is most of why some screens read as "assembled" rather
+    than designed.
+
+    Every tint below is derived from the SAME token as its text, via an opacity
+    modifier. There is therefore exactly one green in the product, one red, one
+    amber, and they cannot drift apart, because there is only one value.
+
+    Use the `.badge-*` classes for state ON a row, `.note-*` for a block of
+    explanation. Neither is a decoration: a badge that is coloured is making a
+    claim about money or about time.
+  */
+  .badge {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-md px-2
+      py-0.5 text-xs font-medium;
+  }
+  /* The DEFAULT. Most states are not urgent and not financial, and a screen
+     where six things are coloured is a screen where nothing reads. */
+  .badge-neutral {
+    @apply badge bg-slate-100 text-slate-600 ring-1 ring-inset ring-slate-500/15;
+  }
+  .badge-in {
+    @apply badge bg-money-in/10 text-money-in ring-1 ring-inset
+      ring-money-in/20;
+  }
+  .badge-out {
+    @apply badge bg-money-out/10 text-money-out ring-1 ring-inset
+      ring-money-out/20;
+  }
+  .badge-due {
+    @apply badge bg-due/10 text-due ring-1 ring-inset ring-due/20;
+  }
+  /* The strongest badge in the set — solid ink. For the ONE state on a screen
+     that outranks the others (an owner account, a business lead). */
+  .badge-ink {
+    @apply badge bg-ink text-white;
+  }
+
+  /* A quieter chip for metadata (a code, a count) rather than a status. */
+  .chip {
+    @apply inline-flex items-center gap-1 whitespace-nowrap rounded-md
+      bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600;
+  }
+
+  /*
+    A block of explanation inside a form or a card — "this cannot be undone",
+    "nothing is linked yet, so this can be removed". Pages were building these
+    out of `rounded-lg border border-red-200 bg-red-50/50 p-4` by hand, each
+    with a slightly different radius, tint and border.
+
+    The left rail carries the meaning rather than a full border, so a page of
+    notes does not read as a page of alerts.
+  */
+  .note {
+    @apply rounded-control border border-line bg-slate-50/70 px-4 py-3
+      text-sm leading-relaxed text-slate-600;
+  }
+  .note-in {
+    @apply note border-money-in/20 bg-money-in/[0.06] text-slate-700;
+    box-shadow: inset 3px 0 0 theme("colors.money.in");
+  }
+  .note-out {
+    @apply note border-money-out/20 bg-money-out/[0.06] text-slate-700;
+    box-shadow: inset 3px 0 0 theme("colors.money.out");
+  }
+  .note-due {
+    @apply note border-due/20 bg-due/[0.06] text-slate-700;
+    box-shadow: inset 3px 0 0 theme("colors.due");
+  }
+  /*
+    A proportion, drawn. "12 / 30" and "share of premium" are progress bars
+    written as text; this is the bar. Set the fill width inline from the data.
+  */
+  .meter {
+    @apply h-1.5 w-full overflow-hidden rounded-full bg-slate-100;
+  }
+  .meter-fill {
+    @apply h-full rounded-full bg-ink transition-[width] duration-500;
+  }
+  .meter-fill-in  { @apply bg-money-in; }
+  .meter-fill-due { @apply bg-due; }
+  /* A bar that sits BEHIND a figure to show its share of a total, rather than
+     beside it. Keeps a numeric column readable while still ranking it. */
+  .bar-track {
+    @apply absolute inset-y-1 left-0 rounded-sm bg-slate-100;
+  }
+
+  /* --------------------------------------------------------------- segments */
+  /*
+    A filter, not a setting. Toggles were being used to filter lists, which is
+    wrong twice over: a switch says "change a preference", and two switches
+    give four states where the user wanted one of three choices.
+  */
+  .seg {
+    @apply inline-flex items-center gap-0.5 rounded-control border border-line
+      bg-slate-50 p-0.5;
+  }
+  .seg-item {
+    @apply inline-flex h-8 items-center gap-1.5 whitespace-nowrap rounded-[6px]
+      px-3 text-[13px] font-medium text-slate-500 transition-all
+      hover:text-slate-900;
+  }
+  .seg-item-active {
+    @apply bg-white text-slate-900 shadow-card;
+  }
+
+  /* ------------------------------------------------------------------ misc */
+  /* `active:scale-95` matches the press on `.btn`. An icon button that does not
+     move under the cursor is the one control on a row that feels dead. */
+  .icon-btn {
+    @apply inline-flex h-8 w-8 shrink-0 items-center justify-center
+      rounded-control border border-line bg-white text-slate-500
+      transition-all duration-100 hover:border-slate-300 hover:bg-slate-50
+      hover:text-slate-900 active:scale-95
+      disabled:pointer-events-none disabled:opacity-40;
+  }
+  .icon-btn-danger {
+    @apply hover:border-money-out/25 hover:bg-money-out/10 hover:text-money-out;
+  }
+  /*
+    The filter row that sits at the top of every list card, INSIDE it and under
+    its head — never floating above it, which is what six pages were doing:
+    a `mb-3 flex gap-3` row aligned with nothing, so the search box hung in the
+    canvas while the table it filtered sat in a card 12px below.
+
+    Defined once so Leads, Policies and Transactions cannot drift apart again.
+    12px vertical, on the 4px grid (it was 14px).
+  */
+  .filter-bar {
+    @apply flex flex-wrap items-center gap-2 border-b border-line px-5 py-3;
+  }
+  /* Pushes what follows it to the right edge of the bar — the "Showing 12 of
+     240" count, an export button, a density switch. */
+  .filter-bar-end {
+    @apply ml-auto flex flex-wrap items-center gap-2;
+  }
+  /* An inline text link inside prose. */
+  .link {
+    @apply font-medium text-slate-900 underline decoration-slate-300
+      underline-offset-2 transition-colors hover:decoration-slate-900;
+  }
+  /* Skeletons. One shimmer, everywhere. */
+  .skeleton {
+    @apply relative overflow-hidden rounded bg-slate-100;
+  }
+  .skeleton::after {
+    @apply absolute inset-0 -translate-x-full;
+    content: "";
+    background-image: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0,
+      rgba(255, 255, 255, 0.65) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

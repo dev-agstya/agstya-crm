@@ -1,0 +1,30 @@
+{#
+  "You are halfway / nearly there / you did it."
+
+  Sent when an employee crosses 50%, 90% or 100% of their monthly target. Only
+  the highest newly-crossed milestone is ever sent (services/targets
+  due_milestone), so nobody gets three congratulations from one big policy.
+
+  `goals` is pre-filtered for the recipient — house profit is never listed.
+#}
+{% extends "base.html" %}
+{% from "_button.html" import button, table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">{{ headline }}</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, you are at
+  <strong style="color:#111111;">{{ attainment }}%</strong> of your
+  {{ period_label }} target. {{ message }}
+</p>
+{% if goals %}
+{{ table_open() }}
+{% for g in goals %}
+{{ row(g.label, g.value, strong=True, first=loop.first) }}
+{% endfor %}
+{{ table_close() }}
+{% endif %}
+{{ button("See my progress", frontend_url ~ "/dashboard") }}
+<p style="margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;">
+  Keep it up — {{ company_name }}
+</p>
+{% endblock %}

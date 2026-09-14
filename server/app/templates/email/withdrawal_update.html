@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_button.html" import button %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Withdrawal {{ status_label }}</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, your withdrawal request
+  <strong style="color:#111111;">{{ code }}</strong> for
+  <strong style="color:#111111;">Rs {{ amount }}</strong> has been
+  <strong style="color:#111111;">{{ status_label }}</strong>.
+</p>
+{% if reference %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#3d3d3d;">
+  Payment reference / UTR: <strong style="color:#111111;">{{ reference }}</strong>
+</p>
+{% endif %}
+{% if reason %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#b91c1c;">
+  Reason: {{ reason }}
+</p>
+{% endif %}
+{{ button("Open your wallet", wallet_url) }}
+{% endblock %}

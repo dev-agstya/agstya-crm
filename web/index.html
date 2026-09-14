@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/png" href="/agastya_hindi_half_logo.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0a0a" />
+
+    <!--
+      Inter — the typeface tailwind.config.js has always specified and that was
+      never actually loaded, so every screen rendered in the OS default (Segoe
+      UI on Windows) and inherited its wider, softer, more clerical look.
+      Loading it is the highest-impact line in this file.
+
+      `display=swap` paints text immediately in the fallback and swaps when
+      Inter arrives, so a slow font never blocks the first render.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <title>Agastya</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

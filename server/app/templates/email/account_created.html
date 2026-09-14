@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_button.html" import button, table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Welcome to {{ app_name }}</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, an account has been created for you at {{ company_name }} as a
+  <strong style="color:#111111;">{{ role }}</strong>.
+  Sign in with the temporary credentials below — you will be asked to set your own
+  password straight away.
+</p>
+{% if role_blurb %}
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  {{ role_blurb }}
+</p>
+{% endif %}
+{{ table_open() }}
+{{ row("Email", email, strong=True, first=True) }}
+  <tr>
+    <td style="padding:11px 14px;background:#fafafa;font-size:13px;color:#6b6b6b;width:42%;border-top:1px solid #e5e5e5;">Temporary password</td>
+    <td style="padding:11px 14px;font-size:15px;color:#111111;font-weight:700;font-family:'Courier New',Courier,monospace;border-top:1px solid #e5e5e5;">{{ temp_password }}</td>
+  </tr>
+{{ table_close() }}
+{{ button("Sign in to " ~ app_name, login_url) }}
+<p style="margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;">
+  {% if expires_days %}This temporary password is valid for {{ expires_days }} days.{% endif %}
+  For your security it stops working the moment you set your own.
+  Never share it with anyone — {{ company_name }} staff will never ask you
+  for it.
+</p>
+{% endblock %}

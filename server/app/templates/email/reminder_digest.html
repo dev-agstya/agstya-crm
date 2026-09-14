@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Your follow-ups for today</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hello {{ name }}, here is what you have to follow up on. Anything marked
+  <strong style="color:#111111;">overdue</strong> was due before today.
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%"
+       style="border-collapse:collapse;margin:0 0 6px;">
+  {% for item in items %}
+  <tr>
+    <td style="padding:12px 14px;border:1px solid #e6e6e6;{% if not loop.first %}border-top:0;{% endif %}background:#fafafa;">
+      <div style="font-size:15px;font-weight:600;color:#111111;">
+        {{ item.title }}{% if item.overdue %}
+        <span style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#111111;background:#e6e6e6;padding:2px 6px;border-radius:3px;margin-left:6px;">Overdue</span>
+        {% endif %}
+      </div>
+      {% if item.entity %}
+      <div style="margin-top:3px;font-size:13px;color:#3d3d3d;">{{ item.entity }}</div>
+      {% endif %}
+      <div style="margin-top:3px;font-size:13px;color:#6b6b6b;">Due {{ item.due }}</div>
+      {% if item.shared_with %}
+      <div style="margin-top:3px;font-size:13px;color:#6b6b6b;">Shared with {{ item.shared_with|join(', ') }}</div>
+      {% endif %}
+      {% if item.note %}
+      <div style="margin-top:6px;font-size:13px;line-height:1.55;color:#3d3d3d;">{{ item.note }}</div>
+      {% endif %}
+    </td>
+  </tr>
+  {% endfor %}
+</table>
+<p style="margin:18px 0 0;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Open {{ app_name }} to mark them done, or set a new date if you need more time.
+</p>
+{% endblock %}
+{% block footer_note %}
+  You are receiving this because these follow-ups are assigned to you in {{ app_name }}.
+{% endblock %}

@@ -1,0 +1,48 @@
+{#
+  Shared bits of chrome. Greyscale only.
+
+  `button`    — solid black call to action.
+  `table_open` / `row` / `table_close` — a label/value detail table.
+  `code_box`  — the big verification-code panel used by the OTP emails.
+  `note`      — a quiet aside (grey left rule, no colour).
+#}
+{% macro button(label, url) %}
+<table role="presentation" cellpadding="0" cellspacing="0" style="margin:26px 0;">
+  <tr>
+    <td style="border-radius:8px;background:#111111;">
+      <a href="{{ url }}" style="display:inline-block;padding:12px 26px;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;border-radius:8px;">
+        {{ label }}
+      </a>
+    </td>
+  </tr>
+</table>
+{% endmacro %}
+
+{% macro table_open() %}
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;margin:10px 0 4px;border-collapse:collapse;border:1px solid #e5e5e5;border-radius:8px;">
+{% endmacro %}
+
+{% macro table_close() %}
+</table>
+{% endmacro %}
+
+{% macro row(label, value, strong=False, first=False) %}
+  <tr>
+    <td style="padding:11px 14px;background:#fafafa;font-size:13px;color:#6b6b6b;width:42%;{% if not first %}border-top:1px solid #e5e5e5;{% endif %}">{{ label }}</td>
+    <td style="padding:11px 14px;font-size:14px;color:#111111;{% if strong %}font-weight:700;{% endif %}{% if not first %}border-top:1px solid #e5e5e5;{% endif %}">{{ value }}</td>
+  </tr>
+{% endmacro %}
+
+{% macro code_box(code) %}
+<div style="margin:26px 0;text-align:center;">
+  <span style="display:inline-block;padding:16px 30px;font-size:32px;font-weight:700;letter-spacing:10px;color:#111111;background:#f4f4f4;border:1px dashed #b8b8b8;border-radius:12px;font-family:'Courier New',Courier,monospace;">
+    {{ code }}
+  </span>
+</div>
+{% endmacro %}
+
+{% macro note(text) %}
+<p style="margin:0 0 18px;padding:12px 14px;background:#fafafa;border-left:3px solid #b8b8b8;font-size:14px;line-height:1.6;color:#3d3d3d;">
+  {{ text }}
+</p>
+{% endmacro %}

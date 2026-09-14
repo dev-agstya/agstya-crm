@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_button.html" import button, note %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">We need a few documents</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Dear {{ name }}, to process your request {{ company_name }} needs the
+  document(s) listed below. You can upload them securely using the button — no
+  login required.
+</p>
+{% if message %}{{ note(message) }}{% endif %}
+<ul style="margin:0 0 8px;padding-left:20px;font-size:14px;color:#3d3d3d;line-height:1.9;">
+  {% for d in docs %}<li>{{ d }}</li>{% endfor %}
+</ul>
+{{ button("Upload documents", upload_url) }}
+<p style="margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;">
+  This secure link expires shortly. If it stops working, call {{ company_phone }}
+  and we will send a fresh one.
+</p>
+{% endblock %}
+{% block footer_note %}
+  You are receiving this because you are a customer of {{ company_name }}.
+{% endblock %}

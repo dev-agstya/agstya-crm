@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_button.html" import button %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Your statement for {{ period_label }}</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Dear {{ name }}, please find attached your channel-partner statement for
+  <strong style="color:#111111;">{{ period_label }}</strong> from
+  {{ company_name }}. It lists every policy attributed to you in the period along
+  with the reward due and anything already settled.
+</p>
+{% if download_url %}{{ button("Download statement", download_url) }}{% endif %}
+<p style="margin:0;font-size:14px;line-height:1.65;color:#3d3d3d;">
+  If any entry looks wrong, contact your relationship manager or call
+  {{ company_phone }} and we will check it with you.
+</p>
+{% endblock %}
+{% block footer_note %}
+  You are receiving this because you are a registered channel partner of
+  {{ company_name }}.
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_button.html" import button, table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Security alert</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, we recorded
+  <strong style="color:#111111;">{{ attempts }} failed sign-in attempts</strong>
+  on your {{ app_name }} account.
+</p>
+{{ table_open() }}
+{{ row("When", when, first=True) }}
+{{ row("IP address", ip) }}
+{{ table_close() }}
+<p style="margin:18px 0;font-size:14px;line-height:1.65;color:#3d3d3d;">
+  If this was you, there is nothing to do. If it was not, reset your password now
+  and tell your administrator.
+</p>
+{{ button("Reset my password", frontend_url ~ "/forgot-password") }}
+{% endblock %}

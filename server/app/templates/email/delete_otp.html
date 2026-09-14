@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_button.html" import code_box %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Confirm account deletion</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, you asked to delete the {{ app_name }} account
+  <strong style="color:#111111;">{{ target_name }}{% if target_code %} ({{ target_code }}){% endif %}</strong>.
+  Enter the code below to confirm. It expires in
+  <strong style="color:#111111;">{{ minutes }} minutes</strong>.
+</p>
+{{ code_box(code) }}
+<p style="margin:0;font-size:14px;line-height:1.65;color:#6b6b6b;">
+  If you did not request this deletion, ignore this email — no account is removed
+  without this code.
+</p>
+{% endblock %}

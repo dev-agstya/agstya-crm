@@ -1,0 +1,47 @@
+# --- Web framework ---
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# --- Database (MongoDB) ---
+motor==3.6.0
+beanie==1.29.0
+pymongo==4.9.2
+
+# --- Config / validation ---
+pydantic==2.10.4
+pydantic-settings==2.7.1
+email-validator==2.2.0
+
+# --- Auth / security ---
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+# Pinned <4.1: passlib 1.7.4 reads bcrypt.__about__ which was removed in 4.1+.
+bcrypt==4.0.1
+
+# --- Email (Gmail SMTP) ---
+aiosmtplib==3.0.2
+jinja2==3.1.5
+
+# --- AWS S3 ---
+boto3==1.35.90
+
+# --- Field encryption (Fernet) ---
+cryptography==44.0.0
+
+# --- Utilities ---
+python-dateutil==2.9.0.post0
+openpyxl==3.1.5
+# Pure-Python PDF generation (channel-partner statements) — no system deps.
+fpdf2==2.8.2
+
+# --- Testing / dev ---
+pytest==8.3.4
+pytest-asyncio==0.25.0
+httpx==0.28.1
+mongomock-motor==0.0.34
+# Static undefined-name sweep over app/ (tests/test_undefined_names.py). Four
+# live NameErrors shipped past a green 985-test suite before this was added —
+# the suite is fakes and AST sweeps, so nothing was checking that the modules'
+# names resolve at all. Pure Python, no system deps, ~1s over the whole package.
+pyflakes==3.2.0

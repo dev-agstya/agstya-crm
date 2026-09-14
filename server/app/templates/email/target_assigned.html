@@ -1,0 +1,29 @@
+{#
+  "Your target for <month> is set."
+
+  Sent to an EMPLOYEE when their monthly target is created or changed. The
+  `goals` list is built by services/target_alerts and has ALREADY had the
+  house-profit row stripped for the recipient (see services/targets
+  can_see_profit_targets) — never add a metric loop that reads the raw target.
+#}
+{% extends "base.html" %}
+{% from "_button.html" import button, table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Your {{ period_label }} target is set</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, here is what you are aiming for this month. Every policy you
+  book counts towards it automatically — you can watch the bars fill up on your
+  dashboard.
+</p>
+{% if goals %}
+{{ table_open() }}
+{% for g in goals %}
+{{ row(g.label, g.value, strong=True, first=loop.first) }}
+{% endfor %}
+{{ table_close() }}
+{% endif %}
+{{ button("Open my dashboard", frontend_url ~ "/dashboard") }}
+<p style="margin:0;font-size:13px;line-height:1.65;color:#8a8a8a;">
+  Go get it. We will cheer you on at every milestone along the way.
+</p>
+{% endblock %}

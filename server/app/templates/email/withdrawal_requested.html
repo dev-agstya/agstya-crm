@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% from "_button.html" import button, table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">New withdrawal request</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, a channel partner has requested a payout from their wallet and it
+  needs your review.
+</p>
+{{ table_open() }}
+{{ row("Partner", partner_name ~ " (" ~ partner_code ~ ")", strong=True, first=True) }}
+{{ row("Amount", "Rs " ~ amount, strong=True) }}
+{{ row("Request", code) }}
+{{ table_close() }}
+{{ button("Review request", review_url) }}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_button.html" import table_open, table_close, row %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Your policy is due for renewal</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Dear {{ name }}, a friendly reminder that your
+  <strong style="color:#111111;">{{ category }}</strong> policy is approaching its
+  renewal date.
+</p>
+{{ table_open() }}
+{{ row("Policy", policy_code, strong=True, first=True) }}
+{{ row("Expires on", expiry ~ " (" ~ days_left ~ " days left)", strong=True) }}
+{{ table_close() }}
+<p style="margin:18px 0 0;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Please contact us to renew on time so your cover continues without a gap. Call
+  {{ company_phone }} or reply to your relationship manager.
+</p>
+{% endblock %}
+{% block footer_note %}
+  You are receiving this because you hold a policy serviced by {{ company_name }}.
+{% endblock %}

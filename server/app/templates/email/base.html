@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+{#
+  Shared shell for every outgoing email.
+
+  Black / white / grey only — no blue, no accent colour (owner, 2026-07-26).
+  Red survives in exactly one place: the word "Reason" on a rejection, where
+  colour is carrying meaning rather than decoration.
+
+  Constraints this file works within, because email clients are not browsers:
+    - tables for layout, inline styles only (Gmail strips <style> blocks)
+    - the logo is a hosted PNG with alt text, so a client that blocks images
+      still shows the agency name
+    - the footer identity comes from services/company.py via the Jinja context
+      (see services/email.py render()), so changing the agency's address or
+      phone number in one Python file updates every email at once.
+#}
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>{{ company_name }}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1a1a1a;">
+  <!-- Preheader: the grey preview line in the inbox, hidden in the body. -->
+  {% if preheader %}
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:transparent;height:0;width:0;">
+    {{ preheader }}
+  </div>
+  {% endif %}
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f4;padding:28px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:580px;background:#ffffff;border:1px solid #e5e5e5;border-radius:12px;overflow:hidden;">
+
+          <!-- Header: black band, logo sits on it (the artwork has a white border). -->
+          <tr>
+            <td align="center" style="background:#111111;padding:22px 32px;">
+              <a href="{{ frontend_url }}" style="text-decoration:none;">
+                <img src="{{ logo_url }}" alt="{{ company_name }}" height="38"
+                     style="display:block;height:38px;width:auto;border:0;outline:none;text-decoration:none;">
+              </a>
+            </td>
+          </tr>
+          <tr>
+            <td style="height:3px;background:#000000;line-height:3px;font-size:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:32px;">
+              {% block content %}{% endblock %}
+            </td>
+          </tr>
+
+          <!-- Footer: who we are, how to reach us, and that nobody reads replies. -->
+          <tr>
+            <td style="padding:22px 32px;border-top:1px solid #e5e5e5;background:#fafafa;">
+              <p style="margin:0 0 10px;font-size:13px;font-weight:700;color:#111111;letter-spacing:.2px;">
+                {{ company_name }}
+              </p>
+              <p style="margin:0;font-size:12px;line-height:1.7;color:#595959;">
+                {{ company_address }}<br>
+                Phone <a href="tel:{{ company_phone }}" style="color:#333333;text-decoration:none;">{{ company_phone }}</a>
+                &nbsp;&middot;&nbsp;
+                <a href="mailto:{{ company_email }}" style="color:#333333;text-decoration:underline;">{{ company_email }}</a>
+                {% if company_website %}
+                <br><a href="{{ company_website }}" style="color:#333333;text-decoration:underline;">{{ company_website_label }}</a>
+                {% endif %}
+                {% if company_gstin %}<br>GSTIN {{ company_gstin }}{% endif %}
+              </p>
+              <p style="margin:14px 0 0;padding-top:12px;border-top:1px solid #ebebeb;font-size:11px;line-height:1.7;color:#8a8a8a;">
+                This is an automatically generated email — please do not reply to
+                this message, as replies to this address are not monitored. For
+                any help, write to
+                <a href="mailto:{{ company_email }}" style="color:#8a8a8a;text-decoration:underline;">{{ company_email }}</a>
+                or call {{ company_phone }}.
+                {% block footer_note %}{% endblock %}
+              </p>
+              <p style="margin:8px 0 0;font-size:11px;color:#a3a3a3;">
+                &copy; {{ year }} {{ company_name }}. All rights reserved.
+              </p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

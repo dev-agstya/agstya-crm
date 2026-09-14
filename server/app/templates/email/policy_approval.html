@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% from "_button.html" import button %}
+{% block content %}
+<h1 style="margin:0 0 14px;font-size:21px;font-weight:700;color:#111111;">Policy {{ status_label }}</h1>
+<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#3d3d3d;">
+  Hi {{ name }}, your policy <strong style="color:#111111;">{{ policy_code }}</strong>
+  {% if policy_number %}(No. {{ policy_number }}){% endif %} has been
+  <strong style="color:#111111;">{{ status_label }}</strong>.
+</p>
+{% if approved and reward_amount %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#3d3d3d;">
+  A reward of <strong style="color:#111111;">Rs {{ reward_amount }}</strong> has
+  been recorded against it and becomes payable once the insurer settles.
+</p>
+{% endif %}
+{% if reason %}
+<p style="margin:0 0 16px;font-size:14px;line-height:1.65;color:#b91c1c;">
+  Reason: {{ reason }}
+</p>
+{% endif %}
+{{ button("View your policies", policies_url) }}
+{% endblock %}
