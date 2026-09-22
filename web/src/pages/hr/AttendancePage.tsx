@@ -225,7 +225,7 @@ export default function AttendancePage() {
             value={view}
             onChange={(v) => setView2(v as View)}
             options={[
-              { value: "mine", label: "My attendance", icon: "User" },
+              ...(user?.account_type !== "owner" ? [{ value: "mine", label: "My attendance", icon: "User" as const }] : []),
               { value: "today", label: "Today", icon: "Users" },
               { value: "month", label: "Month grid", icon: "Grid" },
               {
@@ -237,23 +237,6 @@ export default function AttendancePage() {
           />
         </div>
       )}
-      <div className="mt-5">
-        <Segmented
-          semantics="tabs"
-          value={view}
-          onChange={(v) => setView2(v as View)}
-          options={[
-            ...(user?.account_type !== "owner" ? [{ value: "mine", label: "My attendance", icon: "User" as const }] : []),
-            { value: "today", label: "Today", icon: "Users" },
-            { value: "month", label: "Month grid", icon: "Grid" },
-            {
-              value: "corrections", label: "Corrections",
-              icon: "CheckSquare",
-              count: pendingCount || undefined,
-            },
-          ].filter((o) => o.value === "mine" || has("view_attendance"))}
-        />
-      </div>
 
       {/* ------------------------------------------------ my / one person -- */}
       {view === "mine" && (

@@ -256,7 +256,6 @@ export function NotificationBell() {
             <p className="text-xs text-slate-500">
               {formatDateTime(active.created_at)}</p>
             <p className="whitespace-pre-wrap text-sm text-slate-700">
-              {active.body || "No further details."}</p>
               {active.body || "There are no further details for this notification."}</p>
             <div className="flex justify-end gap-2">
               {active.link && (
