@@ -328,12 +328,14 @@ export default function LeavePage() {
           tone: balanceTone(b.available),
         } : undefined}
         actions={
-          <button className="btn-primary" onClick={() => {
-            setOnBehalf(null);
-            setApplying(true);
-          }}>
-            <Icon.Plus size={15} /> Apply for leave
-          </button>
+          user?.account_type !== "owner" ? (
+            <button className="btn-primary" onClick={() => {
+              setOnBehalf(null);
+              setApplying(true);
+            }}>
+              <Icon.Plus size={15} /> Apply for leave
+            </button>
+          ) : undefined
         }
       />
 
@@ -392,10 +394,12 @@ export default function LeavePage() {
               hint="When you apply for time off it will show here with its
                 status."
               action={
-                <button className="btn-primary"
-                  onClick={() => setApplying(true)}>
-                  Apply for leave
-                </button>
+                user?.account_type !== "owner" ? (
+                  <button className="btn-primary"
+                    onClick={() => setApplying(true)}>
+                    Apply for leave
+                  </button>
+                ) : undefined
               } />
           ) : (
             <>

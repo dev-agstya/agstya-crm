@@ -74,10 +74,6 @@ export default function SettingsPage() {
             </div>
             <div className="divide-y divide-line/70">
               <SettingRow
-                icon="Wallet" title="Channel Partner portal"
-                desc="The master switch, and what a signed-in partner may do"
-                onClick={() => navigate("/settings/partner-portal")} />
-              <SettingRow
                 icon="Clock" title="Attendance & leave"
                 desc="The shift, what counts as a full day, and the leave policy"
                 onClick={() => navigate("/settings/attendance")} />

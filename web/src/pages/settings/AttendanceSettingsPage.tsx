@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { servicesApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { RecordPage } from "../../components/RecordPage";
-import { Field, PageLoader, Section, ToggleField } from "../../components/ui";
+import { Field, PageLoader, Section, Tabs, ToggleField } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import { toast } from "../../components/Toast";
 import type { HrSettings } from "../../lib/types";
@@ -55,6 +55,7 @@ export default function AttendanceSettingsPage() {
   const stored = settings.data?.hr;
 
   const [form, setForm] = useState<HrSettings | null>(null);
+  const [tab, setTab] = useState<string>("shift");
   useEffect(() => {
     if (stored && !form) setForm({ ...stored });
   }, [stored]);
@@ -102,6 +103,17 @@ export default function AttendanceSettingsPage() {
     >
       {settings.isLoading || !form ? <PageLoader /> : (
         <div className="max-w-2xl space-y-6">
+
+          <Tabs
+            items={[
+              { value: 'shift', label: 'Shift & Hours' },
+              { value: 'location', label: 'Location Tracking' },
+              { value: 'payroll', label: 'Payroll & Penalties' },
+              { value: 'leave', label: 'Leave Policy' }
+            ]}
+            value={tab}
+            onChange={setTab}
+          />
           <div className="note-due">
             Changing anything here re-reads <b>every</b> month, including ones
             that have already been through. That is deliberate — one policy, one
@@ -109,6 +121,7 @@ export default function AttendanceSettingsPage() {
             change.
           </div>
 
+          {tab === "shift" && (<>
           {/* ------------------------------------------------- the week -- */}
           <div className="card card-body">
             <Section title="The working week">
@@ -197,6 +210,8 @@ export default function AttendanceSettingsPage() {
             </Section>
           </div>
 
+          </>)}
+          {tab === "payroll" && (<>
           {/* ------------------------------------------------ late marks -- */}
           <div className="card card-body">
             <Section title="Late marks">
@@ -218,6 +233,8 @@ export default function AttendanceSettingsPage() {
             </Section>
           </div>
 
+          </>)}
+          {tab === "location" && (<>
           {/* ------------------------------------------------- location -- */}
           {/*
             WHERE THE PUNCH CAME FROM (owner 2026-08-21).
@@ -330,6 +347,8 @@ export default function AttendanceSettingsPage() {
             </Section>
           </div>
 
+          </>)}
+          {tab === "payroll" && (<>
           {/* --------------------------------------------------- payroll -- */}
           {/*
             THE CORRECTION WINDOW (owner 2026-09-06): "we will also give one
@@ -385,6 +404,8 @@ export default function AttendanceSettingsPage() {
             </Section>
           </div>
 
+          </>)}
+          {tab === "leave" && (<>
           {/* ---------------------------------------------------- leave -- */}
           <div className="card card-body">
             <Section title="Leave">
@@ -418,6 +439,7 @@ export default function AttendanceSettingsPage() {
               </div>
             </Section>
           </div>
+          </>)}
 
           <div className="flex items-center justify-end gap-2">
             <button className="btn-secondary"

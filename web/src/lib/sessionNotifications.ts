@@ -18,7 +18,8 @@ export interface SessionNotification {
 
 // Pure acknowledgement toasts not worth logging in the bell (owner: "avoid
 // saved/copied noise"). Matched case-insensitively at the start of the message.
-const TRIVIAL = /^(saved|copied)\b/i;
+// Expanded to filter out "trash" login/profile updates.
+const TRIVIAL = /^(saved|copied|profile|logged in|signed in|welcome|password|email|updated|deleted)\b/i;
 
 interface State {
   items: SessionNotification[];

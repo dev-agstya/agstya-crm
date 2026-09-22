@@ -18,8 +18,8 @@ import getpass
 import re
 import sys
 
-# Allow running as a plain script from the server/ directory.
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+# Allow running as a plain script from any directory.
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
 
 from beanie import init_beanie  # noqa: E402
 from motor.motor_asyncio import AsyncIOMotorClient  # noqa: E402

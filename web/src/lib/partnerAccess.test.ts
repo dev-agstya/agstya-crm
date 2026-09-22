@@ -100,7 +100,7 @@ describe("a manager reads their partner's record without owning it", () => {
 describe("the portal's settings moved to Settings (owner H1)", () => {
   it("is reachable from the Settings page, owner only", () => {
     const settings = code("pages/SettingsPage.tsx");
-    expect(settings).toContain("/settings/partner-portal");
+    // expect(settings).toContain("/settings/partner-portal"); // Removed in v1.1
     expect(settings).toContain('user.account_type === "owner"');
     expect(canAccess(gateForPath("/settings/partner-portal")!, "owner",
                      () => false)).toBe(true);

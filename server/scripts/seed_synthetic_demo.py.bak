@@ -89,9 +89,7 @@ from app.models.lead import Lead                                   # noqa: E402
 from app.models.master import (                                    # noqa: E402
     CategoryNode, CustomFieldSpec, PolicyCategory, RequiredDocSpec,
 )
-from app.models.policy import Policy
-from app.models.document import DocumentRecord
-from app.models.quote_request import QuoteRequest, QuoteOption, QuoteEvent, QuoteStage                                # noqa: E402
+from app.models.policy import Policy                                # noqa: E402
 from app.models.rate_rule import RateRule                          # noqa: E402
 from app.models.reward import Reward                                # noqa: E402
 from app.models.target import Target                                # noqa: E402
@@ -108,15 +106,14 @@ from app.services.policy_ops import resolve_reward_terms, sync_reward  # noqa: E
 
 random.seed(20260913)
 
-EMAIL_DOMAIN = "agstyaassociate.in"
+EMAIL_DOMAIN = "gmail.com"
+LOCAL_PREFIX = "work4rajan"
 PASSWORD = "Test@123"
 SEED_TAG = "[demo]"
 
+
 def email_for(tag: str) -> str:
-    if tag == "owner": return "owner@agstyaassociate.in"
-    if tag.startswith("emp"): return f"emp_{tag[3:]}@agstyaassociate.in"
-    if tag.startswith("cp"): return f"cp_{tag[2:]}@agstyaassociate.in"
-    return f"{tag}@agstyaassociate.in"
+    return f"{LOCAL_PREFIX}+{tag}@{EMAIL_DOMAIN}"
 
 
 def rupees(amount: int) -> int:
@@ -157,64 +154,32 @@ POLICY_TYPES = [
                     "Repair Estimate"), ("photos", "Photos of Damage")]},
 ]
 
-CUSTOMERS = ['Customer 1', 'Customer 2', 'Customer 3', 'Customer 4', 'Customer 5', 'Customer 6', 'Customer 7', 'Customer 8', 'Customer 9', 'Customer 10', 'Customer 11', 'Customer 12', 'Customer 13', 'Customer 14', 'Customer 15', 'Customer 16', 'Customer 17', 'Customer 18', 'Customer 19', 'Customer 20', 'Customer 21', 'Customer 22', 'Customer 23', 'Customer 24', 'Customer 25', 'Customer 26', 'Customer 27', 'Customer 28', 'Customer 29', 'Customer 30', 'Customer 31', 'Customer 32', 'Customer 33', 'Customer 34', 'Customer 35', 'Customer 36', 'Customer 37', 'Customer 38', 'Customer 39', 'Customer 40', 'Customer 41', 'Customer 42', 'Customer 43', 'Customer 44', 'Customer 45', 'Customer 46', 'Customer 47', 'Customer 48', 'Customer 49', 'Customer 50', 'Customer 51', 'Customer 52', 'Customer 53', 'Customer 54', 'Customer 55']
+CUSTOMERS = [
+    "Ayush Verma", "Ishaan Patel", "Meera Krishnan", "Rahul Saxena",
+    "Ananya Bose", "Kunal Kapoor", "Swati Mishra", "Devansh Trivedi",
+    "Lakshmi Pillai", "Harsh Vardhan", "Nidhi Chopra", "Siddharth Rao",
+    "Pallavi Deshmukh", "Gaurav Khanna", "Ritika Sinha", "Mohit Aggarwal",
+    "Juhi Bhatt", "Aditya Kulkarni",
+]
 
 LEADS = [
-    ("Lead 1", "9700300001", "Interest 1", 101000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 2", "9700300002", "Interest 2", 102000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 3", "9700300003", "Interest 3", 103000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 4", "9700300004", "Interest 4", 104000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 5", "9700300005", "Interest 5", 105000, LeadType.BUSINESS, LeadStage.NEW),
-    ("Lead 6", "9700300006", "Interest 6", 106000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 7", "9700300007", "Interest 7", 107000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 8", "9700300008", "Interest 8", 108000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 9", "9700300009", "Interest 9", 109000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 10", "9700300010", "Interest 10", 110000, LeadType.BUSINESS, LeadStage.NEW),
-    ("Lead 11", "9700300011", "Interest 11", 111000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 12", "9700300012", "Interest 12", 112000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 13", "9700300013", "Interest 13", 113000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 14", "9700300014", "Interest 14", 114000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 15", "9700300015", "Interest 15", 115000, LeadType.BUSINESS, LeadStage.CONTACTED),
-    ("Lead 16", "9700300016", "Interest 16", 116000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 17", "9700300017", "Interest 17", 117000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 18", "9700300018", "Interest 18", 118000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 19", "9700300019", "Interest 19", 119000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 20", "9700300020", "Interest 20", 120000, LeadType.BUSINESS, LeadStage.QUOTED),
-    ("Lead 21", "9700300021", "Interest 21", 121000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 22", "9700300022", "Interest 22", 122000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 23", "9700300023", "Interest 23", 123000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 24", "9700300024", "Interest 24", 124000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 25", "9700300025", "Interest 25", 125000, LeadType.BUSINESS, LeadStage.NEW),
-    ("Lead 26", "9700300026", "Interest 26", 126000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 27", "9700300027", "Interest 27", 127000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 28", "9700300028", "Interest 28", 128000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 29", "9700300029", "Interest 29", 129000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 30", "9700300030", "Interest 30", 130000, LeadType.BUSINESS, LeadStage.CONTACTED),
-    ("Lead 31", "9700300031", "Interest 31", 131000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 32", "9700300032", "Interest 32", 132000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 33", "9700300033", "Interest 33", 133000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 34", "9700300034", "Interest 34", 134000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 35", "9700300035", "Interest 35", 135000, LeadType.BUSINESS, LeadStage.NEW),
-    ("Lead 36", "9700300036", "Interest 36", 136000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 37", "9700300037", "Interest 37", 137000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 38", "9700300038", "Interest 38", 138000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 39", "9700300039", "Interest 39", 139000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 40", "9700300040", "Interest 40", 140000, LeadType.BUSINESS, LeadStage.QUOTED),
-    ("Lead 41", "9700300041", "Interest 41", 141000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 42", "9700300042", "Interest 42", 142000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 43", "9700300043", "Interest 43", 143000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 44", "9700300044", "Interest 44", 144000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 45", "9700300045", "Interest 45", 145000, LeadType.BUSINESS, LeadStage.CONTACTED),
-    ("Lead 46", "9700300046", "Interest 46", 146000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 47", "9700300047", "Interest 47", 147000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 48", "9700300048", "Interest 48", 148000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 49", "9700300049", "Interest 49", 149000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 50", "9700300050", "Interest 50", 150000, LeadType.BUSINESS, LeadStage.NEW),
-    ("Lead 51", "9700300051", "Interest 51", 151000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 52", "9700300052", "Interest 52", 152000, LeadType.CUSTOMER, LeadStage.QUOTED),
-    ("Lead 53", "9700300053", "Interest 53", 153000, LeadType.CUSTOMER, LeadStage.NEW),
-    ("Lead 54", "9700300054", "Interest 54", 154000, LeadType.CUSTOMER, LeadStage.CONTACTED),
-    ("Lead 55", "9700300055", "Interest 55", 155000, LeadType.BUSINESS, LeadStage.NEW)
+    # name, mobile, interest, est premium (rupees), type, stage
+    ("Naveen Kumar", "9700200011", "Health cover for family", 250000,
+     LeadType.CUSTOMER, LeadStage.NEW),
+    ("Shreya Banerjee", "9700200012", "Term life 1 crore", 180000,
+     LeadType.CUSTOMER, LeadStage.CONTACTED),
+    ("Parth Doshi", "9700200013", "Car insurance renewal", 95000,
+     LeadType.CUSTOMER, LeadStage.QUOTED),
+    ("Anjali Rathore", "9700200014", "Top-up health plan", 120000,
+     LeadType.CUSTOMER, LeadStage.LOST),
+    ("Deepak Negi", "9700200015", "Endowment / savings plan", 600000,
+     LeadType.CUSTOMER, LeadStage.CONVERTED),
+    ("Rathi Motors Pvt Ltd", "9700200016", "Fleet motor cover", 450000,
+     LeadType.BUSINESS, LeadStage.NEW),
+    ("Sunrise Traders", "9700200017", "Group health for staff", 300000,
+     LeadType.BUSINESS, LeadStage.CONTACTED),
+    ("Ramesh Iyer", "9700200018", "Wants to bring in business", 0,
+     LeadType.CHANNEL_PARTNER, LeadStage.NEW),
 ]
 
 PREMIUM_POOL = [11800, 23600, 17700, 35400, 8850, 47200, 14160,
@@ -297,9 +262,8 @@ async def upsert_employees(owner: User) -> list[User]:
 async def upsert_partners(manager: User) -> list[User]:
     print("\n--- Channel partners ---")
     out: list[User] = []
-    names = ["Yogesh Sharma", "Ayesha Khan"] + [f"Partner {i}" for i in range(3, 11)]
-    tags = ["cp1", "cp2"] + [f"cp{i}" for i in range(3, 11)]
-    for i, (tag, name) in enumerate(zip(tags, names), start=1):
+    names = ["Yogesh Sharma", "Ayesha Khan"]
+    for i, (tag, name) in enumerate(zip(["cp1", "cp2"], names), start=1):
         email = email_for(tag)
         existing = await User.find_one(User.email == email,
                                        {"is_deleted": {"$ne": True}})
@@ -311,7 +275,7 @@ async def upsert_partners(manager: User) -> list[User]:
             code=await next_code("partner"), full_name=name, email=email,
             mobile=f"97000002{i:02d}", account_type=AccountType.CHANNEL_PARTNER,
             hashed_password=hash_password(PASSWORD), must_change_password=False,
-            onboarded=True, status=AccountStatus.ACTIVE, portal_access=(i<=2),
+            onboarded=True, status=AccountStatus.ACTIVE, portal_access=True,
             relationship_manager_id=str(manager.id), created_by=str(manager.id),
         )
         await u.insert()
@@ -483,7 +447,7 @@ async def seed_policies(owner: User, insurers, brokers, cats, customers,
     made: list[Policy] = []
     now = utcnow()
 
-    for n in range(70):
+    for n in range(24):
         cust = customers[n % len(customers)]
         insurer = active_insurers[n % len(active_insurers)]
         broker = rated_brokers[n % len(rated_brokers)]
@@ -492,7 +456,7 @@ async def seed_policies(owner: User, insurers, brokers, cats, customers,
             continue
         gross = rupees(PREMIUM_POOL[n % len(PREMIUM_POOL)])
         partner = partners[n % len(partners)] if (n % 2 == 0 and partners) else None
-        started = now - timedelta(days=random.randint(5, 395))
+        started = now - timedelta(days=random.randint(5, 175))
         booker = employees[n % len(employees)] if employees else owner
         # Motor needs its own required custom field.
         details = {"sum_assured": gross * 40} if cat_key != "motor" \
@@ -586,7 +550,7 @@ async def seed_targets(employees: list[User], partners: list[User]) -> None:
     for person, kind in [(e, AccountType.EMPLOYEE.value) for e in employees] \
             + [(p, AccountType.CHANNEL_PARTNER.value) for p in partners]:
         anchor = now
-        for _back in range(14):
+        for _back in range(3):
             lo, hi = target_svc.normalise_period(TargetPeriod.MONTH, anchor)
             if not await Target.find_one(Target.assignee_id == str(person.id),
                                          Target.period_start == lo):
@@ -610,7 +574,9 @@ async def seed_targets(employees: list[User], partners: list[User]) -> None:
 async def seed_holidays(owner: User) -> None:
     print("\n--- Holidays ---")
     year = utcnow().year
-    holidays = [(f"{year}-01-26", "Republic Day"), (f"{year}-08-15", "Independence Day"), (f"{year}-10-02", "Gandhi Jayanti"), (f"{year}-05-01", "Labour Day"), (f"{year}-12-25", "Christmas")]
+    holidays = [(f"{year}-01-26", "Republic Day"),
+                (f"{year}-08-15", "Independence Day"),
+                (f"{year}-10-02", "Gandhi Jayanti")]
     made = 0
     for date_str, name in holidays:
         if await Holiday.find_one(Holiday.date == date_str):
@@ -632,13 +598,13 @@ async def seed_attendance(employees: list[User], hr) -> None:
     today_ist = now_ist().date()
     made = 0
     for emp in employees:
-        for back in range(1, 396):
+        for back in range(1, 46):
             day = today_ist - timedelta(days=back)
             if day.weekday() == 6:            # Sunday off, per default HrSettings
                 continue
             # One absence a fortnight, a late clock-in every fourth day,
             # otherwise a normal 10:00-19:00 day.
-            if back % 20 == 0:
+            if back % 14 == 0:
                 continue                       # absent — no punch at all
             in_time = "10:25" if back % 4 == 0 else "09:55"
             clock_in = combine_ist(day, in_time)
@@ -662,7 +628,7 @@ async def seed_leave(employees: list[User], hr) -> None:
                                           "leave_year": year}):
             continue
         anchor = now
-        for _back in range(14):
+        for _back in range(3):
             period_key = anchor.strftime("%Y-%m")
             await hr_leave.post(str(emp.id), LeaveLedgerEntry.ACCRUAL.value,
                                 hr_leave.accrual_for(emp, hr),
@@ -711,44 +677,6 @@ async def seed_payslips(employees: list[User], hr) -> None:
 # --- Entry point ---------------------------------------------------------------
 
 
-
-async def seed_quote_requests(owner, partners, policies):
-    print("\n--- Quote Requests & Renewals ---")
-    now = utcnow()
-    made = 0
-    # Create some quote requests
-    for p in policies[:15]:
-        partner = partners[0] if partners else None
-        if not partner: break
-        is_renewal = bool(made % 2)
-        stage = QuoteStage.LOST if made % 2 else QuoteStage.SUBMITTED
-        qr = QuoteRequest(
-            code=await next_code("quote"), partner_id=str(partner.id), partner_name=partner.full_name,
-            customer_name=f"Customer {made}", customer_mobile=f"98100100{made}",
-            category_key="motor",
-            is_renewal=is_renewal,
-            renewal_of_policy_id=str(p.id) if is_renewal else None,
-            stage=stage,
-            created_at=now - timedelta(days=random.randint(1, 395))
-        )
-        await qr.insert()
-        made += 1
-    print(f"  + {made} quote requests")
-    
-async def seed_documents(policies):
-    print("\n--- Documents ---")
-    made = 0
-    for p in policies:
-        doc = DocumentRecord(
-            entity_type="policy", entity_id=str(p.id),
-            label="Policy PDF", s3_key=f"policies/{p.id}/policy.pdf",
-            filename="policy.pdf", content_type="application/pdf",
-            size_bytes=1024 * 1024 * 2
-        )
-        await doc.insert()
-        made += 1
-    print(f"  + {made} policy documents")
-
 async def main() -> None:
     print(f"\n=== {settings.app_name}: synthetic demo seed ===")
     print(f"    database: {settings.mongo_db_name}")
@@ -774,10 +702,6 @@ async def main() -> None:
                                    partners, employees)
     await seed_money(owner, policies)
     await seed_targets(employees, partners)
-
-    await seed_quote_requests(owner, partners, policies)
-    await seed_documents(policies)
-
 
     await seed_holidays(owner)
     hr = (await settings_svc.get_settings()).hr

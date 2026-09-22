@@ -3,7 +3,7 @@
 from functools import lru_cache
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # server/ directory (this file lives at server/app/config.py)
@@ -28,6 +28,17 @@ class Settings(BaseSettings):
     app_name: str = "Agstya Associates"
     environment: str = Field(default="development")
     debug: bool = Field(default=True)
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug(cls, v: object) -> bool:
+        if isinstance(v, str):
+            val = v.strip().lower()
+            if val in ("release", "prod", "production", "false", "0", "no", "off"):
+                return False
+            if val in ("debug", "dev", "development", "true", "1", "yes", "on"):
+                return True
+        return bool(v)
     # Comma-separated list of allowed frontend origins for CORS.
     cors_origins: str = Field(
         default="http://localhost:5173,http://127.0.0.1:5173"

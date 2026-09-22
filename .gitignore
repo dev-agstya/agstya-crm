@@ -8,6 +8,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# Secrets
 # Secrets & Environment variables
 .env
 .env.*
@@ -33,6 +34,8 @@ desktop.ini
 *.swp
 *~
 
+# Misc
+reffer/
 # AI / Assistant tools
 .claude/
 .agents/
@@ -54,6 +57,8 @@ reffer/
 
 # Local email-template previews (python preview_emails.py)
 server/.email_preview/
+
+
 
 # Local notes & scratch files
 changes.txt

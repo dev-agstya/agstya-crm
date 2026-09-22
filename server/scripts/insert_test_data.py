@@ -66,7 +66,7 @@ import secrets
 import sys
 from datetime import timedelta
 
-sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.parent))
 
 from app.config import settings                                    # noqa: E402
 from app.core.enums import (                                       # noqa: E402
