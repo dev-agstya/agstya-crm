@@ -10,9 +10,9 @@
 // page, and both forms follow that order.
 
 import { Field } from "./ui";
-import { Icon } from "./Icon";
 import { DateInput } from "./DateInput";
 import { SearchSelect } from "./SearchSelect";
+import { FileUpload } from "./FileUpload";
 import { rupeesToPaise } from "../lib/format";
 import { COMMISSIONABLE_BASE } from "../lib/types";
 import type { CustomFieldSpec, RequiredDocSpec } from "../lib/types";
@@ -204,7 +204,7 @@ export function AmountCustomFields({ title, fields, details, setDetail,
             hint="Which amount the reward % applies to for this policy.">
             <SearchSelect
               options={[
-                { value: COMMISSIONABLE_BASE, label: "Reward Base Premium (net of GST)" },
+                { value: COMMISSIONABLE_BASE, label: "Premium before tax (net of GST)" },
                 ...baseFieldOptions.map((f) => ({ value: f.key, label: f.label })),
               ]}
               value={rewardBaseField || COMMISSIONABLE_BASE}
@@ -258,15 +258,11 @@ export function RequiredDocuments({ docs, docFiles, setDocFiles }: {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {docs.map((doc) => (
           <Field key={doc.key} label={doc.label} required={doc.required}>
-            <input type="file" className="input cursor-pointer py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200/80 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"
-              onChange={(e) => setDocFiles((m) => ({
-                ...m, [doc.key]: e.target.files?.[0] ?? null }))} />
-            {docFiles[doc.key] && (
-              <span className="inline-flex items-center gap-1 text-xs
-                font-medium text-money-in">
-                <Icon.Check size={13} /> {docFiles[doc.key]!.name}
-              </span>
-            )}
+            <FileUpload
+              file={docFiles[doc.key] ?? null}
+              onChange={(f) => setDocFiles((m) => ({ ...m, [doc.key]: f }))}
+              hint="PDF or image up to 20 MB"
+            />
           </Field>
         ))}
       </div>

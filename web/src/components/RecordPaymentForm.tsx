@@ -4,7 +4,7 @@ import {
   brokersApi, financeApi, usersApi, withdrawalsApi,
 } from "../api/endpoints";
 import { apiError } from "../api/client";
-import { Field } from "./ui";
+import { Field, FileUpload } from "./ui";
 import { FormPage } from "./RecordPage";
 import { Icon } from "./Icon";
 import { DateTimeInput } from "./DateInput";
@@ -365,16 +365,13 @@ export function RecordPaymentForm({ onDone, initialParty }: {
 
         {/* Attachment — not supported for partner payouts (no ledger row id) */}
         {!(dir === "paid" && party?.kind === "channel_partner") && (
-          <Field label="Attachment"
-            hint="Payment screenshot or receipt (PDF/image, max 20 MB).">
-            <input type="file" className="input py-1.5"
+          <Field label="Attachment">
+            <FileUpload
+              file={file}
+              onChange={setFile}
               accept="application/pdf,image/*"
-              onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
-            {file && (
-              <span className="inline-flex items-center gap-1 text-xs
-                font-medium text-money-in">
-                <Icon.Check size={13} /> {file.name}</span>
-            )}
+              hint="Payment screenshot or receipt (PDF or image up to 20 MB)"
+            />
           </Field>
         )}
 

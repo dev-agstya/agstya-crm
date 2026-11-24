@@ -7,7 +7,7 @@ import {
 } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { FormPage } from "../../components/RecordPage";
-import { Field, Toggle } from "../../components/ui";
+import { Field, FileUpload, Toggle } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import { DateInput } from "../../components/DateInput";
 import { SearchSelect } from "../../components/SearchSelect";
@@ -662,12 +662,12 @@ export default function PolicyFormPage() {
               </Field>
 
               <Field
-                label="Reward Base Premium (₹)"
-                tooltip="Auto-filled net of 18% GST. Edit if the insurer calculates commission on a different base."
+                label="Premium before tax (₹)"
+                tooltip="Auto-calculated net of 18% GST. Edit if the insurer calculates commission on a specific net base amount."
               >
                 <input type="number" step="0.01" className="input"
                   value={form.commissionable}
-                  placeholder="Net premium"
+                  placeholder="Premium before tax"
                   onChange={(e) => {
                     setCommTouched(true);
                     setForm({ ...form, commissionable: e.target.value });
@@ -836,15 +836,13 @@ export default function PolicyFormPage() {
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               5. Policy Documents & Uploads
             </h3>
-            <Field label="Policy PDF document" required
-              hint="Official policy document issued by insurer (PDF, max 20 MB).">
-              <input type="file" accept="application/pdf,.pdf" className="input cursor-pointer py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200/80 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"
-                onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
-              {pdfFile && (
-                <span className="text-xs font-medium text-money-in mt-1 inline-flex items-center gap-1">
-                  <Icon.Check size={13} /> {pdfFile.name}
-                </span>
-              )}
+            <Field label="Policy PDF document" required>
+              <FileUpload
+                file={pdfFile}
+                onChange={setPdfFile}
+                accept="application/pdf,.pdf"
+                hint="Official policy document issued by insurer (PDF up to 20 MB)"
+              />
             </Field>
             <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
               setDocFiles={setDocFiles} />

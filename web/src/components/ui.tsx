@@ -1100,6 +1100,7 @@ export function SearchInput({
 
 import { InfoTooltip } from "./Tooltip";
 export { Tooltip, InfoTooltip } from "./Tooltip";
+export { FileUpload } from "./FileUpload";
 
 /* ------------------------------------------------------------------ fields -- */
 

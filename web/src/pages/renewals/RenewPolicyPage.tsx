@@ -7,7 +7,7 @@ import {
 } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { FormPage, RecordPage } from "../../components/RecordPage";
-import { Field, ToggleField } from "../../components/ui";
+import { Field, FileUpload, ToggleField } from "../../components/ui";
 import { SearchSelect } from "../../components/SearchSelect";
 import { Icon } from "../../components/Icon";
 import { DateInput } from "../../components/DateInput";
@@ -383,15 +383,13 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
 
         {/* Policy PDF is mandatory on a renewal too, with the type's document
             slots right after it (owner 2026-07-24). */}
-        <Field label="Policy PDF" required
-          hint="Upload the renewed policy document (PDF, max 20 MB).">
-          <input type="file" accept="application/pdf,.pdf" className="input cursor-pointer py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200/80 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"
-            onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
-          {pdfFile && (
-            <span className="text-xs font-medium text-money-in inline-flex items-center gap-1 mt-1">
-              <Icon.Check size={13} /> {pdfFile.name}
-            </span>
-          )}
+        <Field label="Policy PDF" required>
+          <FileUpload
+            file={pdfFile}
+            onChange={setPdfFile}
+            accept="application/pdf,.pdf"
+            hint="Upload the renewed policy document (PDF up to 20 MB)"
+          />
         </Field>
         {/* Carry last year's supporting paperwork across. Above the upload
             slots, because it changes what those slots are asking for. */}

@@ -765,7 +765,7 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
                 value={f.premium} required
                 onChange={(e) => set("premium", e.target.value)} />
             </Field>
-            <Field label="Reward base premium (₹)"
+            <Field label="Premium before tax (₹)"
               hint="Leave blank to auto-derive net of GST.">
               <input type="number" step="0.01" min="0" className="input"
                 value={f.commissionable}
