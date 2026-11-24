@@ -61,10 +61,12 @@ export default function AttendancePage() {
   const canSeeTeam = has("view_attendance");
   const canManage = has("manage_attendance");
   const canExport = has("export_data") && canSeeTeam;
+  const isOwner = user?.account_type === "owner";
 
   const requested = params.get("view") as View | null;
+  const defaultView: View = isOwner ? "today" : "mine";
   const [view, setView] = useState<View>(
-    requested && canSeeTeam ? requested : "mine");
+    requested && (canSeeTeam || requested === "mine") ? requested : defaultView);
   const [month, setMonth] = useState(
     () => params.get("month") || monthKey(new Date()));
   const [day, setDay] = useState(todayKey());
@@ -202,8 +204,9 @@ export default function AttendancePage() {
     <div>
       <PageHeader
         title="Attendance"
-        subtitle="Clock in when you start, clock out when you finish. The month
-          adds up to the days your pay is worked out from."
+        subtitle={isOwner
+          ? "Team attendance register, daily clock-in logs, and correction requests."
+          : "Clock in when you start, clock out when you finish. Monthly attendance determines payroll."}
         eyebrow="Workplace HR"
         actions={
           <button className="btn-secondary"
@@ -213,10 +216,11 @@ export default function AttendancePage() {
         }
       />
 
-      {/* Always on screen, whichever view is showing — it is the thing most
-          people open this page to press. */}
-      <PunchPanel onChanged={() => qc.invalidateQueries({
-        queryKey: ["hr", "month"] })} />
+      {/* Employees see the quick punch clock; owners do not punch in. */}
+      {!isOwner && (
+        <PunchPanel onChanged={() => qc.invalidateQueries({
+          queryKey: ["hr", "month"] })} />
+      )}
 
       {canSeeTeam && (
         <div className="mt-5">

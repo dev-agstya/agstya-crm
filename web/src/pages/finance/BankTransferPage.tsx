@@ -61,6 +61,8 @@ export default function BankTransferPage() {
       backTo="/finance/banks"
       backLabel="Back to bank & cash"
       title="Move money between your accounts"
+      wide={true}
+      maxWidth="max-w-4xl"
       subtitle="A transfer never touches profit and never touches a customer, broker or partner balance — it is the same money, somewhere else."
       onSubmit={() => send.mutate()}
       submitLabel="Record transfer"

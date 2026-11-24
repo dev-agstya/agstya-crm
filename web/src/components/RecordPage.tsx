@@ -203,6 +203,7 @@ export function FormPage({
   onRetry,
   notFound,
   wide = false,
+  maxWidth,
   children,
 }: {
   backTo: string;
@@ -221,8 +222,12 @@ export function FormPage({
   notFound?: boolean;
   /** For forms with genuinely two columns of fields. */
   wide?: boolean;
+  /** Custom max width override, e.g. "max-w-5xl" or "max-w-6xl" */
+  maxWidth?: string;
   children: ReactNode;
 }) {
+  const widthClass = maxWidth ?? (wide ? "max-w-5xl" : "max-w-3xl");
+
   return (
     <RecordPage
       backTo={backTo}
@@ -235,7 +240,7 @@ export function FormPage({
       notFound={notFound}
     >
       <form
-        className={`card ${wide ? "max-w-4xl" : "max-w-2xl"}`}
+        className={`card ${widthClass}`}
         onSubmit={(e) => { e.preventDefault(); onSubmit(); }}
       >
         <div className="px-6 py-5">{children}</div>

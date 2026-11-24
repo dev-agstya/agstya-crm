@@ -101,6 +101,8 @@ export default function BankAccountFormPage() {
       backTo="/finance/banks"
       backLabel="Back to bank & cash"
       title={editing ? `Edit ${account?.name ?? "account"}` : "Add an account"}
+      wide={true}
+      maxWidth="max-w-4xl"
       subtitle="Where the agency's own money sits. Every payment you record gets linked to one."
       onSubmit={() => save.mutate()}
       submitLabel={editing ? "Save changes" : "Add account"}

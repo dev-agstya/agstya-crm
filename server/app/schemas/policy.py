@@ -86,6 +86,8 @@ class PolicyRenew(BaseModel):
     start_date: datetime
     expiry_date: datetime
     policy_number: Optional[str] = None
+    broker_id: Optional[str] = None
+    insurer_id: Optional[str] = None
     reward: Optional[RewardTerms] = None
     # Type-specific custom fields for the new term. None = carry the old policy's
     # values unchanged; a dict re-collects them (validated against the type).

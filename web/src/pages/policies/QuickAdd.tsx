@@ -33,12 +33,12 @@ export function AddCustomerModal({ partnerId, initial, onClose, onCreated }: {
     email: initial?.email ?? "",
   });
   const set = (k: keyof typeof f, v: string) => setF((s) => ({ ...s, [k]: v }));
-  const valid = f.name.trim().length >= 2 && f.mobile.trim().length === 10;
+  const valid = f.name.trim().length >= 2 && (f.mobile.trim().length === 0 || f.mobile.trim().length === 10);
 
   const create = useMutation({
     mutationFn: () => customersApi.create({
       name: f.name.trim(),
-      mobile: f.mobile.trim(),
+      mobile: f.mobile.trim() || null,
       email: f.email.trim() || null,
       partner_id: partnerId || null,
     }),
@@ -57,12 +57,12 @@ export function AddCustomerModal({ partnerId, initial, onClose, onCreated }: {
           <input className="input" value={f.name} required autoFocus
             onChange={(e) => set("name", e.target.value)} />
         </Field>
-        <Field label="Mobile" required>
+        <Field label="Mobile number (optional)" hint="Optional. 10 digits without +91">
           <div className="flex">
-            <span className="inline-flex items-center rounded-l-lg border
-              border-r-0 border-slate-300 bg-slate-50 px-3 text-sm
-              text-slate-500">+91</span>
-            <input className="input rounded-l-none" value={f.mobile} required
+            <span className="inline-flex items-center rounded-l-control border
+              border-r-0 border-line bg-slate-50 px-3 text-sm
+              text-slate-500 font-medium">+91</span>
+            <input className="input rounded-l-none" value={f.mobile}
               inputMode="numeric" maxLength={10} placeholder="10-digit number"
               onChange={(e) => set("mobile", e.target.value.replace(/\D/g, ""))} />
           </div>

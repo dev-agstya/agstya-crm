@@ -238,6 +238,8 @@ export function RecordPaymentForm({ onDone, initialParty }: {
       backLabel="Back to transactions"
       title="Add transaction"
       subtitle="Any money in or out — a receipt, a payout, or a house expense."
+      wide
+      maxWidth="max-w-4xl"
       onSubmit={() => { if (canSave) save.mutate(); }}
       submitLabel="Save transaction"
       submitting={save.isPending}

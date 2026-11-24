@@ -340,9 +340,11 @@ function MoneyTiles({ s, onOpen }: {
     <>
       <MetricCard label="Pending to collect"
         value={formatINR(s?.pending_to_collect)} icon="Money"
+        title="Money owed to the agency from customers and insurers"
         onClick={() => onOpen("/finance")} />
       <MetricCard label="Pending to pay"
         value={formatINR(s?.pending_to_pay)} icon="Money"
+        title="Commissions and settlements the agency owes to partners or insurers"
         onClick={() => onOpen("/finance")} />
     </>
   );
@@ -411,6 +413,65 @@ function OwnerBoard({ s, go }: { s?: DashboardStats; go: (to: string) => void })
           </>
         )}
         {canProfit && <ProfitTiles s={s} />}
+      </div>
+
+      {/* Quick shortcuts for routine management workflows */}
+      <div className="card p-4">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          <button
+            type="button"
+            onClick={() => go("/policies/new")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Plus size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Book Policy</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/customers/new")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Customers size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Add Customer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/finance/transactions/new")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Money size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Record Payment</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/renewals")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Refresh size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Check Renewals</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/finance/reports")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Trend size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Finance Reports</span>
+          </button>
+        </div>
       </div>
       {/*
         The team-target card and the top-performers list were here and are gone
@@ -495,6 +556,65 @@ function EmployeeBoard({ s, go }: {
         )}
         {canFinance && <MoneyTiles s={s} onOpen={go} />}
         {canProfit && <ProfitTiles s={s} />}
+      </div>
+
+      {/* Quick shortcuts for routine management workflows */}
+      <div className="card p-4">
+        <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+          Quick Actions
+        </h2>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+          <button
+            type="button"
+            onClick={() => go("/policies/new")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Plus size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Book Policy</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/customers/new")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Customers size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Add Customer</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/finance/transactions/new")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Money size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Record Payment</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/renewals")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Refresh size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Check Renewals</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => go("/finance/reports")}
+            className="flex flex-col items-center justify-center gap-1.5 rounded-control border border-line bg-slate-50/60 p-3 text-center transition hover:border-slate-300 hover:bg-slate-100/70"
+          >
+            <div className="rounded-full bg-slate-200/70 p-2 text-slate-700">
+              <Icon.Trend size={16} />
+            </div>
+            <span className="text-xs font-medium text-slate-800">Finance Reports</span>
+          </button>
+        </div>
       </div>
     </div>
   );

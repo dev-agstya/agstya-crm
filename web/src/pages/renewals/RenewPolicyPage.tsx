@@ -3,11 +3,12 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import {
-  categoriesApi, documentsApi, policiesApi, rateRulesApi,
+  brokersApi, categoriesApi, documentsApi, insurersApi, policiesApi, rateRulesApi,
 } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { FormPage, RecordPage } from "../../components/RecordPage";
 import { Field, ToggleField } from "../../components/ui";
+import { SearchSelect } from "../../components/SearchSelect";
 import { Icon } from "../../components/Icon";
 import { DateInput } from "../../components/DateInput";
 import {
@@ -74,6 +75,8 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
 }) {
   const startDefault = dateInput(policy.expiry_date) || new Date().toISOString().slice(0, 10);
   const [form, setForm] = useState({
+    broker_id: policy.broker_id || "",
+    insurer_id: policy.insurer_id || "",
     premium: String(policy.premium_amount / 100),
     commissionable: "",
     policy_number: "",
@@ -86,6 +89,16 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
   });
   const set = (k: keyof typeof form, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
+
+  const brokers = useQuery({
+    queryKey: ["brokers-picker"],
+    queryFn: async () => (await brokersApi.list({ active_only: 1 })).data,
+    enabled: !isPartner,
+  });
+  const insurers = useQuery({
+    queryKey: ["insurers-all"],
+    queryFn: async () => (await insurersApi.list({ page_size: 200 })).data,
+  });
 
   // The policy type's custom fields + document-collection slots so the renewal
   // form matches the add form (owner 2026-07-24). Values pre-fill from the
@@ -147,14 +160,14 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
   [existingDocs.data]);
 
   const preview = useQuery({
-    queryKey: ["rate-preview-renew", policy.id],
+    queryKey: ["rate-preview-renew", policy.id, form.broker_id, form.insurer_id],
     queryFn: async () => (await rateRulesApi.preview({
-      broker_id: policy.broker_id!,
-      insurer_id: policy.insurer_id || undefined,
+      broker_id: form.broker_id,
+      insurer_id: form.insurer_id || undefined,
       category_key: policy.category_key,
       subcategory_path: policy.subcategory_path || [],
     })).data,
-    enabled: !!policy.broker_id,
+    enabled: !!form.broker_id,
   });
   const rate = preview.data;
   const applyRate = () => {
@@ -189,6 +202,8 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
           ? Math.round(parseFloat(form.partner_value) * 100) : 0,
       } : undefined;
       const res = await policiesApi.renew(policy.id, {
+        broker_id: form.broker_id || undefined,
+        insurer_id: form.insurer_id || undefined,
         premium_amount: rupeesToPaise(parseFloat(form.premium || "0")),
         commissionable_premium: form.commissionable
           ? rupeesToPaise(parseFloat(form.commissionable)) : 0,
@@ -220,7 +235,8 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
   });
 
   const canSave = parseFloat(form.premium || "0") > 0
-    && !!form.start_date && !!form.expiry_date;
+    && !!form.start_date && !!form.expiry_date
+    && (!isPartner ? (!!form.broker_id && !!form.insurer_id) : !!form.insurer_id);
 
   const submit = () => {
     if (!canSave) return;
@@ -241,40 +257,78 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
       backTo="/renewals"
       backLabel="Back to renewals"
       title={`Renew ${policy.code}`}
-      subtitle={[policy.customer_name, policy.insurer_name]
+      subtitle={[policy.customer_name, cat?.label]
         .filter(Boolean).join(" · ") || undefined}
       onSubmit={submit}
       submitLabel={isPartner ? "Submit renewal" : "Renew policy"}
       submitting={save.isPending}
       disabled={!canSave}
       wide
+      maxWidth="max-w-5xl"
     >
-      <div className="space-y-5">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <Field label="New premium (₹)" required>
-            <input type="number" step="0.01" className="input" value={form.premium}
-              required onChange={(e) => set("premium", e.target.value)} />
-          </Field>
-          <Field label="Reward base (₹)"
-            hint="Blank = net of GST from premium.">
-            <input type="number" step="0.01" className="input"
-              value={form.commissionable}
-              onChange={(e) => set("commissionable", e.target.value)} />
-          </Field>
-          <Field label="New policy number">
-            <input className="input" value={form.policy_number}
-              onChange={(e) => set("policy_number", e.target.value)} />
-          </Field>
+      <div className="space-y-6">
+        <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            1. Placement & Provider
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {!isPartner && (
+              <Field label="Broker" required
+                tooltip="Broker for the renewed term. You can change this if placing through a different broker.">
+                <SearchSelect
+                  options={(brokers.data ?? []).map((b) => ({
+                    value: b.id, label: `${b.name} (${b.short_code})` }))}
+                  value={form.broker_id}
+                  placeholder="Select broker…"
+                  onChange={(v) => set("broker_id", v)} />
+              </Field>
+            )}
+            <Field label="Insurer" required
+              tooltip="Underwriting insurer for this renewal term.">
+              <SearchSelect
+                options={(insurers.data?.items ?? []).map((i) => ({
+                  value: i.id, label: i.name, sub: i.code }))}
+                value={form.insurer_id}
+                placeholder="Select insurer…"
+                onChange={(v) => set("insurer_id", v)} />
+            </Field>
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Field label="Start date" required>
-            <DateInput value={form.start_date} required
-              onChange={(v) => set("start_date", v)} />
-          </Field>
-          <Field label="Expiry date" required>
-            <DateInput value={form.expiry_date} required
-              onChange={(v) => set("expiry_date", v)} />
-          </Field>
+
+        <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            2. Policy Details & Renewal Dates
+          </h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="New Gross Premium (₹)" required>
+              <input type="number" step="0.01" className="input" value={form.premium}
+                required placeholder="0.00" onChange={(e) => set("premium", e.target.value)} />
+            </Field>
+            <Field
+              label="Reward Base (₹)"
+              tooltip="Calculated automatically net of 18% GST. Edit if the insurer calculates commission on a different amount."
+            >
+              <input type="number" step="0.01" className="input"
+                value={form.commissionable}
+                placeholder="Net of GST"
+                onChange={(e) => set("commissionable", e.target.value)} />
+            </Field>
+            <Field label="New Policy Number" hint="Optional if not yet issued">
+              <input className="input" value={form.policy_number}
+                placeholder="e.g. POL-2027-1002"
+                onChange={(e) => set("policy_number", e.target.value)} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4 pt-3 border-t border-line-soft">
+            <Field label="Start date" required>
+              <DateInput value={form.start_date} required
+                onChange={(v) => set("start_date", v)} />
+            </Field>
+            <Field label="Expiry date" required>
+              <DateInput value={form.expiry_date} required
+                onChange={(v) => set("expiry_date", v)} />
+            </Field>
+          </div>
         </div>
 
         {/* Type-specific amounts + other details, carried over from the policy
@@ -331,11 +385,11 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
             slots right after it (owner 2026-07-24). */}
         <Field label="Policy PDF" required
           hint="Upload the renewed policy document (PDF, max 20 MB).">
-          <input type="file" accept="application/pdf,.pdf" className="input py-1.5"
+          <input type="file" accept="application/pdf,.pdf" className="input cursor-pointer py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200/80 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"
             onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
           {pdfFile && (
-            <span className="text-xs font-medium text-money-in">
-              ✓ {pdfFile.name}
+            <span className="text-xs font-medium text-money-in inline-flex items-center gap-1 mt-1">
+              <Icon.Check size={13} /> {pdfFile.name}
             </span>
           )}
         </Field>

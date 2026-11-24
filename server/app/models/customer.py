@@ -37,9 +37,8 @@ class Customer(Document):
     name: Indexed(str)
     contact_person: Optional[str] = None
     email: Optional[EmailStr] = None
-    # Mobile is compulsory and unique per agency (10 digits, +91 assumed). It is
-    # the natural key we dedupe customers on.
-    mobile: Indexed(str)
+    # Mobile is optional; when provided, it is 10 digits and unique per agency.
+    mobile: Optional[str] = None
     alt_mobile: Optional[str] = None
 
     # No postal address is collected: the agency works off mobile + email

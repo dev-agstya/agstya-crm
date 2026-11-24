@@ -14,8 +14,8 @@ MOBILE_FIELD = Field(min_length=10, max_length=10, pattern=r"^\d{10}$")
 
 
 def _validate_mobile(v: Optional[str]) -> Optional[str]:
-    if v is None:
-        return v
+    if v is None or str(v).strip() == "":
+        return None
     digits = "".join(ch for ch in str(v) if ch.isdigit())
     if len(digits) != 10:
         raise ValueError("Mobile number must be exactly 10 digits.")
@@ -26,7 +26,7 @@ class CustomerCreate(BaseModel):
     name: str = Field(min_length=2, max_length=160)
     contact_person: Optional[str] = None
     email: Optional[EmailStr] = None
-    mobile: str = MOBILE_FIELD   # compulsory, unique per agency
+    mobile: Optional[str] = None   # optional; when provided, unique per agency
     alt_mobile: Optional[str] = None
     kyc: Optional[KYC] = None
     nominees: list[Nominee] = Field(default_factory=list)

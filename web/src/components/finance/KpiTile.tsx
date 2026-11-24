@@ -1,8 +1,9 @@
 import { Sparkline, C } from "./charts";
+import { InfoTooltip } from "../Tooltip";
 
 // A modern KPI tile: label, big value, optional delta pill and sparkline.
 export function KpiTile({ label, value, delta, spark, sparkColor, accent, sub,
-  tone }: {
+  tone, tooltip }: {
   label: string;
   value: string;
   delta?: number | null; // percent change vs previous
@@ -11,6 +12,7 @@ export function KpiTile({ label, value, delta, spark, sparkColor, accent, sub,
   accent?: string; // left accent bar color
   sub?: React.ReactNode;
   tone?: string; // value colour class (e.g. sign rule)
+  tooltip?: string;
 }) {
   const up = (delta ?? 0) >= 0;
   return (
@@ -23,8 +25,11 @@ export function KpiTile({ label, value, delta, spark, sparkColor, accent, sub,
           {/* Caption / big figure / sub-caption — the KPI tile from the design
               system. Secondary text is slate-500, not slate-400: the muted grey
               was unreadable on a white card (owner Q4.4). */}
-          <p className="truncate text-caption font-semibold uppercase
-            text-slate-500">{label}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="truncate text-caption font-semibold uppercase
+              text-slate-500">{label}</p>
+            {tooltip && <InfoTooltip text={tooltip} />}
+          </div>
           <p className={`mt-1.5 text-metric tabular-nums
             tracking-tight ${tone ?? "text-slate-900"}`}>{value}</p>
           {sub && (

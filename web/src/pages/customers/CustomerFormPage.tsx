@@ -76,7 +76,7 @@ export default function CustomerFormPage() {
 
   const missing = isAxiosError(customer.error)
     && customer.error.response?.status === 404;
-  const valid = form.name.trim().length >= 2 && form.mobile.length === 10;
+  const valid = form.name.trim().length >= 2 && (form.mobile.length === 0 || form.mobile.length === 10);
 
   return (
     <FormPage
@@ -84,8 +84,10 @@ export default function CustomerFormPage() {
       backLabel={editing ? "Back to customer" : "Back to customers"}
       title={editing ? "Edit customer" : "Add customer"}
       subtitle={editing ? undefined
-        : "Documents and policies are added later."
+        : "Basic details. Policies and KYC documents can be attached anytime."
           }
+      wide={true}
+      maxWidth="max-w-4xl"
       onSubmit={() => save.mutate()}
       submitLabel={editing ? "Save changes" : "Add customer"}
       submitting={save.isPending}
@@ -95,34 +97,42 @@ export default function CustomerFormPage() {
       onRetry={() => customer.refetch()}
       notFound={missing}
     >
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Full name" required>
+          <Field label="Customer full name" required>
             <input className="input" value={form.name} autoFocus required
+              placeholder="e.g. Rajesh Kumar"
               onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </Field>
-          <Field label="Mobile" required
-            hint="Customers are unique by mobile number.">
+          <Field
+            label="Mobile number (optional)"
+            tooltip="Customers with a phone number are checked to prevent duplicate accounts."
+            hint="Optional. 10 digits without +91"
+          >
             <div className="flex">
               <span className="inline-flex h-10 items-center rounded-l-control
                 border border-r-0 border-line bg-slate-50 px-3 text-sm
-                text-slate-500">+91</span>
+                text-slate-500 font-medium">+91</span>
               <input className="input rounded-l-none" value={form.mobile}
-                inputMode="numeric" maxLength={10} required
+                inputMode="numeric" maxLength={10}
                 placeholder="10-digit number"
                 onChange={(e) => setForm({
                   ...form, mobile: e.target.value.replace(/\D/g, "") })} />
             </div>
           </Field>
         </div>
-        <Field label="Email">
-          <input type="email" className="input" value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })} />
-        </Field>
-        <Field label="Notes">
-          <textarea className="input" rows={3} value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Email address" hint="Optional. Used for policy notices.">
+            <input type="email" className="input" value={form.email}
+              placeholder="customer@example.com"
+              onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          </Field>
+          <Field label="Notes or remarks" hint="Any specific client requirements or tags.">
+            <input className="input" value={form.notes}
+              placeholder="e.g. VIP client, preferred insurer"
+              onChange={(e) => setForm({ ...form, notes: e.target.value })} />
+          </Field>
+        </div>
       </div>
     </FormPage>
   );

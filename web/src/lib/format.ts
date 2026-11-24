@@ -25,10 +25,11 @@
 export function formatINR(paise: number | null | undefined): string {
   if (paise == null) return "—";
   const rupees = paise / 100;
+  const hasPaise = paise % 100 !== 0;
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency: "INR",
-    minimumFractionDigits: 0,
+    minimumFractionDigits: hasPaise ? 2 : 0,
     maximumFractionDigits: 2,
   }).format(rupees);
 }

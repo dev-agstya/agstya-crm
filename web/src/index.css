@@ -175,6 +175,20 @@
 .scrollbar-light::-webkit-scrollbar-thumb:hover {
   background-color: rgba(24, 24, 27, 0.28);
 }
+
+/* Global root rule to suppress native OS/browser dropdown arrows across WebKit/Blink/Gecko */
+select,
+.select,
+select.select {
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  appearance: none !important;
+}
+select::-ms-expand,
+.select::-ms-expand {
+  display: none !important;
+}
+
 /* The app is LIGHT-ONLY (see store/theme.ts, which strips any persisted `dark`
    class on boot). The former ~120-line `.dark` remap and every `dark:` utility
    were dead code and have been removed — do not reintroduce them without also
@@ -248,11 +262,21 @@
      dropdown arrow (different on every OS), which made native selects and the
      app's searchable picker look like two unrelated controls sitting next to
      each other. Suppress it and paint the same chevron the picker uses. */
-  .select {
-    @apply input cursor-pointer appearance-none bg-no-repeat pr-9;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239d9da5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
-    background-position: right 0.75rem center;
-    background-size: 14px 14px;
+  select,
+  .select,
+  select.select {
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+    @apply input cursor-pointer pr-9;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239d9da5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+    background-position: right 0.75rem center !important;
+    background-size: 14px 14px !important;
+    background-repeat: no-repeat !important;
+  }
+  select::-ms-expand,
+  .select::-ms-expand {
+    display: none !important;
   }
   /* Firefox keeps a focus ring inside the control; drop it for parity. */
   .select:-moz-focusring {

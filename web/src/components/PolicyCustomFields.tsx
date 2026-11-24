@@ -12,6 +12,7 @@
 import { Field } from "./ui";
 import { Icon } from "./Icon";
 import { DateInput } from "./DateInput";
+import { SearchSelect } from "./SearchSelect";
 import { rupeesToPaise } from "../lib/format";
 import { COMMISSIONABLE_BASE } from "../lib/types";
 import type { CustomFieldSpec, RequiredDocSpec } from "../lib/types";
@@ -98,11 +99,13 @@ export function CustomFieldInput({ spec, value, onChange }: {
       );
     case "select":
       return (
-        <select className="select" value={(value as string) ?? ""}
-          onChange={(e) => onChange(e.target.value || undefined)}>
-          <option value="">— Select —</option>
-          {spec.options.map((o) => <option key={o} value={o}>{o}</option>)}
-        </select>
+        <SearchSelect
+          options={spec.options.map((o) => ({ value: o, label: o }))}
+          value={(value as string) ?? ""}
+          placeholder="— Select —"
+          allowClear
+          onChange={(v) => onChange(v || undefined)}
+        />
       );
     case "multi_select": {
       const arr = Array.isArray(value) ? (value as string[]) : [];
@@ -184,31 +187,38 @@ export function AmountCustomFields({ title, fields, details, setDetail,
     ? fields.filter((f) => f.is_reward_base) : [];
   if (fields.length === 0) return null;
   return (
-    <div className="rounded-control border border-line p-3">
-      <p className="mb-3 text-sm font-medium text-slate-600">{title} amounts</p>
-      <FieldsGrid fields={fields} details={details} setDetail={setDetail} />
-      {baseFieldOptions.length > 0 && (
-        <div className="mt-3 max-w-xs border-t border-line/70 pt-3">
+    <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {title} Amounts & Specifics
+      </h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {fields.map((spec) => (
+          <Field key={spec.key} label={spec.label} required={spec.required}
+            hint={spec.hint || undefined}>
+            <CustomFieldInput spec={spec} value={details[spec.key]}
+              onChange={(v) => setDetail(spec.key, v)} />
+          </Field>
+        ))}
+        {baseFieldOptions.length > 0 && (
           <Field label="Reward calculated on"
             hint="Which amount the reward % applies to for this policy.">
-            <select className="select" value={rewardBaseField}
-              onChange={(e) => setRewardBaseField?.(e.target.value)}>
-              <option value={COMMISSIONABLE_BASE}>
-                Reward Base Premium (net of GST)</option>
-              {baseFieldOptions.map((f) => (
-                <option key={f.key} value={f.key}>{f.label}</option>
-              ))}
-            </select>
+            <SearchSelect
+              options={[
+                { value: COMMISSIONABLE_BASE, label: "Reward Base Premium (net of GST)" },
+                ...baseFieldOptions.map((f) => ({ value: f.key, label: f.label })),
+              ]}
+              value={rewardBaseField || COMMISSIONABLE_BASE}
+              onChange={(v) => setRewardBaseField?.(v || COMMISSIONABLE_BASE)}
+            />
+            {rewardBaseField && rewardBaseField !== COMMISSIONABLE_BASE
+              && !(Number(details[rewardBaseField]) > 0) && (
+              <p className="mt-1 text-xs text-due">
+                No amount entered — reward falls back to commissionable premium.
+              </p>
+            )}
           </Field>
-          {rewardBaseField && rewardBaseField !== COMMISSIONABLE_BASE
-            && !(Number(details[rewardBaseField]) > 0) && (
-            <p className="mt-1 text-xs text-due">
-              No amount entered — reward will fall back to the commissionable
-              premium.
-            </p>
-          )}
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
@@ -222,8 +232,10 @@ export function OtherCustomFields({ title, fields, details, setDetail }: {
 }) {
   if (fields.length === 0) return null;
   return (
-    <div className="rounded-control border border-line p-3">
-      <p className="mb-3 text-sm font-medium text-slate-600">{title} details</p>
+    <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        {title} Details & Specifics
+      </h3>
       <FieldsGrid fields={fields} details={details} setDetail={setDetail} />
     </div>
   );
@@ -239,13 +251,14 @@ export function RequiredDocuments({ docs, docFiles, setDocFiles }: {
 }) {
   if (docs.length === 0) return null;
   return (
-    <div className="rounded-control border border-line p-3">
-      <p className="mb-3 text-sm font-medium text-slate-600">
-        Supporting documents</p>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+        Supporting Documents Required for {docs.length === 1 ? "this Type" : "these Types"}
+      </h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {docs.map((doc) => (
           <Field key={doc.key} label={doc.label} required={doc.required}>
-            <input type="file" className="input py-1.5"
+            <input type="file" className="input cursor-pointer py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200/80 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"
               onChange={(e) => setDocFiles((m) => ({
                 ...m, [doc.key]: e.target.files?.[0] ?? null }))} />
             {docFiles[doc.key] && (

@@ -98,6 +98,9 @@ export default function LeadFormPage() {
       backTo={editing ? `/leads/${id}` : "/leads"}
       backLabel={editing ? "Back to lead" : "Back to leads"}
       title={editing ? "Edit lead" : "Add lead"}
+      subtitle={editing ? undefined : "Capture a prospective client to follow up with and convert."}
+      wide={true}
+      maxWidth="max-w-4xl"
       onSubmit={() => save.mutate()}
       submitLabel={editing ? "Save changes" : "Add lead"}
       submitting={save.isPending}
@@ -107,13 +110,14 @@ export default function LeadFormPage() {
       onRetry={() => lead.refetch()}
       notFound={missing}
     >
-      <div className="space-y-5">
+      <div className="space-y-6">
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Full name" required>
+          <Field label="Contact full name" required>
             <input className="input" value={form.name} autoFocus required
+              placeholder="e.g. Amit Sharma"
               onChange={(e) => setForm({ ...form, name: e.target.value })} />
           </Field>
-          <Field label="Lead type" required>
+          <Field label="Lead category" required>
             <select className="select" value={form.type}
               onChange={(e) =>
                 setForm({ ...form, type: e.target.value as LeadType })}>
@@ -125,11 +129,11 @@ export default function LeadFormPage() {
         </div>
 
         <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Mobile" required>
+          <Field label="Mobile number" required hint="10-digit primary phone number">
             <div className="flex">
               <span className="inline-flex h-10 items-center rounded-l-control
                 border border-r-0 border-line bg-slate-50 px-3 text-sm
-                text-slate-500">
+                text-slate-500 font-medium">
                 +91
               </span>
               <input className="input rounded-l-none" value={form.mobile}
@@ -139,24 +143,26 @@ export default function LeadFormPage() {
                   ...form, mobile: e.target.value.replace(/\D/g, "") })} />
             </div>
           </Field>
-          <Field label="Email">
+          <Field label="Email address" hint="Optional. For sending quotes.">
             <input type="email" className="input" value={form.email}
+              placeholder="lead@example.com"
               onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </Field>
         </div>
 
-        <Field label="Interested in">
-          <input className="input" value={form.interested_in} maxLength={20}
-            placeholder="e.g. Health insurance"
-            onChange={(e) =>
-              setForm({ ...form, interested_in: e.target.value })} />
-        </Field>
-
-        <Field label="Note">
-          <textarea className="input" rows={3} value={form.note}
-            placeholder="Optional note about this lead"
-            onChange={(e) => setForm({ ...form, note: e.target.value })} />
-        </Field>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <Field label="Insurance requirement" hint="Type of policy or cover requested">
+            <input className="input" value={form.interested_in} maxLength={40}
+              placeholder="e.g. Commercial Vehicle, Family Floater"
+              onChange={(e) =>
+                setForm({ ...form, interested_in: e.target.value })} />
+          </Field>
+          <Field label="Lead remarks / notes" hint="Any specific client requirements or tags">
+            <input className="input" value={form.note}
+              placeholder="e.g. Wants comparative quotes from HDFC and ICICI"
+              onChange={(e) => setForm({ ...form, note: e.target.value })} />
+          </Field>
+        </div>
       </div>
     </FormPage>
   );

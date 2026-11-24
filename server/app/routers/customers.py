@@ -392,13 +392,13 @@ async def import_customers(
             failures.append(CustomerImportFailure(
                 row=rownum, reason="Full Name is required."))
             continue
-        mobile = "".join(ch for ch in (row.get("mobile") or "")
-                         if ch.isdigit())
-        if len(mobile) != 10:
+        raw_mobile = (row.get("mobile") or "").strip()
+        mobile = "".join(ch for ch in raw_mobile if ch.isdigit()) if raw_mobile else None
+        if raw_mobile and (not mobile or len(mobile) != 10):
             failures.append(CustomerImportFailure(
-                row=rownum, reason="A valid 10-digit mobile is required."))
+                row=rownum, reason="A valid 10-digit mobile is required when provided."))
             continue
-        if mobile in seen or mobile in existing_mobiles:
+        if mobile and (mobile in seen or mobile in existing_mobiles):
             failures.append(CustomerImportFailure(
                 row=rownum, reason=f"Duplicate mobile {mobile}."))
             continue
@@ -414,7 +414,8 @@ async def import_customers(
                 created_by_name=actor.full_name,
             )
             await cust.insert()
-            seen.add(mobile)
+            if mobile:
+                seen.add(mobile)
             created += 1
         except Exception:  # noqa: BLE001
             failures.append(CustomerImportFailure(

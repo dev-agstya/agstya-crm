@@ -183,6 +183,12 @@ export const Icon = {
       <path d="M12 17h.01" />
     </Base>
   ),
+  Info: (p: IconProps) => (
+    <Base {...p}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 16v-4M12 8h.01" />
+    </Base>
+  ),
   Trash: (p: IconProps) => (
     <Base {...p}>
       <path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m1 0v12a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V7" />

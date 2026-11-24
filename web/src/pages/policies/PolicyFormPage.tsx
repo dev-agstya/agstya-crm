@@ -29,7 +29,7 @@ import { PAID_BY_OPTIONS } from "../../lib/payer";
 import { COMMISSIONABLE_BASE } from "../../lib/types";
 import { pathLevels } from "../../lib/rating";
 import { AddCustomerModal, AddPartnerQuickModal } from "./QuickAdd";
-import type { Broker, PolicyCategory } from "../../lib/types";
+import type { PolicyCategory } from "../../lib/types";
 
 const EMPTY_FORM = {
   category_key: "",
@@ -158,9 +158,6 @@ export default function PolicyFormPage() {
     queryFn: async () => (await brokersApi.list({ active_only: 1 })).data,
     enabled: !isPartner,
   });
-  const selectedBroker: Broker | undefined = useMemo(
-    () => brokers.data?.find((b) => b.id === form.broker_id),
-    [brokers.data, form.broker_id]);
 
   // Live rate lookup under the selected broker for this scenario (insurer + path).
   const ratePreview = useQuery({
@@ -491,15 +488,14 @@ export default function PolicyFormPage() {
         backTo="/policies"
         backLabel="Back to policies"
         title="Add policy"
-        subtitle={isPartner
-          ? "Booking a policy records its reward and finance immediately."
-          : "Booking a policy records its reward and finance immediately."}
+        subtitle="Book a new policy to record financial ledger and commission automatically."
         onSubmit={submit}
         submitLabel="Create policy"
         submitting={save.isPending}
         wide
+        maxWidth="max-w-6xl"
       >
-      <div className="space-y-5">
+      <div className="space-y-6">
           {/* Where this booking came from. It is a real panel rather than a
               line of subtitle text because it carries the two facts the form
               itself cannot show — WHO the customer is on the quote, and that
@@ -517,10 +513,8 @@ export default function PolicyFormPage() {
                 </span>
               </p>
               <p className="mt-1 text-xs text-slate-500">
-                Type, insurer, premium, cover dates and the partner are filled
-                in from the quotation. Choose the broker yourself — that is what
-                prices the reward. Saving links the two and tells the partner
-                their policy is issued.
+                Type, insurer, premium, cover dates and partner are filled
+                from the quotation. Choose the broker to apply the rate card.
               </p>
               {!form.customer_id && (
                 <div className="mt-2.5 flex flex-wrap items-center gap-2
@@ -538,148 +532,164 @@ export default function PolicyFormPage() {
             </div>
           )}
 
-          {/* Broker sits IN the grid rather than beside it — as a bare
-              full-width Field it was the widest control on the page and set an
-              edge nothing else matched. */}
-          {!isPartner && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Broker" required className="sm:col-span-2">
-              <SearchSelect
-                options={(brokers.data ?? []).map((b) => ({
-                  value: b.id, label: `${b.name} (${b.short_code})` }))}
-                value={form.broker_id}
-                placeholder="Select broker…"
-                // The policy type is NOT cleared here any more: it no longer
-                // depends on the broker, so wiping it just lost the user's work.
-                onChange={(v) => setForm({ ...form, broker_id: v })} />
-            </Field>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Policy type" required>
-              <select className="select" value={form.category_key} required
-                onChange={(e) => setForm({
-                  ...form, category_key: e.target.value, subcategory_path: [] })}>
-                <option value="">Select…</option>
-                {allCats.map((c) => (
-                  <option key={c.key} value={c.key}>{c.label}</option>
-                ))}
-              </select>
-              {noRateForType && (
-                <span className="text-xs text-due">
-                  {selectedBroker?.name ?? "This broker"} has no rate card for
-                  this type — enter the % below yourself.
-                </span>
-              )}
-            </Field>
-            <Field label="Insurer" required>
-              <SearchSelect
-                options={(insurers.data?.items ?? []).map((i) => ({
-                  value: i.id, label: i.name, sub: i.code }))}
-                value={form.insurer_id}
-                placeholder="Select insurer…"
-                onChange={(v) => setForm({ ...form, insurer_id: v })} />
-            </Field>
-          </div>
-
-          {levels.length > 0 && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {levels.map((lvl, i) => (
-                <Field key={i} label={i === 0 ? "Sub-type" : `Sub-type ${i + 1}`}>
-                  <select className="select" value={lvl.value}
-                    onChange={(e) => setLevel(i, e.target.value)}>
-                    <option value="">— Select —</option>
-                    {lvl.options.map((n) => (
-                      <option key={n.key} value={n.key}>{n.label}</option>
-                    ))}
-                  </select>
+          {/* Core Insurance & Placement Section */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              1. Policy Classification & Provider
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {!isPartner && (
+                <Field label="Broker" required>
+                  <SearchSelect
+                    options={(brokers.data ?? []).map((b) => ({
+                      value: b.id, label: `${b.name} (${b.short_code})` }))}
+                    value={form.broker_id}
+                    placeholder="Select broker…"
+                    onChange={(v) => setForm({ ...form, broker_id: v })} />
                 </Field>
-              ))}
-            </div>
-          )}
+              )}
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Customer" required>
-              <CustomerPicker
-                value={form.customer_id}
-                displayName={form.customer_name}
-                onSelect={(id, name) =>
-                  setForm({ ...form, customer_id: id, customer_name: name })}
-                onAddNew={has("manage_customers")
-                  ? () => setAddingCustomer(true) : undefined}
-              />
-            </Field>
-            {!isPartner && (
-              <Field label="Channel Partner"
-                hint="Attributes the reward to this partner's wallet.">
+              <Field label="Policy type" required>
                 <SearchSelect
-                  options={(partners.data ?? []).map((b) => ({
-                    value: b.id, label: b.full_name, sub: b.code }))}
-                  value={form.partner_id}
-                  placeholder="— None (in-house sale) —"
-                  allowClear clearLabel="— None (in-house sale) —"
-                  onChange={(v) => {
-                    // No discount on partner-attributed policies (owner Q5).
-                    if (v) setDiscountOn(false);
-                    setForm({ ...form, partner_id: v,
-                      ...(v ? { discount_value: "" } : {}) });
-                  }}
-                  onAddNew={has("manage_partners")
-                    ? () => setAddingPartner(true) : undefined}
-                  addNewLabel="Add Channel Partner" />
+                  options={allCats.map((c) => ({ value: c.key, label: c.label }))}
+                  value={form.category_key}
+                  placeholder="Select policy type…"
+                  onChange={(v) => setForm({
+                    ...form, category_key: v || "", subcategory_path: [] })}
+                />
+                {noRateForType && (
+                  <span className="text-xs text-due mt-1 block">
+                    No rate card rule found for this broker & type — enter commission % below.
+                  </span>
+                )}
               </Field>
+
+              <Field label="Insurer" required>
+                <SearchSelect
+                  options={(insurers.data?.items ?? []).map((i) => ({
+                    value: i.id, label: i.name, sub: i.code }))}
+                  value={form.insurer_id}
+                  placeholder="Select insurer…"
+                  onChange={(v) => setForm({ ...form, insurer_id: v })} />
+              </Field>
+            </div>
+
+            {levels.length > 0 && (
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 mt-4 pt-3 border-t border-line-soft">
+                {levels.map((lvl, i) => (
+                  <Field key={i} label={i === 0 ? "Sub-type" : `Sub-type ${i + 1}`}>
+                    <SearchSelect
+                      options={lvl.options.map((n) => ({ value: n.key, label: n.label }))}
+                      value={lvl.value}
+                      placeholder="— Select sub-type —"
+                      allowClear
+                      onChange={(v) => setLevel(i, v || "")}
+                    />
+                  </Field>
+                ))}
+              </div>
             )}
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Policy number" required>
-              <input className="input" value={form.policy_number} required
-                onChange={(e) => setForm({ ...form, policy_number: e.target.value })} />
-              {numberVerdict && !numberVerdict.available && (
-                <span className="inline-flex items-center gap-1 text-xs
-                  font-medium text-money-out">
-                  <Icon.Alert size={13} />
-                  Already used on {numberVerdict.used_by_code}
-                </span>
+          {/* Customer & Partner Section */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              2. Customer & Partner Attribution
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Customer" required>
+                <CustomerPicker
+                  value={form.customer_id}
+                  displayName={form.customer_name}
+                  onSelect={(id, name) =>
+                    setForm({ ...form, customer_id: id, customer_name: name })}
+                  onAddNew={has("manage_customers")
+                    ? () => setAddingCustomer(true) : undefined}
+                />
+              </Field>
+
+              {!isPartner && (
+                <Field
+                  label="Channel Partner"
+                  tooltip="Assigning a partner credits commission to their partner wallet."
+                >
+                  <SearchSelect
+                    options={(partners.data ?? []).map((b) => ({
+                      value: b.id, label: b.full_name, sub: b.code }))}
+                    value={form.partner_id}
+                    placeholder="— None (in-house sale) —"
+                    allowClear clearLabel="— None (in-house sale) —"
+                    onChange={(v) => {
+                      if (v) setDiscountOn(false);
+                      setForm({ ...form, partner_id: v,
+                        ...(v ? { discount_value: "" } : {}) });
+                    }}
+                    onAddNew={has("manage_partners")
+                      ? () => setAddingPartner(true) : undefined}
+                    addNewLabel="Add Channel Partner" />
+                </Field>
               )}
-              {numberVerdict?.available && (
-                <span className="inline-flex items-center gap-1 text-xs
-                  font-medium text-money-in">
-                  <Icon.Check size={13} /> Not used yet
-                </span>
-              )}
-            </Field>
-            <Field label="Premium — gross incl. GST (₹)" required>
-              <input type="number" step="0.01" className="input" value={form.premium}
-                required
-                onChange={(e) => setForm({ ...form, premium: e.target.value })} />
-            </Field>
-            <Field label="Reward base premium (₹)"
-              hint="Auto-filled net of 18% GST; edit if the insurer differs.">
-              <input type="number" step="0.01" className="input"
-                value={form.commissionable}
-                onChange={(e) => {
-                  setCommTouched(true);
-                  setForm({ ...form, commissionable: e.target.value });
-                }} />
-            </Field>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Sum insured (₹)">
-              <input type="number" step="0.01" className="input"
-                value={form.sum_insured}
-                onChange={(e) => setForm({ ...form, sum_insured: e.target.value })} />
-            </Field>
-            <Field label="Start date" required>
-              <DateInput value={form.start_date} required
-                onChange={(v) => setForm({ ...form, start_date: v })} />
-            </Field>
-            <Field label="Expiry date" required>
-              <DateInput value={form.expiry_date} required
-                onChange={(v) => setForm({ ...form, expiry_date: v })} />
-            </Field>
+          {/* Policy Dates & Amounts */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              3. Policy Coverage & Premiums
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field label="Policy number" required>
+                <input className="input" value={form.policy_number} required
+                  placeholder="e.g. POL-2026-9901"
+                  onChange={(e) => setForm({ ...form, policy_number: e.target.value })} />
+                {numberVerdict && !numberVerdict.available && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-money-out mt-1">
+                    <Icon.Alert size={13} />
+                    Already used on {numberVerdict.used_by_code}
+                  </span>
+                )}
+                {numberVerdict?.available && (
+                  <span className="inline-flex items-center gap-1 text-xs font-medium text-money-in mt-1">
+                    <Icon.Check size={13} /> Available
+                  </span>
+                )}
+              </Field>
+
+              <Field label="Gross Premium (incl. GST) (₹)" required>
+                <input type="number" step="0.01" className="input" value={form.premium}
+                  required placeholder="0.00"
+                  onChange={(e) => setForm({ ...form, premium: e.target.value })} />
+              </Field>
+
+              <Field
+                label="Reward Base Premium (₹)"
+                tooltip="Auto-filled net of 18% GST. Edit if the insurer calculates commission on a different base."
+              >
+                <input type="number" step="0.01" className="input"
+                  value={form.commissionable}
+                  placeholder="Net premium"
+                  onChange={(e) => {
+                    setCommTouched(true);
+                    setForm({ ...form, commissionable: e.target.value });
+                  }} />
+              </Field>
+
+              <Field label="Sum Insured (₹)">
+                <input type="number" step="0.01" className="input"
+                  value={form.sum_insured} placeholder="Optional"
+                  onChange={(e) => setForm({ ...form, sum_insured: e.target.value })} />
+              </Field>
+
+              <Field label="Start date" required>
+                <DateInput value={form.start_date} required
+                  onChange={(v) => setForm({ ...form, start_date: v })} />
+              </Field>
+
+              <Field label="Expiry date" required>
+                <DateInput value={form.expiry_date} required
+                  onChange={(v) => setForm({ ...form, expiry_date: v })} />
+              </Field>
+            </div>
           </div>
 
           {/* Amount-type custom fields sit right after the built-in amounts;
@@ -691,59 +701,75 @@ export default function PolicyFormPage() {
           <OtherCustomFields title={selectedCat?.label ?? "Policy"}
             fields={otherCustomFields} details={details} setDetail={setDetail} />
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Policy Premium Paid By" required
-              hint="Who paid the insurer (drives who owes the agency).">
-              <select className="select" value={form.payer} required
-                onChange={(e) => setForm({ ...form, payer: e.target.value })}>
-                {PAID_BY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </Field>
-            {!isPartner && !form.partner_id && (
-              <Field label="Discount"
-                hint="Discount to the customer — borne by the house.">
-                <div className="flex items-center gap-2.5">
-                  <Toggle
-                    checked={discountOn}
-                    label="Apply a discount"
-                    onChange={(next) => {
-                      if (!next) setForm((f) => ({ ...f, discount_value: "" }));
-                      setDiscountOn(next);
-                    }}
-                  />
-                  <span className="text-sm text-slate-500">
-                    {discountOn ? "Discount applied" : "No discount"}
-                  </span>
-                </div>
-                {discountOn && (
-                  <input type="number" step="0.01" min="0"
-                    className="input mt-2"
-                    value={form.discount_value}
-                    placeholder="Discount amount (₹) — e.g. 500"
-                    onChange={(e) =>
-                      setForm({ ...form, discount_value: e.target.value })} />
-                )}
+          {/* Settlements & Commission Rates */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              4. Premium Settlement & Commission Rates
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <Field
+                label="Policy Premium Paid By"
+                required
+                tooltip="Who paid the insurer. Drives whether customer or insurer owes the agency."
+              >
+                <SearchSelect
+                  options={PAID_BY_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                  value={form.payer}
+                  onChange={(v) => setForm({ ...form, payer: v || "customer" })}
+                />
               </Field>
-            )}
-          </div>
 
-          {!isPartner && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <Field label="Agency % (received from insurer)" required
-                hint="Auto-filled from the rate card — type over it to override.">
-                <input type="number" step="0.01" min="0" className="input"
-                  value={form.agency_value} placeholder={agencyPlaceholder}
+              {!isPartner && !form.partner_id && (
+                <Field
+                  label="Customer Discount"
+                  tooltip="Direct discount given to the customer, borne by the agency."
+                >
+                  <div className="flex items-center gap-2.5 h-10">
+                    <Toggle
+                      checked={discountOn}
+                      label="Apply a discount"
+                      onChange={(next) => {
+                        if (!next) setForm((f) => ({ ...f, discount_value: "" }));
+                        setDiscountOn(next);
+                      }}
+                    />
+                    <span className="text-sm text-slate-600 font-medium">
+                      {discountOn ? "Discount applied" : "No discount"}
+                    </span>
+                  </div>
+                  {discountOn && (
+                    <input type="number" step="0.01" min="0"
+                      className="input mt-2"
+                      value={form.discount_value}
+                      placeholder="Discount amount (₹) — e.g. 500"
+                      onChange={(e) =>
+                        setForm({ ...form, discount_value: e.target.value })} />
+                  )}
+                </Field>
+              )}
+
+              {!isPartner && (
+                <Field
+                  label="Agency Commission %"
                   required
-                  onChange={(e) => {
-                    setAgencyTouched(true);
-                    setForm({ ...form, agency_value: e.target.value });
-                  }} />
-              </Field>
-              {form.partner_id && (
-                <Field label="Channel Partner % (paid to partner)" required
-                  hint="Auto-filled from the rate card — type over it to override.">
+                  tooltip="Percentage received from insurer. Auto-filled from rate card or overridden manually."
+                >
+                  <input type="number" step="0.01" min="0" className="input"
+                    value={form.agency_value} placeholder={agencyPlaceholder}
+                    required
+                    onChange={(e) => {
+                      setAgencyTouched(true);
+                      setForm({ ...form, agency_value: e.target.value });
+                    }} />
+                </Field>
+              )}
+
+              {!isPartner && form.partner_id && (
+                <Field
+                  label="Partner Commission %"
+                  required
+                  tooltip="Percentage paid out to the channel partner from this policy."
+                >
                   <input type="number" step="0.01" min="0" className="input"
                     value={form.partner_value} placeholder={partnerPlaceholder}
                     required
@@ -754,42 +780,75 @@ export default function PolicyFormPage() {
                 </Field>
               )}
             </div>
-          )}
 
-          {!isPartner && parseFloat(form.premium || "0") > 0 && (
-            <div className="flex flex-wrap gap-4 text-xs text-slate-500">
-              <span>Base: <b className="text-slate-700">
-                {formatINR(rupeesToPaise(preview.base))}</b></span>
-              <span>Agency: <b className="text-slate-700">
-                {formatINR(rupeesToPaise(preview.agency))}</b></span>
-              {form.partner_id && (
-                <span>Channel Partner: <b className="text-slate-700">
-                  {formatINR(rupeesToPaise(preview.partner))}</b></span>
-              )}
-              {preview.discount > 0 && (
-                <span>Discount: <b className="text-money-out">
-                  -{formatINR(rupeesToPaise(preview.discount))}</b></span>
-              )}
-              <span>House: <b className={preview.house < 0
-                ? "text-money-out" : "text-slate-900"}>
-                {formatINR(rupeesToPaise(preview.house))}</b></span>
-            </div>
-          )}
-
-          {/* Policy PDF, with the type's document-collection slots right after
-              it (owner 2026-07-24). */}
-          <Field label="Policy PDF" required
-            hint="Upload the policy document (PDF, max 20 MB).">
-            <input type="file" accept="application/pdf,.pdf" className="input py-1.5"
-              onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
-            {pdfFile && (
-              <span className="text-xs font-medium text-money-in">
-                ✓ {pdfFile.name}
-              </span>
+            {/* Live Financial Calculations */}
+            {!isPartner && parseFloat(form.premium || "0") > 0 && (
+              <div className="mt-4 pt-4 border-t border-line-soft">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    Live Commission & House Profit Summary
+                  </span>
+                  <span className="text-xs text-slate-400">Calculated in real-time</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <div className="p-2.5 rounded-control bg-white border border-line-soft">
+                    <p className="text-xs text-slate-500">Reward Base</p>
+                    <p className="font-semibold text-slate-800 text-sm mt-0.5">
+                      {formatINR(rupeesToPaise(preview.base))}
+                    </p>
+                  </div>
+                  <div className="p-2.5 rounded-control bg-white border border-line-soft">
+                    <p className="text-xs text-slate-500">Agency Commission</p>
+                    <p className="font-semibold text-money-in text-sm mt-0.5">
+                      {formatINR(rupeesToPaise(preview.agency))}
+                    </p>
+                  </div>
+                  {form.partner_id && (
+                    <div className="p-2.5 rounded-control bg-white border border-line-soft">
+                      <p className="text-xs text-slate-500">Partner Payout</p>
+                      <p className="font-semibold text-slate-800 text-sm mt-0.5">
+                        {formatINR(rupeesToPaise(preview.partner))}
+                      </p>
+                    </div>
+                  )}
+                  {preview.discount > 0 && (
+                    <div className="p-2.5 rounded-control bg-white border border-line-soft">
+                      <p className="text-xs text-slate-500">Customer Discount</p>
+                      <p className="font-semibold text-money-out text-sm mt-0.5">
+                        -{formatINR(rupeesToPaise(preview.discount))}
+                      </p>
+                    </div>
+                  )}
+                  <div className="p-2.5 rounded-control bg-white border border-line-soft">
+                    <p className="text-xs text-slate-500">Net House Profit</p>
+                    <p className={`font-semibold text-sm mt-0.5 ${preview.house < 0
+                      ? "text-money-out" : "text-slate-900"}`}>
+                      {formatINR(rupeesToPaise(preview.house))}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
-          </Field>
-          <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
-            setDocFiles={setDocFiles} />
+          </div>
+
+          {/* Document Uploads */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              5. Policy Documents & Uploads
+            </h3>
+            <Field label="Policy PDF document" required
+              hint="Official policy document issued by insurer (PDF, max 20 MB).">
+              <input type="file" accept="application/pdf,.pdf" className="input cursor-pointer py-1.5 file:mr-3 file:rounded-md file:border-0 file:bg-slate-200/80 file:px-2.5 file:py-1 file:text-xs file:font-medium file:text-slate-700 hover:file:bg-slate-300"
+                onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
+              {pdfFile && (
+                <span className="text-xs font-medium text-money-in mt-1 inline-flex items-center gap-1">
+                  <Icon.Check size={13} /> {pdfFile.name}
+                </span>
+              )}
+            </Field>
+            <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
+              setDocFiles={setDocFiles} />
+          </div>
 
       </div>
       </FormPage>

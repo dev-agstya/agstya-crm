@@ -18,7 +18,7 @@ export default function SettingsPage() {
           covers the second. */}
       <PageHeader title="Settings" backTo="/dashboard" backLabel="Dashboard" />
 
-      <div className="mx-auto max-w-2xl space-y-6">
+      <div className="max-w-4xl space-y-6">
         {/* Profile summary */}
         <div className="card flex items-center gap-4 p-6">
           <div className="flex h-14 w-14 items-center justify-center rounded-full

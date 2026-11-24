@@ -1302,14 +1302,25 @@ async def renew_policy(policy_id: str, payload: PolicyRenew,
         specs, payload.reward_base_field
         or getattr(old, "reward_base_field", "commissionable"))
 
+    broker_id = payload.broker_id or old.broker_id
+    insurer_id = payload.insurer_id if payload.insurer_id is not None else old.insurer_id
+    if broker_id:
+        broker = await Broker.get(await parse_object_id(broker_id))
+        if broker is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Broker not found.")
+    if insurer_id:
+        insurer = await Insurer.get(await parse_object_id(insurer_id))
+        if insurer is None:
+            raise HTTPException(status.HTTP_400_BAD_REQUEST, "Insurer not found.")
+
     new = Policy(
         code=await next_code("policy"),
         policy_number=payload.policy_number,
         category_key=old.category_key,
         subcategory_path=old.subcategory_path,
         subcategory_key=old.subcategory_key,
-        insurer_id=old.insurer_id,
-        broker_id=old.broker_id,
+        insurer_id=insurer_id,
+        broker_id=broker_id,
         customer_id=old.customer_id,
         status=PolicyStatus.ACTIVE,
         premium_amount=payload.premium_amount,

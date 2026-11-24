@@ -1,4 +1,4 @@
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthShell } from "./AuthShell";
 import { authApi } from "../../api/endpoints";
@@ -18,7 +18,11 @@ export default function LoginPage() {
   const [failed, setFailed] = useState(false);
   const [captchaToken, setCaptchaToken] = useState("");
 
-  if (user) navigate("/dashboard");
+  useEffect(() => {
+    if (user) navigate("/dashboard", { replace: true });
+  }, [user, navigate]);
+
+  if (user) return null;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();

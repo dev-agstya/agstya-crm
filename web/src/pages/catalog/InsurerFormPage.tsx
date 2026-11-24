@@ -124,6 +124,8 @@ export default function InsurerFormPage() {
       backTo="/insurers"
       backLabel="Back to insurers"
       title={editing ? "Edit insurer" : "Add insurer"}
+      wide={true}
+      maxWidth="max-w-4xl"
       onSubmit={submit}
       submitLabel="Save"
       submitting={save.isPending}

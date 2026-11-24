@@ -185,3 +185,28 @@ def test_a_legacy_customer_with_an_address_still_serialises():
     out = CustomerOut.from_model(_LegacyCustomer())
     assert out.name == "Ramesh"
     assert not hasattr(out, "address")
+
+
+def test_customer_mobile_is_optional():
+    from app.models.customer import Customer
+    from app.schemas.customer import CustomerCreate
+
+    assert not CustomerCreate.model_fields["mobile"].is_required()
+    assert not Customer.model_fields["mobile"].is_required()
+
+    # Omitted mobile
+    c1 = CustomerCreate(name="Rajesh Kumar")
+    assert c1.mobile is None
+
+    # Empty string mobile
+    c2 = CustomerCreate(name="Rajesh Kumar", mobile="")
+    assert c2.mobile is None
+
+    # Valid 10 digit mobile
+    c3 = CustomerCreate(name="Rajesh Kumar", mobile="9876543210")
+    assert c3.mobile == "9876543210"
+
+    # Invalid mobile still rejected
+    with pytest.raises(ValidationError):
+        CustomerCreate(name="Rajesh Kumar", mobile="12345")
+

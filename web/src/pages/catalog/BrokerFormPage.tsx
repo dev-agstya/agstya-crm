@@ -134,6 +134,8 @@ export default function BrokerFormPage() {
       backLabel="Back to brokers"
       title={editing ? "Edit broker" : "Add broker"}
       subtitle="Each broker carries its own rate card and TDS %."
+      wide={true}
+      maxWidth="max-w-4xl"
       onSubmit={submit}
       submitLabel="Save"
       submitting={save.isPending}

@@ -113,13 +113,13 @@ export default function AddEmployeePage() {
         ? "Their details and what they can reach."
         : "Check this over — the invitation goes out as soon as you confirm."}
     >
-      <div className="card px-6 py-5">
+      <div className="card max-w-4xl px-6 py-5">
       {step === "form" ? (
         <form
           onSubmit={(e) => { e.preventDefault(); if (formValid) setStep("review"); }}
           className="space-y-5"
         >
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Field label="Full name" required>
               <input className="input" value={f.full_name} required
                 onChange={(e) => set("full_name", e.target.value)} />

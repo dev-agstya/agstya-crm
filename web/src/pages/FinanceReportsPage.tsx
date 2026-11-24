@@ -9,7 +9,7 @@ import { toast } from "../components/Toast";
 import { useAuth } from "../store/auth";
 import { PageHeader } from "../components/PageHeader";
 import { Icon } from "../components/Icon";
-import { ErrorState, EmptyState, PageLoader } from "../components/ui";
+import { ErrorState, EmptyState, PageLoader, InfoTooltip } from "../components/ui";
 import {
   AreaTrend, Donut, RankedBars, SegmentBar, StackedBars,
   C, catColor,
@@ -112,8 +112,22 @@ export default function FinanceReportsPage() {
     queryFn: async () => (await categoriesApi.list()).data });
   const partners = useQuery({ queryKey: ["attributable-partners"],
     queryFn: async () => (await usersApi.attributablePartners()).data });
-  const staff = useQuery({ queryKey: ["staff-users"],
-    queryFn: async () => (await usersApi.list({ page_size: 200 })).data });
+  const staff = useQuery({
+    queryKey: ["staff-users"],
+    queryFn: async () => {
+      const first = (await usersApi.list({ page: 1, page_size: 100 })).data;
+      let allItems = [...first.items];
+      const total = first.total ?? allItems.length;
+      if (total > 100) {
+        const pages = Math.ceil(total / 100);
+        const rest = await Promise.all(
+          Array.from({ length: pages - 1 }, (_, i) => usersApi.list({ page: i + 2, page_size: 100 }))
+        );
+        for (const r of rest) allItems = allItems.concat(r.data.items);
+      }
+      return { items: allItems, total };
+    },
+  });
   const employees = (staff.data?.items ?? []).filter(
     (u) => u.account_type === "employee" || u.account_type === "owner");
 
@@ -196,11 +210,15 @@ export default function FinanceReportsPage() {
             <KpiTile label="Net profit"
               value={formatINR(d.kpis.net_profit)}
               tone={moneyTone(d.kpis.net_profit)}
+              tooltip="Total cash received minus cash paid out during the selected period"
               sub="cash in − cash out · selected period" />
             <div className="relative overflow-hidden rounded-card border
               border-line bg-white p-4 shadow-card">
-              <p className="truncate text-xs font-medium uppercase
-                tracking-wide text-slate-500">Pending to Collect &amp; Pay</p>
+              <div className="flex items-center gap-1.5">
+                <p className="truncate text-xs font-semibold uppercase
+                  tracking-wide text-slate-500">Pending to Collect &amp; Pay</p>
+                <InfoTooltip text="Outstanding balances across customers, insurers, and partner commissions" />
+              </div>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-5">
                 <div>
                   <p className="text-metric tabular-nums
@@ -218,10 +236,12 @@ export default function FinanceReportsPage() {
             </div>
             <KpiTile label="Total policies" accent={C.count}
               value={String(d.kpis.policies)}
+              tooltip="All policies booked during the period and the average gross premium"
               sub={`${d.kpis.active_policies} active in this period · avg ${
                 formatINR(d.kpis.avg_premium)}`} />
             <KpiTile label="Renewal rate" accent={C.green}
               value={pctText(d.kpis.renewal_rate)}
+              tooltip="Percentage of expiring policies that were successfully renewed"
               sub={`repeat customers ${pctText(d.kpis.repeat_rate)}`} />
           </div>
 

@@ -1098,6 +1098,9 @@ export function SearchInput({
   );
 }
 
+import { InfoTooltip } from "./Tooltip";
+export { Tooltip, InfoTooltip } from "./Tooltip";
+
 /* ------------------------------------------------------------------ fields -- */
 
 export function Field({
@@ -1105,6 +1108,7 @@ export function Field({
   children,
   required,
   hint,
+  tooltip,
   error,
   className = "",
 }: {
@@ -1112,6 +1116,8 @@ export function Field({
   children: ReactNode;
   required?: boolean;
   hint?: string;
+  /** Explanatory info tooltip rendered as an accessible info icon next to label */
+  tooltip?: string;
   /** Replaces the hint and turns it red. */
   error?: string;
   /** Column span inside a form grid — `sm:col-span-2` for a wide control. */
@@ -1119,9 +1125,12 @@ export function Field({
 }) {
   return (
     <div className={className}>
-      <label className="label">
-        {label}
-        {required && <span className="ml-0.5 text-money-out">*</span>}
+      <label className="label inline-flex items-center gap-1.5 flex-wrap">
+        <span>
+          {label}
+          {required && <span className="ml-0.5 text-money-out">*</span>}
+        </span>
+        {tooltip && <InfoTooltip text={tooltip} />}
       </label>
       {children}
       {error ? <p className="hint-error">{error}</p>

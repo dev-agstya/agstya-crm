@@ -242,36 +242,62 @@ function TreeEditor({ nodes, depth, onChange }: {
   const addChild = (i: number) =>
     update(i, { children: [...nodes[i].children, newNode()] });
 
+  if (nodes.length === 0) return null;
+
   return (
-    <div className="space-y-2">
+    <div className={`space-y-3 ${depth > 1 ? "ml-2 pl-2 sm:ml-5 sm:pl-4 border-l-2 border-line mt-3" : ""}`}>
       {nodes.map((n, i) => (
-        <div key={i} className="rounded-control border border-line p-2.5">
-          <div className="flex items-center gap-2">
-            <span className="text-slate-300"><Icon.ChevronRight size={14} /></span>
-            <input className="input flex-1" placeholder="Sub-type name"
+        <div
+          key={i}
+          className="rounded-control border border-line bg-white p-3 shadow-xs transition-shadow hover:shadow-sm"
+        >
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="chip text-[11px] font-semibold bg-slate-100 text-slate-700 py-0.5 px-2">
+              Level {depth}
+            </span>
+            <input
+              className="input w-full min-w-0 sm:w-auto sm:flex-1 text-sm font-medium"
+              placeholder={`Sub-type name (Level ${depth})`}
               value={n.label}
-              onChange={(e) => update(i, { label: e.target.value })} />
-            <label className="flex items-center gap-1 whitespace-nowrap text-xs
-              text-slate-500">
-              <input type="checkbox" checked={n.active}
-                onChange={(e) => update(i, { active: e.target.checked })} />
-              Active
-            </label>
-            <button type="button" className="icon-btn text-money-out" title="Remove"
-              onClick={() => remove(i)}><Icon.Trash size={15} /></button>
-          </div>
-          {(n.children.length > 0 || depth < MAX_SUBCATEGORY_DEPTH) && (
-            <div className="ml-5 mt-2 border-l border-line/70 pl-3">
-              <TreeEditor nodes={n.children} depth={depth + 1}
-                onChange={(ch) => update(i, { children: ch })} />
+              onChange={(e) => update(i, { label: e.target.value })}
+            />
+            <div className="flex flex-wrap items-center gap-2 ml-auto">
+              <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border border-line-soft cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={n.active}
+                  onChange={(e) => update(i, { active: e.target.checked })}
+                />
+                Active
+              </label>
               {depth < MAX_SUBCATEGORY_DEPTH && (
-                <button type="button"
-                  className="mt-1 text-xs font-medium text-slate-900 hover:underline"
-                  onClick={() => addChild(i)}>
-                  + Add sub-type
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm text-xs py-1 px-2.5 inline-flex items-center gap-1 text-slate-700"
+                  onClick={() => addChild(i)}
+                  title="Add a sub-branch under this category"
+                >
+                  <Icon.Plus size={13} />
+                  Add child
                 </button>
               )}
+              <button
+                type="button"
+                className="icon-btn text-money-out hover:bg-money-out/10"
+                title="Remove sub-type"
+                onClick={() => remove(i)}
+              >
+                <Icon.Trash size={15} />
+              </button>
             </div>
+          </div>
+
+          {n.children.length > 0 && (
+            <TreeEditor
+              nodes={n.children}
+              depth={depth + 1}
+              onChange={(ch) => update(i, { children: ch })}
+            />
           )}
         </div>
       ))}
@@ -375,109 +401,191 @@ function EditTypeForm({ category, qc, navigate }: {
       backTo="/insurance/policy-types"
       backLabel="Back to policy types"
       title={category.label}
-      subtitle="Sub-types, the fields collected on a policy of this type,
-        and the documents it needs — at booking and at claim."
+      subtitle="Sub-types, custom booking fields, and document requirements for this insurance category."
       onSubmit={() => save.mutate()}
       submitLabel="Save changes"
       submitting={save.isPending}
       disabled={!valid}
       wide
+      maxWidth="max-w-5xl"
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Policy type name" required>
-          <input className="input" value={label} autoFocus
-            onChange={(e) => setLabel(e.target.value)} />
-        </Field>
-        <Field label="Description">
-          <input className="input" value={description}
-            onChange={(e) => setDescription(e.target.value)} />
-        </Field>
-      </div>
+      <div className="space-y-6">
+        {/* Section 1: Classification Details */}
+        <div className="rounded-control border border-line bg-slate-50/40 p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            1. Category Information
+          </h3>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Policy type name" required>
+              <input className="input" value={label} autoFocus
+                onChange={(e) => setLabel(e.target.value)} />
+            </Field>
+            <Field label="Description" hint="Optional summary of this category">
+              <input className="input" value={description}
+                onChange={(e) => setDescription(e.target.value)} />
+            </Field>
+          </div>
+        </div>
 
-      <p className="mb-2 mt-5 text-sm font-medium text-slate-700">Sub-types</p>
-      <p className="mb-3 text-sm text-slate-500">
-        Build the nested sub-types for this policy type (up to
-        {" "}{MAX_SUBCATEGORY_DEPTH} levels). Rewards are set per node in each
-        broker code's rate card. Add a level only if you need it.
-      </p>
-      <TreeEditor nodes={tree} depth={1} onChange={setTree} />
-      <button type="button"
-        className="mt-3 text-sm font-medium text-slate-900 hover:underline"
-        onClick={() => setTree([...tree, newNode()])}>
-        + Add sub-type
-      </button>
+        {/* Section 2: Sub-types Hierarchy */}
+        <div className="rounded-control border border-line bg-slate-50/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                2. Sub-types Tree Hierarchy
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Define the branches for this policy type (up to {MAX_SUBCATEGORY_DEPTH} levels). Rate cards price policies per sub-type.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+              onClick={() => setTree([...tree, newNode()])}
+            >
+              <Icon.Plus size={14} /> Add sub-type
+            </button>
+          </div>
+          {tree.length === 0 ? (
+            <div className="rounded-control border border-dashed border-line p-6 text-center text-sm text-slate-500">
+              No sub-types defined yet. Policies will simply use "{category.label}".
+            </div>
+          ) : (
+            <TreeEditor nodes={tree} depth={1} onChange={setTree} />
+          )}
+        </div>
 
-      {/* --- Custom fields ------------------------------------------------- */}
-      <p className="mb-2 mt-6 text-sm font-medium text-slate-700">Custom fields</p>
-      <p className="mb-3 text-sm text-slate-500">
-        Extra details collected when booking a policy of this type (e.g. Vehicle
-        Number, OD Amount, TP Amount). Mark an Amount field "usable as reward
-        base" to let it drive the reward % ("Comm On").
-      </p>
-      <FieldsEditor fields={fields} onChange={setFields} />
-      <button type="button"
-        className="mt-3 text-sm font-medium text-slate-900 hover:underline"
-        onClick={() => setFields([...fields, newField()])}>
-        + Add field
-      </button>
+        {/* Section 3: Custom Fields & Field Ordering */}
+        <div className="rounded-control border border-line bg-slate-50/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                3. Custom Fields & Booking Order
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Custom fields appear on the booking form alongside standard fields (Customer, Policy No, Premium). Use Up/Down arrows to reorder.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+              onClick={() => setFields([...fields, newField()])}
+            >
+              <Icon.Plus size={14} /> Add custom field
+            </button>
+          </div>
 
-      {/* --- Default reward base ------------------------------------------ */}
-      <div className="mt-5 max-w-md">
-        <Field label="Default reward base"
-          hint="Which amount the reward % applies to by default. Staff can still
-            change this per policy.">
-          <select className="select" value={effectiveBase}
-            onChange={(e) => setRewardBase(e.target.value)}>
-            <option value={COMMISSIONABLE_BASE}>
-              Reward Base Premium (net of GST)</option>
-            {baseOptions.map((f) => (
-              <option key={f.key || slugify(f.label)}
-                value={f.key || slugify(f.label)}>{f.label}</option>
-            ))}
-          </select>
-        </Field>
-      </div>
+          {fields.length === 0 ? (
+            <div className="rounded-control border border-dashed border-line p-6 text-center text-sm text-slate-500">
+              No custom fields configured for this type.
+            </div>
+          ) : (
+            <FieldsEditor fields={fields} onChange={setFields} />
+          )}
 
-      {/* --- Documents to collect ----------------------------------------- */}
-      <p className="mb-2 mt-6 text-sm font-medium text-slate-700">
-        Documents to collect at booking</p>
-      <p className="mb-3 text-sm text-slate-500">
-        Supporting files uploaded on the policy form (e.g. RC book, previous
-        policy, ID proof). Required documents block saving until attached.
-      </p>
-      <DocsEditor docs={docs} onChange={setDocs} />
-      <button type="button"
-        className="mt-3 text-sm font-medium text-slate-900 hover:underline"
-        onClick={() => setDocs([...docs, newDoc()])}>
-        + Add document
-      </button>
+          {/* Form Booking Order Guide */}
+          <div className="mt-4 pt-3 border-t border-line-soft">
+            <details className="text-xs text-slate-600 cursor-pointer">
+              <summary className="font-medium text-slate-700 hover:text-slate-900 select-none">
+                Preview Booking Form Flow Order
+              </summary>
+              <div className="mt-2.5 rounded bg-white p-3 border border-line-soft space-y-1.5 text-xs text-slate-600">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 text-slate-400 font-mono">1.</span>
+                  <span className="font-medium text-slate-800">Placement:</span> Broker, Policy Type, Insurer, Sub-types
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-5 text-slate-400 font-mono">2.</span>
+                  <span className="font-medium text-slate-800">Attribution:</span> Customer, Channel Partner
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-5 text-slate-400 font-mono">3.</span>
+                  <span className="font-medium text-slate-800">Financials:</span> Policy Number, Gross Premium, Reward Base, Sum Insured, Dates
+                </div>
+                <div className="flex items-center gap-2 text-ink">
+                  <span className="w-5 text-slate-400 font-mono">4.</span>
+                  <span className="font-semibold">Custom Fields ({fields.length}):</span>{" "}
+                  {fields.map((f) => f.label.trim() || "Untitled").join(" → ") || "None"}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-5 text-slate-400 font-mono">5.</span>
+                  <span className="font-medium text-slate-800">Settlement:</span> Paid by, Discount, Commission Rates & Preview
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-5 text-slate-400 font-mono">6.</span>
+                  <span className="font-medium text-slate-800">Documents:</span> Policy PDF, Supporting Documents
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        {/* Section 4: Default Reward Base */}
+        <div className="rounded-control border border-line bg-slate-50/40 p-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+            4. Default Commission Reward Base
+          </h3>
+          <div className="max-w-md">
+            <Field label="Default reward base"
+              tooltip="Which amount the reward % applies to by default. Staff can still override per policy.">
+              <select className="select" value={effectiveBase}
+                onChange={(e) => setRewardBase(e.target.value)}>
+                <option value={COMMISSIONABLE_BASE}>
+                  Reward Base Premium (net of GST)</option>
+                {baseOptions.map((f) => (
+                  <option key={f.key || slugify(f.label)}
+                    value={f.key || slugify(f.label)}>{f.label}</option>
+                ))}
+              </select>
+            </Field>
+          </div>
+        </div>
+
+        {/* Section 5: Documents at Booking */}
+        <div className="rounded-control border border-line bg-slate-50/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                5. Documents to Collect at Booking
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Supporting files uploaded on the policy form (e.g. RC book, previous policy).
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+              onClick={() => setDocs([...docs, newDoc()])}
+            >
+              <Icon.Plus size={14} /> Add document
+            </button>
+          </div>
+          <DocsEditor docs={docs} onChange={setDocs} />
+        </div>
 
       {/* --- Documents to collect on a CLAIM ------------------------------- */}
-      {/*
-        Owner C3: claim paperwork differs by type — motor wants an FIR, photos
-        and an estimate; health wants a discharge summary and bills — and it is
-        the SAME mechanism as the booking documents above, configured on the
-        same page, rather than a second thing to learn.
-
-        The server has read this list since the portal was rebuilt: it drives
-        the "Still needed" checklist a partner sees on their claim, and the
-        "This type asks for" line on the staff claim screen. Until now there
-        was no way to fill it in, so both rendered empty.
-      */}
-      <p className="mb-2 mt-8 text-sm font-medium text-slate-700">
-        Documents to collect on a claim</p>
-      <p className="mb-3 text-sm text-slate-500">
-        What this type needs when a claim is raised. The partner sees these as a
-        checklist on their claim, so name them the way you would say them on the
-        phone.
-      </p>
-      <DocsEditor docs={claimDocs} onChange={setClaimDocs} />
-      <button type="button"
-        className="mt-3 text-sm font-medium text-slate-900 hover:underline"
-        onClick={() => setClaimDocs([...claimDocs, newDoc()])}>
-        + Add claim document
-      </button>
-
+        {/* Section 6: Claim Documents */}
+        <div className="rounded-control border border-line bg-slate-50/40 p-5">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                6. Documents to Collect on a Claim
+              </h3>
+              <p className="mt-1 text-xs text-slate-500">
+                Checklist presented to clients and partners when filing a claim for this type.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+              onClick={() => setClaimDocs([...claimDocs, newDoc()])}
+            >
+              <Icon.Plus size={14} /> Add claim document
+            </button>
+          </div>
+          <DocsEditor docs={claimDocs} onChange={setClaimDocs} />
+        </div>
+      </div>
     </FormPage>
   );
 }

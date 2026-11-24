@@ -50,7 +50,7 @@ export default function AuditDetailPage() {
       notFound={missing}
     >
       {e && (
-        <div className="max-w-3xl">
+        <div className="max-w-4xl">
           <AuditDetailBody entry={e} isOwner={!!isOwner} />
         </div>
       )}
