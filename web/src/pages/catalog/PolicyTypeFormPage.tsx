@@ -7,6 +7,7 @@ import { FormPage, RecordPage } from "../../components/RecordPage";
 import { Field } from "../../components/ui";
 import { Icon } from "../../components/Icon";
 import { toast } from "../../components/Toast";
+import { SearchSelect } from "../../components/SearchSelect";
 import { COMMISSIONABLE_BASE } from "../../lib/types";
 import { MAX_SUBCATEGORY_DEPTH } from "../../lib/rating";
 import type {
@@ -110,60 +111,57 @@ function FieldsEditor({ fields, onChange }: {
   };
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {fields.map((f, i) => (
-        <div key={i} className="rounded-control border border-line p-3">
+        <div key={i} className="rounded-control border border-line bg-white p-3 shadow-xs hover:border-line-soft transition-colors">
           <div className="flex flex-wrap items-center gap-2">
-            <input className="input min-w-[140px] flex-1" placeholder="Field label"
+            <input className="input min-w-[140px] flex-1 text-sm font-medium" placeholder="Field label (e.g. Engine Number)"
               value={f.label}
               onChange={(e) => update(i, { label: e.target.value })} />
-            <select className="select max-w-[150px]" value={f.type}
-              onChange={(e) => update(i, {
-                type: e.target.value as CustomFieldType })}>
-              {FIELD_TYPES.map((t) => (
-                <option key={t} value={t}>{FIELD_TYPE_LABELS[t]}</option>
-              ))}
-            </select>
-            <label className="flex items-center gap-1 whitespace-nowrap text-xs
-              text-slate-500">
+            <div className="w-36 shrink-0">
+              <SearchSelect
+                options={FIELD_TYPES.map((t) => ({ value: t, label: FIELD_TYPE_LABELS[t] }))}
+                value={f.type}
+                onChange={(v) => update(i, { type: (v || "text") as CustomFieldType })}
+              />
+            </div>
+            <label className="flex items-center gap-1.5 whitespace-nowrap text-xs font-medium text-slate-600 cursor-pointer bg-slate-50 px-2.5 py-1.5 rounded border border-line">
               <input type="checkbox" checked={f.required}
                 onChange={(e) => update(i, { required: e.target.checked })} />
               Required
             </label>
             <div className="ml-auto flex items-center gap-0.5">
-              {/* Icons, not text glyphs: a glyph cannot take a stroke weight
-                  or a hover state, and it renders differently in every font. */}
-              <button type="button" className="icon-btn" aria-label="Move up"
+              <button type="button" className="icon-btn text-slate-500 hover:text-slate-800" aria-label="Move up"
                 title="Move up" onClick={() => move(i, -1)}>
                 <Icon.ChevronDown size={15} className="rotate-180" /></button>
-              <button type="button" className="icon-btn" aria-label="Move down"
+              <button type="button" className="icon-btn text-slate-500 hover:text-slate-800" aria-label="Move down"
                 title="Move down" onClick={() => move(i, 1)}>
                 <Icon.ChevronDown size={15} /></button>
-              <button type="button" className="icon-btn text-money-out" title="Remove"
+              <button type="button" className="icon-btn text-money-out hover:bg-money-out/10" title="Remove"
                 onClick={() => remove(i)}><Icon.Trash size={15} /></button>
             </div>
           </div>
 
           {CHOICE_TYPES.includes(f.type) && (
-            <input className="input mt-2" placeholder="Options, comma separated"
+            <input className="input mt-2" placeholder="Options, comma separated (e.g. Petrol, Diesel, CNG, Electric)"
               value={f.options.join(", ")}
               onChange={(e) => update(i, {
                 options: e.target.value.split(",").map((s) => s.trimStart()) })} />
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <input className="input min-w-[140px] flex-1"
-              placeholder="Helper text"
+            <input className="input min-w-[140px] flex-1 text-xs"
+              placeholder="Helper text / hint for agents"
               value={f.hint ?? ""}
               onChange={(e) => update(i, { hint: e.target.value })} />
             {NUMERIC_TYPES.includes(f.type) && (
               <>
-                <input type="number" className="input max-w-[100px]"
+                <input type="number" className="input max-w-[100px] text-xs"
                   placeholder="Min" value={f.min_value ?? ""}
                   onChange={(e) => update(i, {
                     min_value: e.target.value === "" ? null
                       : parseFloat(e.target.value) })} />
-                <input type="number" className="input max-w-[100px]"
+                <input type="number" className="input max-w-[100px] text-xs"
                   placeholder="Max" value={f.max_value ?? ""}
                   onChange={(e) => update(i, {
                     max_value: e.target.value === "" ? null
@@ -171,8 +169,7 @@ function FieldsEditor({ fields, onChange }: {
               </>
             )}
             {f.type === "amount" && (
-              <label className="flex items-center gap-1 whitespace-nowrap text-xs
-                font-medium text-slate-900">
+              <label className="flex items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-money-in bg-money-in/10 px-2 py-1 rounded border border-money-in/20 cursor-pointer">
                 <input type="checkbox" checked={f.is_reward_base}
                   onChange={(e) =>
                     update(i, { is_reward_base: e.target.checked })} />
@@ -182,6 +179,166 @@ function FieldsEditor({ fields, onChange }: {
           </div>
         </div>
       ))}
+    </div>
+  );
+}
+
+function FormFlowOrderBoard({
+  fields,
+  onMoveField,
+}: {
+  fields: CustomFieldSpec[];
+  onMoveField: (index: number, dir: -1 | 1) => void;
+}) {
+  const amountFields = fields.filter((f) => f.type === "amount");
+  const otherFields = fields.filter((f) => f.type !== "amount");
+
+  return (
+    <div className="rounded-control border border-line bg-white p-4 shadow-xs">
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-line-soft">
+        <div>
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-800">
+            Booking Form Field Sequence
+          </h4>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Standard fields are anchored. Reorder your custom fields with Up and Down arrow buttons.
+          </p>
+        </div>
+        <span className="text-[11px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+          {fields.length} Custom Field{fields.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <div className="space-y-3 text-xs">
+        {/* Section 1: Placement */}
+        <div className="rounded-md border border-line-soft bg-slate-50/60 p-2.5">
+          <span className="font-semibold text-slate-700 block mb-1">1. Placement</span>
+          <div className="flex flex-wrap gap-1.5">
+            {["Broker", "Policy type", "Insurer", "Sub-type"].map((name) => (
+              <span key={name} className="px-2 py-1 rounded bg-slate-200/80 text-slate-700 font-medium text-[11px]">
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Section 2: Attribution */}
+        <div className="rounded-md border border-line-soft bg-slate-50/60 p-2.5">
+          <span className="font-semibold text-slate-700 block mb-1">2. Attribution</span>
+          <div className="flex flex-wrap gap-1.5">
+            {["Customer", "Channel Partner"].map((name) => (
+              <span key={name} className="px-2 py-1 rounded bg-slate-200/80 text-slate-700 font-medium text-[11px]">
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Section 3: Financials & Policy Identifiers */}
+        <div className="rounded-md border border-line-soft bg-slate-50/60 p-2.5">
+          <span className="font-semibold text-slate-700 block mb-1">3. Financials & Identifiers</span>
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {[
+              "Policy number",
+              "Gross Premium (₹)",
+              "Premium before tax (₹)",
+              "Sum Insured (₹)",
+              "Start & Expiry dates",
+            ].map((name) => (
+              <span key={name} className="px-2 py-1 rounded bg-slate-200/80 text-slate-700 font-medium text-[11px]">
+                {name}
+              </span>
+            ))}
+          </div>
+
+          {amountFields.length > 0 && (
+            <div className="mt-2 pt-2 border-t border-line-soft">
+              <span className="text-[10px] uppercase font-bold text-slate-600 block mb-1">
+                Amount Custom Fields (Calculated in Financials):
+              </span>
+              <div className="space-y-1.5">
+                {fields.map((f, idx) => {
+                  if (f.type !== "amount") return null;
+                  return (
+                    <div key={idx} className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-money-in/30 text-slate-800 shadow-2xs">
+                      <span className="font-medium flex items-center gap-1.5 text-xs">
+                        <span className="w-2 h-2 rounded-full bg-money-in" />
+                        {f.label.trim() || `Untitled field #${idx + 1}`}
+                        <span className="text-[10px] text-money-in font-semibold bg-money-in/10 px-1.5 py-0.2 rounded border border-money-in/20">Amount (₹)</span>
+                      </span>
+                      <div className="flex items-center gap-0.5">
+                        <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                          onClick={() => onMoveField(idx, -1)} title="Move earlier in order">
+                          <Icon.ChevronDown size={13} className="rotate-180" />
+                        </button>
+                        <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                          onClick={() => onMoveField(idx, 1)} title="Move later in order">
+                          <Icon.ChevronDown size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Section 4: Specific Details */}
+        <div className="rounded-md border border-line-soft bg-slate-50/60 p-2.5">
+          <span className="font-semibold text-slate-700 block mb-1">4. Policy Specifics & Custom Details</span>
+          {otherFields.length === 0 ? (
+            <span className="text-[11px] text-slate-400 italic">No non-amount custom fields yet.</span>
+          ) : (
+            <div className="space-y-1.5">
+              {fields.map((f, idx) => {
+                if (f.type === "amount") return null;
+                return (
+                  <div key={idx} className="flex items-center justify-between bg-white px-2.5 py-1.5 rounded border border-line text-slate-800 shadow-2xs">
+                    <span className="font-medium flex items-center gap-1.5 text-xs">
+                      <span className="w-2 h-2 rounded-full bg-slate-400" />
+                      {f.label.trim() || `Untitled field #${idx + 1}`}
+                      <span className="text-[10px] text-slate-600 font-semibold bg-slate-100 px-1.5 py-0.2 rounded border border-line">{FIELD_TYPE_LABELS[f.type] || f.type}</span>
+                    </span>
+                    <div className="flex items-center gap-0.5">
+                      <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                        onClick={() => onMoveField(idx, -1)} title="Move earlier in order">
+                        <Icon.ChevronDown size={13} className="rotate-180" />
+                      </button>
+                      <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                        onClick={() => onMoveField(idx, 1)} title="Move later in order">
+                        <Icon.ChevronDown size={13} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Section 5: Settlement */}
+        <div className="rounded-md border border-line-soft bg-slate-50/60 p-2.5">
+          <span className="font-semibold text-slate-700 block mb-1">5. Premium Settlement & Rates</span>
+          <div className="flex flex-wrap gap-1.5">
+            {["Policy Premium Paid By", "Customer Discount", "Commission rate & live ledger preview"].map((name) => (
+              <span key={name} className="px-2 py-1 rounded bg-slate-200/80 text-slate-700 font-medium text-[11px]">
+                {name}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Section 6: Documents */}
+        <div className="rounded-md border border-line-soft bg-slate-50/60 p-2.5">
+          <span className="font-semibold text-slate-700 block mb-1">6. Documents & Uploads</span>
+          <div className="flex flex-wrap gap-1.5">
+            <span className="px-2 py-1 rounded bg-slate-200/80 text-slate-700 font-medium text-[11px]">
+              Policy PDF document
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -245,39 +402,44 @@ function TreeEditor({ nodes, depth, onChange }: {
   if (nodes.length === 0) return null;
 
   return (
-    <div className={`space-y-3 ${depth > 1 ? "ml-2 pl-2 sm:ml-5 sm:pl-4 border-l-2 border-line mt-3" : ""}`}>
+    <div className={`space-y-2.5 ${depth > 1 ? "ml-3 sm:ml-5 pl-3 sm:pl-4 border-l-2 border-line-soft mt-2" : ""}`}>
       {nodes.map((n, i) => (
         <div
           key={i}
-          className="rounded-control border border-line bg-white p-3 shadow-xs transition-shadow hover:shadow-sm"
+          className="rounded-control border border-line bg-white p-2.5 sm:px-3 sm:py-2.5 shadow-xs transition-colors hover:border-line-soft"
         >
           <div className="flex flex-wrap items-center gap-2">
-            <span className="chip text-[11px] font-semibold bg-slate-100 text-slate-700 py-0.5 px-2">
+            <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 rounded">
               Level {depth}
             </span>
             <input
-              className="input w-full min-w-0 sm:w-auto sm:flex-1 text-sm font-medium"
+              className="input flex-1 min-w-[130px] text-sm font-medium"
               placeholder={`Sub-type name (Level ${depth})`}
               value={n.label}
               onChange={(e) => update(i, { label: e.target.value })}
             />
             <div className="flex flex-wrap items-center gap-2 ml-auto">
-              <label className="flex items-center gap-1.5 whitespace-nowrap text-xs text-slate-600 bg-slate-50 px-2 py-1 rounded border border-line-soft cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={n.active}
-                  onChange={(e) => update(i, { active: e.target.checked })}
-                />
-                Active
-              </label>
+              <button
+                type="button"
+                onClick={() => update(i, { active: !n.active })}
+                className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
+                  n.active
+                    ? "bg-money-in/10 text-money-in border-money-in/20 hover:bg-money-in/15"
+                    : "bg-slate-50 text-slate-500 border-line hover:bg-slate-100"
+                }`}
+                title="Toggle active status"
+              >
+                <Icon.Check size={12} className={n.active ? "text-money-in" : "opacity-0"} />
+                {n.active ? "Active" : "Inactive"}
+              </button>
               {depth < MAX_SUBCATEGORY_DEPTH && (
                 <button
                   type="button"
-                  className="btn-secondary btn-sm text-xs py-1 px-2.5 inline-flex items-center gap-1 text-slate-700"
+                  className="btn-secondary btn-sm px-2.5 text-xs inline-flex items-center gap-1 text-slate-700"
                   onClick={() => addChild(i)}
                   title="Add a sub-branch under this category"
                 >
-                  <Icon.Plus size={13} />
+                  <Icon.Plus size={12} />
                   Add child
                 </button>
               )}
@@ -407,7 +569,7 @@ function EditTypeForm({ category, qc, navigate }: {
       submitting={save.isPending}
       disabled={!valid}
       wide
-      maxWidth="max-w-5xl"
+      maxWidth="max-w-7xl"
     >
       <div className="space-y-6">
         {/* Section 1: Classification Details */}
@@ -427,163 +589,146 @@ function EditTypeForm({ category, qc, navigate }: {
           </div>
         </div>
 
-        {/* Section 2: Sub-types Hierarchy */}
-        <div className="rounded-control border border-line bg-slate-50/40 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                2. Sub-types Tree Hierarchy
-              </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Define the branches for this policy type (up to {MAX_SUBCATEGORY_DEPTH} levels). Rate cards price policies per sub-type.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
-              onClick={() => setTree([...tree, newNode()])}
-            >
-              <Icon.Plus size={14} /> Add sub-type
-            </button>
-          </div>
-          {tree.length === 0 ? (
-            <div className="rounded-control border border-dashed border-line p-6 text-center text-sm text-slate-500">
-              No sub-types defined yet. Policies will simply use "{category.label}".
-            </div>
-          ) : (
-            <TreeEditor nodes={tree} depth={1} onChange={setTree} />
-          )}
-        </div>
-
-        {/* Section 3: Custom Fields & Field Ordering */}
-        <div className="rounded-control border border-line bg-slate-50/40 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                3. Custom Fields & Booking Order
-              </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Custom fields appear on the booking form alongside standard fields (Customer, Policy No, Premium). Use Up/Down arrows to reorder.
-              </p>
-            </div>
-            <button
-              type="button"
-              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
-              onClick={() => setFields([...fields, newField()])}
-            >
-              <Icon.Plus size={14} /> Add custom field
-            </button>
-          </div>
-
-          {fields.length === 0 ? (
-            <div className="rounded-control border border-dashed border-line p-6 text-center text-sm text-slate-500">
-              No custom fields configured for this type.
-            </div>
-          ) : (
-            <FieldsEditor fields={fields} onChange={setFields} />
-          )}
-
-          {/* Form Booking Order Guide */}
-          <div className="mt-4 pt-3 border-t border-line-soft">
-            <details className="text-xs text-slate-600 cursor-pointer">
-              <summary className="font-medium text-slate-700 hover:text-slate-900 select-none">
-                Preview Booking Form Flow Order
-              </summary>
-              <div className="mt-2.5 rounded bg-white p-3 border border-line-soft space-y-1.5 text-xs text-slate-600">
-                <div className="flex items-center gap-2">
-                  <span className="w-5 text-slate-400 font-mono">1.</span>
-                  <span className="font-medium text-slate-800">Placement:</span> Broker, Policy Type, Insurer, Sub-types
+        {/* 2-Column Responsive Grid on Desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column (7 cols): Sub-types Tree & Documents */}
+          <div className="lg:col-span-7 space-y-6">
+            {/* Section 2: Sub-types Hierarchy */}
+            <div className="rounded-control border border-line bg-slate-50/40 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    2. Sub-types Tree Hierarchy
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Define the branches for this policy type (up to {MAX_SUBCATEGORY_DEPTH} levels). Rate cards price policies per sub-type.
+                  </p>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 text-slate-400 font-mono">2.</span>
-                  <span className="font-medium text-slate-800">Attribution:</span> Customer, Channel Partner
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 text-slate-400 font-mono">3.</span>
-                  <span className="font-medium text-slate-800">Financials:</span> Policy Number, Gross Premium, Reward Base, Sum Insured, Dates
-                </div>
-                <div className="flex items-center gap-2 text-ink">
-                  <span className="w-5 text-slate-400 font-mono">4.</span>
-                  <span className="font-semibold">Custom Fields ({fields.length}):</span>{" "}
-                  {fields.map((f) => f.label.trim() || "Untitled").join(" → ") || "None"}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 text-slate-400 font-mono">5.</span>
-                  <span className="font-medium text-slate-800">Settlement:</span> Paid by, Discount, Commission Rates & Preview
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-5 text-slate-400 font-mono">6.</span>
-                  <span className="font-medium text-slate-800">Documents:</span> Policy PDF, Supporting Documents
-                </div>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  onClick={() => setTree([...tree, newNode()])}
+                >
+                  <Icon.Plus size={14} /> Add sub-type
+                </button>
               </div>
-            </details>
-          </div>
-        </div>
-
-        {/* Section 4: Default Reward Base */}
-        <div className="rounded-control border border-line bg-slate-50/40 p-5">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-            4. Default Commission Reward Base
-          </h3>
-          <div className="max-w-md">
-            <Field label="Default reward base"
-              tooltip="Which amount the reward % applies to by default. Staff can still override per policy.">
-              <select className="select" value={effectiveBase}
-                onChange={(e) => setRewardBase(e.target.value)}>
-                <option value={COMMISSIONABLE_BASE}>
-                  Reward Base Premium (net of GST)</option>
-                {baseOptions.map((f) => (
-                  <option key={f.key || slugify(f.label)}
-                    value={f.key || slugify(f.label)}>{f.label}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-        </div>
-
-        {/* Section 5: Documents at Booking */}
-        <div className="rounded-control border border-line bg-slate-50/40 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                5. Documents to Collect at Booking
-              </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Supporting files uploaded on the policy form (e.g. RC book, previous policy).
-              </p>
+              {tree.length === 0 ? (
+                <div className="rounded-control border border-dashed border-line p-6 text-center text-sm text-slate-500">
+                  No sub-types defined yet. Policies will simply use "{category.label}".
+                </div>
+              ) : (
+                <TreeEditor nodes={tree} depth={1} onChange={setTree} />
+              )}
             </div>
-            <button
-              type="button"
-              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
-              onClick={() => setDocs([...docs, newDoc()])}
-            >
-              <Icon.Plus size={14} /> Add document
-            </button>
-          </div>
-          <DocsEditor docs={docs} onChange={setDocs} />
-        </div>
 
-      {/* --- Documents to collect on a CLAIM ------------------------------- */}
-        {/* Section 6: Claim Documents */}
-        <div className="rounded-control border border-line bg-slate-50/40 p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-            <div>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                6. Documents to Collect on a Claim
-              </h3>
-              <p className="mt-1 text-xs text-slate-500">
-                Checklist presented to clients and partners when filing a claim for this type.
-              </p>
+            {/* Section 5: Documents at Booking */}
+            <div className="rounded-control border border-line bg-slate-50/40 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    5. Documents to Collect at Booking
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Supporting files uploaded on the policy form (e.g. RC book, previous policy).
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  onClick={() => setDocs([...docs, newDoc()])}
+                >
+                  <Icon.Plus size={14} /> Add document
+                </button>
+              </div>
+              <DocsEditor docs={docs} onChange={setDocs} />
             </div>
-            <button
-              type="button"
-              className="btn-secondary btn-sm inline-flex items-center gap-1.5"
-              onClick={() => setClaimDocs([...claimDocs, newDoc()])}
-            >
-              <Icon.Plus size={14} /> Add claim document
-            </button>
+
+            {/* Section 6: Claim Documents */}
+            <div className="rounded-control border border-line bg-slate-50/40 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    6. Documents to Collect on a Claim
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Checklist presented to clients and partners when filing a claim for this type.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  onClick={() => setClaimDocs([...claimDocs, newDoc()])}
+                >
+                  <Icon.Plus size={14} /> Add claim document
+                </button>
+              </div>
+              <DocsEditor docs={claimDocs} onChange={setClaimDocs} />
+            </div>
           </div>
-          <DocsEditor docs={claimDocs} onChange={setClaimDocs} />
+
+          {/* Right Column (5 cols): Custom Fields & Booking Order Manager & Reward Base */}
+          <div className="lg:col-span-5 space-y-6">
+            {/* Section 3: Custom Fields & Field Ordering */}
+            <div className="rounded-control border border-line bg-slate-50/40 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    3. Custom Fields Configuration
+                  </h3>
+                  <p className="mt-1 text-xs text-slate-500">
+                    Add custom fields prompted when booking this policy type.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  onClick={() => setFields([...fields, newField()])}
+                >
+                  <Icon.Plus size={14} /> Add field
+                </button>
+              </div>
+
+              {fields.length === 0 ? (
+                <div className="rounded-control border border-dashed border-line p-5 text-center text-xs text-slate-500">
+                  No custom fields configured for this type yet.
+                </div>
+              ) : (
+                <FieldsEditor fields={fields} onChange={setFields} />
+              )}
+            </div>
+
+            {/* Form Flow Order Manager with Move Up / Move Down */}
+            <FormFlowOrderBoard
+              fields={fields}
+              onMoveField={(i, dir) => {
+                const j = i + dir;
+                if (j < 0 || j >= fields.length) return;
+                const next = [...fields];
+                [next[i], next[j]] = [next[j], next[i]];
+                setFields(next);
+              }}
+            />
+
+            {/* Section 4: Default Reward Base */}
+            <div className="rounded-control border border-line bg-slate-50/40 p-5">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                4. Default Commission Reward Base
+              </h3>
+              <Field
+                label="Reward calculated on"
+                tooltip="Which amount the reward % applies to by default. Staff can still override per policy."
+              >
+                <SearchSelect
+                  options={[
+                    { value: COMMISSIONABLE_BASE, label: "Premium before tax (net of GST)" },
+                    ...baseOptions.map((f) => ({ value: f.key || slugify(f.label), label: f.label })),
+                  ]}
+                  value={effectiveBase}
+                  onChange={(v) => setRewardBase(v || COMMISSIONABLE_BASE)}
+                />
+              </Field>
+            </div>
+          </div>
         </div>
       </div>
     </FormPage>

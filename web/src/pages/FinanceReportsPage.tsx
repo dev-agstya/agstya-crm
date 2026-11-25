@@ -27,16 +27,18 @@ import type { InsightSlice, ReportRow } from "../lib/types";
 import { moneyTone } from "../lib/tone";
 
 // A titled dashboard card.
-function Card({ title, sub, right, children, className = "" }: {
-  title: string; sub?: string; right?: React.ReactNode;
+function Card({ title, sub, tooltip, right, children, className = "" }: {
+  title: string; sub?: string; tooltip?: string; right?: React.ReactNode;
   children: React.ReactNode; className?: string;
 }) {
   return (
     <div className={`card p-5 ${className}`}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
-          <p className="text-sm font-semibold text-slate-700">
-            {title}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-sm font-semibold text-slate-700">{title}</p>
+            {tooltip && <InfoTooltip text={tooltip} />}
+          </div>
           {sub && <p className="text-xs text-slate-500">{sub}</p>}
         </div>
         {right}
@@ -248,14 +250,16 @@ export default function FinanceReportsPage() {
           {/* Trends — fixed 12-month context, NOT driven by the date filter */}
           <div className="grid gap-4 lg:grid-cols-2">
             <Card title="Total policies — last 12 months"
-              sub="Policies booked each month">
+              sub="Policies booked each month"
+              tooltip="Volume of booked policies across all categories month-by-month">
               <AreaTrend valueLabel="Policies" color={C.count}
                 format={(n) => String(n)}
                 data={d.trend.map((t) => ({
                   label: monthShort(t.month), value: t.policies }))} />
             </Card>
             <Card title="Net profit — last 12 months"
-              sub="Cash in minus cash out, month by month">
+              sub="Cash in minus cash out, month by month"
+              tooltip="Total realized agency profit across all booked policies month-by-month">
               <AreaTrend valueLabel="Net profit" color={C.green}
                 data={d.trend.map((t) => ({
                   label: monthShort(t.month), value: t.net_profit }))} />
@@ -264,11 +268,13 @@ export default function FinanceReportsPage() {
 
           {/* Category + insurer */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card title="Premium by category" sub="Share of business by policy type">
+            <Card title="Premium by category" sub="Share of business by policy type"
+              tooltip="Breakdown of gross premium placed across different insurance lines">
               <Donut data={d.by_category.slice(0, 8).map((c) => ({
                 label: c.label, value: c.premium }))} centerLabel="Premium" />
             </Card>
-            <Card title="Insurance companies" sub="Premium placed, top 8">
+            <Card title="Insurance companies" sub="Premium placed, top 8"
+              tooltip="Top insurance providers by total placed premium volume">
               <RankedBars color={catColor(1)}
                 data={d.by_insurer.slice(0, 8).map((r) => ({
                   label: r.label, value: r.premium,
@@ -278,15 +284,18 @@ export default function FinanceReportsPage() {
 
           {/* Mix + reward health */}
           <div className="grid gap-4 lg:grid-cols-3">
-            <Card title="Who paid the premium" sub="Cash-flow mix">
+            <Card title="Who paid the premium" sub="Cash-flow mix"
+              tooltip="Proportion of premiums paid directly by the client vs advanced by the agency or partner">
               <Donut centerLabel="Policies" format={(n) => String(n)}
                 data={d.payer_mix.map((s) => ({ label: s.label, value: s.count }))} />
             </Card>
-            <Card title="Direct vs via partner" sub="Sourcing mix">
+            <Card title="Direct vs via partner" sub="Sourcing mix"
+              tooltip="Distribution between in-house organic sales and channel partner sourced deals">
               <Donut centerLabel="Policies" format={(n) => String(n)}
                 data={d.buyer_mix.map((s) => ({ label: s.label, value: s.count }))} />
             </Card>
             <Card title="Reward health"
+              tooltip="Status of commission receivable from insurance providers and brokers"
               sub={`Realization ${pctText(d.reward_health.realization_pct)} of rewards earned`}>
               <SegmentBar segments={[
                 { label: "Received", value: d.reward_health.received, color: C.green },
@@ -302,6 +311,7 @@ export default function FinanceReportsPage() {
           {/* Renewals */}
           <div className="grid gap-4 lg:grid-cols-3">
             <Card title="New business vs renewals" sub="Policies booked each month"
+              tooltip="Monthly comparison between first-time policy bookings and renewed policies"
               className="lg:col-span-2">
               <StackedBars format={(n) => String(n)}
                 series={[{ label: "New business", color: catColor(0) },
@@ -310,7 +320,8 @@ export default function FinanceReportsPage() {
                   label: monthShort(t.month),
                   parts: [t.new_business, t.renewals] }))} />
             </Card>
-            <Card title="Renewals due" sub="Live policies expiring soon">
+            <Card title="Renewals due" sub="Live policies expiring soon"
+              tooltip="Policies expiring within the next 30, 60, and 90 days requiring follow-up">
               <div className="grid grid-cols-3 gap-2">
                 <MiniStat label="30 days" value={String(d.renewals_due.d30)}
                   tone="text-due" />
@@ -327,7 +338,8 @@ export default function FinanceReportsPage() {
           {/* Retention & customers */}
           <div className="grid gap-4 lg:grid-cols-3">
             <Card title="Repeat customers"
-              sub="Customers with more than one policy">
+              sub="Customers with more than one policy"
+              tooltip="Proportion and count of customers holding multiple policies with the agency">
               <div className="space-y-2">
                 <MiniStat label="Repeat rate"
                   value={pctText(d.retention.repeat_rate)} tone="text-slate-900" />
@@ -340,7 +352,8 @@ export default function FinanceReportsPage() {
               </div>
             </Card>
             <Card title="New vs returning customers"
-              sub="By month, last 12 months" className="lg:col-span-2">
+              sub="By month, last 12 months" className="lg:col-span-2"
+              tooltip="Trend of new policyholders versus returning clients over the last 12 months">
               <StackedBars format={(n) => String(n)}
                 series={[{ label: "New", color: catColor(0) },
                   { label: "Returning", color: catColor(4) }]}
@@ -351,7 +364,8 @@ export default function FinanceReportsPage() {
 
           {/* Leaderboards */}
           <div className="grid gap-4 lg:grid-cols-2">
-            <Card title="Top channel partners" sub="By profit contribution">
+            <Card title="Top channel partners" sub="By profit contribution"
+              tooltip="Leading agency partners ranked by generated net commission">
               <RankedBars color={catColor(2)}
                 data={d.top_partners.map((r) => ({
                   label: r.label, value: r.profit,

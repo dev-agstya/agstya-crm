@@ -493,7 +493,7 @@ export default function PolicyFormPage() {
         submitLabel="Create policy"
         submitting={save.isPending}
         wide
-        maxWidth="max-w-6xl"
+        maxWidth="max-w-7xl"
       >
       <div className="space-y-6">
           {/* Where this booking came from. It is a real panel rather than a
@@ -532,8 +532,12 @@ export default function PolicyFormPage() {
             </div>
           )}
 
-          {/* Core Insurance & Placement Section */}
-          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+          {/* 2-Column Responsive Layout on Desktop */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* Main Left Column (7 cols): Classification, Customer, Financials, Custom Details, Documents */}
+            <div className="lg:col-span-7 space-y-6">
+              {/* Core Insurance & Placement Section */}
+              <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               1. Policy Classification & Provider
             </h3>
@@ -701,12 +705,32 @@ export default function PolicyFormPage() {
           <OtherCustomFields title={selectedCat?.label ?? "Policy"}
             fields={otherCustomFields} details={details} setDetail={setDetail} />
 
+          {/* Document Uploads (in left column) */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              5. Policy Documents & Uploads
+            </h3>
+            <Field label="Policy PDF document" required>
+              <FileUpload
+                file={pdfFile}
+                onChange={setPdfFile}
+                accept="application/pdf,.pdf"
+                hint="Official policy document issued by insurer (PDF up to 20 MB)"
+              />
+            </Field>
+            <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
+              setDocFiles={setDocFiles} />
+          </div>
+        </div>
+
+        {/* Right Column (5 cols): Settlements, Commission Rates & Live Summary */}
+        <div className="lg:col-span-5 space-y-6 lg:sticky lg:top-4">
           {/* Settlements & Commission Rates */}
           <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
             <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
               4. Premium Settlement & Commission Rates
             </h3>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="space-y-4">
               <Field
                 label="Policy Premium Paid By"
                 required
@@ -783,72 +807,61 @@ export default function PolicyFormPage() {
 
             {/* Live Financial Calculations */}
             {!isPartner && parseFloat(form.premium || "0") > 0 && (
-              <div className="mt-4 pt-4 border-t border-line-soft">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    Live Commission & House Profit Summary
+              <div className="mt-4 pt-4 border-t border-line-soft space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-700">
+                    Live Commission Summary
                   </span>
-                  <span className="text-xs text-slate-400">Calculated in real-time</span>
+                  <span className="text-[11px] text-slate-500">Live preview</span>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3">
-                  <div className="p-2.5 rounded-control bg-white border border-line-soft">
-                    <p className="text-xs text-slate-500">Reward Base</p>
-                    <p className="font-semibold text-slate-800 text-sm mt-0.5">
+                <div className="space-y-2 text-xs">
+                  <div className="flex items-center justify-between p-2 rounded bg-white border border-line-soft">
+                    <span className="text-slate-500">Premium before tax</span>
+                    <span className="font-semibold text-slate-800">
                       {formatINR(rupeesToPaise(preview.base))}
-                    </p>
+                    </span>
                   </div>
-                  <div className="p-2.5 rounded-control bg-white border border-line-soft">
-                    <p className="text-xs text-slate-500">Agency Commission</p>
-                    <p className="font-semibold text-money-in text-sm mt-0.5">
-                      {formatINR(rupeesToPaise(preview.agency))}
-                    </p>
+                  <div className="flex items-center justify-between p-2 rounded bg-white border border-line-soft">
+                    <span className="text-slate-500">Agency Commission</span>
+                    <span className="font-semibold text-money-in">
+                      +{formatINR(rupeesToPaise(preview.agency))}
+                    </span>
                   </div>
                   {form.partner_id && (
-                    <div className="p-2.5 rounded-control bg-white border border-line-soft">
-                      <p className="text-xs text-slate-500">Partner Payout</p>
-                      <p className="font-semibold text-slate-800 text-sm mt-0.5">
+                    <div className="flex items-center justify-between p-2 rounded bg-white border border-line-soft">
+                      <span className="text-slate-500">Partner Payout</span>
+                      <span className="font-semibold text-slate-800">
                         {formatINR(rupeesToPaise(preview.partner))}
-                      </p>
+                      </span>
                     </div>
                   )}
                   {preview.discount > 0 && (
-                    <div className="p-2.5 rounded-control bg-white border border-line-soft">
-                      <p className="text-xs text-slate-500">Customer Discount</p>
-                      <p className="font-semibold text-money-out text-sm mt-0.5">
+                    <div className="flex items-center justify-between p-2 rounded bg-white border border-line-soft">
+                      <span className="text-slate-500">Customer Discount</span>
+                      <span className="font-semibold text-money-out">
                         -{formatINR(rupeesToPaise(preview.discount))}
-                      </p>
+                      </span>
                     </div>
                   )}
-                  <div className="p-2.5 rounded-control bg-white border border-line-soft">
-                    <p className="text-xs text-slate-500">Net House Profit</p>
-                    <p className={`font-semibold text-sm mt-0.5 ${preview.house < 0
-                      ? "text-money-out" : "text-slate-900"}`}>
+                  <div className="flex items-center justify-between p-2.5 rounded bg-white border border-line font-medium text-sm">
+                    <span className="text-slate-700 font-semibold">Net House Profit</span>
+                    <span className={`font-bold ${preview.house < 0 ? "text-money-out" : "text-slate-900"}`}>
                       {formatINR(rupeesToPaise(preview.house))}
-                    </p>
+                    </span>
                   </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Document Uploads */}
-          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-              5. Policy Documents & Uploads
-            </h3>
-            <Field label="Policy PDF document" required>
-              <FileUpload
-                file={pdfFile}
-                onChange={setPdfFile}
-                accept="application/pdf,.pdf"
-                hint="Official policy document issued by insurer (PDF up to 20 MB)"
-              />
-            </Field>
-            <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
-              setDocFiles={setDocFiles} />
+          {/* Quick Helper Note */}
+          <div className="rounded-control border border-line-soft bg-white p-3.5 text-xs text-slate-500 space-y-1">
+            <p className="font-medium text-slate-700">Instant Ledger Entry</p>
+            <p>Creating this policy immediately enters debtor/creditor ledger transactions and updates live agency profit.</p>
           </div>
-
+        </div>
       </div>
+    </div>
       </FormPage>
 
       {/* Quick-add stays a DIALOG on purpose — see the note at the top. */}
