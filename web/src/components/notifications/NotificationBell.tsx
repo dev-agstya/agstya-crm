@@ -42,8 +42,8 @@ type Row = {
 // Anything can open the panel: window.dispatchEvent(new Event("notifications:open"))
 const OPEN_EVENT = "notifications:open";
 
-// Seven rows at ~62px. Fixed so the box never resizes under the cursor.
-const LIST_HEIGHT = "h-[27.5rem]";
+// Compact height when populated; empty state fits its content.
+const LIST_HEIGHT = "max-h-[22rem]";
 
 export function NotificationBell() {
   const { user } = useAuth();
@@ -196,17 +196,16 @@ export function NotificationBell() {
           <div className={`${LIST_HEIGHT} shrink-0 overflow-y-auto
             scrollbar-light`}>
             {items.length === 0 ? (
-              <div className="flex h-full flex-col items-center justify-center
-                px-6 text-center">
-                <div className="mb-3 flex h-11 w-11 items-center justify-center
-                  rounded-full bg-slate-50 text-slate-500 ring-1 ring-inset
-                  ring-slate-200/70">
-                  <Icon.Bell size={19} />
+              <div className="flex flex-col items-center justify-center px-6 py-7 text-center">
+                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <Icon.Bell size={16} />
                 </div>
-                <p className="text-sm font-medium text-slate-900">
-                  You're all caught up</p>
-                <p className="mt-1 text-secondary text-slate-500">
-                  New alerts land here.</p>
+                <p className="text-sm font-medium text-foreground">
+                  You're all caught up
+                </p>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  New alerts land here.
+                </p>
               </div>
             ) : (
               /*

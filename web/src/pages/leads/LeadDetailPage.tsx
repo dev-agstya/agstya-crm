@@ -2,35 +2,35 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { Pencil, Trash2 } from "lucide-react";
 import { leadsApi } from "../../api/endpoints";
 import { api, apiError } from "../../api/client";
 import { RecordPage } from "../../components/RecordPage";
 import { LeadRemindersPanel } from "./LeadRemindersPanel";
-import { Icon } from "../../components/Icon";
-import { DetailItem, StatusBadge } from "../../components/ui";
+import { StatusBadge } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { confirmDialog } from "../../components/Confirm";
 import { formatDateTime, titleCase } from "../../lib/format";
 import { useAuth } from "../../store/auth";
 import { LEAD_TYPE_LABELS } from "../../lib/types";
 import type { Lead, LeadStage } from "../../lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STAGES: LeadStage[] = ["new", "contacted", "quoted", "converted", "lost"];
 
-// What changing the stage actually does. It used to be a paragraph under the
-// Stage card; the picker now lives in the header action row, where there is no
-// room for prose, so it is the control's tooltip instead.
 const STAGE_HINT =
-  "Marking a lead Converted or Lost closes its open reminders. "
-  + "The customer or channel partner is created from their own page.";
+  "Marking a lead Converted or Lost closes its open reminders. The customer or channel partner is created from their own page.";
 
-/**
- * One lead, as a page (owner 2026-08-03 — this replaced a dialog).
- *
- * Everything about the lead is done from here: stage, comments, reminders, edit
- * and delete. The URL is the record, so it can be linked to, refreshed and
- * opened in a second tab — none of which a dialog could do.
- */
 export default function LeadDetailPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -57,7 +57,6 @@ export default function LeadDetailPage() {
       toast.success("Stage updated.");
       qc.setQueryData(["lead", id], res.data);
       qc.invalidateQueries({ queryKey: ["leads"] });
-      // Converted and Lost close the lead's open reminders server-side.
       qc.invalidateQueries({ queryKey: ["reminders"] });
     },
     onError: (e) => toast.error(apiError(e)),
@@ -84,153 +83,250 @@ export default function LeadDetailPage() {
   });
 
   const d = lead.data;
-  const missing = isAxiosError(lead.error) && lead.error.response?.status === 404;
+  const missing =
+    isAxiosError(lead.error) && lead.error.response?.status === 404;
 
   return (
     <RecordPage
       backTo="/leads"
       backLabel="Back to leads"
       title={d?.name ?? "Lead"}
-      subtitle={d ? `Added by ${d.created_by_name || "—"} · ${
-        formatDateTime(d.created_at)}` : undefined}
-      meta={d && <span className="chip">{d.code}</span>}
-      badges={d && (
-        <>
-          <span className="chip">{LEAD_TYPE_LABELS[d.type] ?? d.type}</span>
-          {/* The stage is a control in the header for anyone who can change it
-              (below), so the read-only pill would be the same fact twice.
-              Someone who cannot edit still needs to SEE it. */}
-          {!d.can_edit && <StatusBadge value={d.stage} />}
-          {d.origin === "channel_partner" && (
-            <span className="chip">Added by a channel partner</span>
-          )}
-        </>
-      )}
+      subtitle={
+        d
+          ? `Added by ${d.created_by_name || "—"} · ${formatDateTime(
+              d.created_at
+            )}`
+          : undefined
+      }
+      meta={
+        d && (
+          <Badge variant="secondary" className="h-5 px-1.5 font-mono text-[11px]">
+            {d.code}
+          </Badge>
+        )
+      }
+      badges={
+        d && (
+          <>
+            <Badge variant="outline" className="h-5 px-1.5 text-[11px]">
+              {LEAD_TYPE_LABELS[d.type] ?? d.type}
+            </Badge>
+            {!d.can_edit && <StatusBadge value={d.stage} />}
+            {d.origin === "channel_partner" && (
+              <Badge variant="secondary" className="h-5 px-1.5 text-[11px]">
+                Added by a channel partner
+              </Badge>
+            )}
+          </>
+        )
+      }
       loading={lead.isLoading}
       error={missing ? undefined : lead.error}
       onRetry={() => lead.refetch()}
       notFound={missing}
-      actions={d?.can_edit && (
-        <>
-          {/* Stage is the thing you change most often on a lead, so it sits in
-              the header beside Edit rather than in a card of its own down the
-              right-hand side (owner 2026-08-04). h-9 to match the buttons —
-              `.select` is the 40px form height. */}
-          <select className="select h-9 w-[150px]" value={d.stage}
-            aria-label="Lead stage" title={STAGE_HINT}
-            disabled={setStage.isPending}
-            onChange={(e) => setStage.mutate(e.target.value)}>
-            {STAGES.map((s) => (
-              <option key={s} value={s}>{titleCase(s)}</option>
-            ))}
-          </select>
-          <button className="btn-secondary"
-            onClick={() => navigate(`/leads/${id}/edit`)}>
-            <Icon.Edit size={15} /> Edit
-          </button>
-          <button className="btn-danger-soft"
-            onClick={async () => {
-              if (await confirmDialog({
-                title: `Delete ${d.name}?`,
-                message: "The lead and its follow-ups are removed. This cannot "
-                  + "be undone.",
-                confirmLabel: "Delete lead",
-                danger: true,
-              })) remove.mutate();
-            }}>
-            <Icon.Trash size={15} /> Delete
-          </button>
-        </>
-      )}
+      actions={
+        d?.can_edit && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Select
+              value={d.stage}
+              disabled={setStage.isPending}
+              onValueChange={(v) => setStage.mutate(v)}
+            >
+              <SelectTrigger
+                className="h-8 w-[140px] text-xs"
+                aria-label="Lead stage"
+                title={STAGE_HINT}
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STAGES.map((s) => (
+                  <SelectItem key={s} value={s} className="text-xs">
+                    {titleCase(s)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => navigate(`/leads/${id}/edit`)}
+            >
+              <Pencil className="mr-1.5 h-3.5 w-3.5" /> Edit
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-8 border-destructive/30 text-xs text-destructive hover:bg-destructive/10"
+              onClick={async () => {
+                if (
+                  await confirmDialog({
+                    title: `Delete ${d.name}?`,
+                    message:
+                      "The lead and its follow-ups are removed. This cannot be undone.",
+                    confirmLabel: "Delete lead",
+                    danger: true,
+                  })
+                )
+                  remove.mutate();
+              }}
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+            </Button>
+          </div>
+        )
+      }
     >
       {d && (
-        <div className="grid gap-5 lg:grid-cols-3">
-          {/* Left: the record itself */}
-          <div className="space-y-5 lg:col-span-2">
-            <section className="card">
-              <div className="card-head"><h2 className="card-title">Details</h2></div>
-              <div className="grid gap-x-6 gap-y-4 px-5 py-4 sm:grid-cols-2">
-                <DetailItem label="Mobile" value={d.mobile
-                  ? `${d.mobile_country_code} ${d.mobile}` : "—"} />
-                <DetailItem label="Email" value={d.email || "—"} />
-                <DetailItem label="Lead type"
-                  value={LEAD_TYPE_LABELS[d.type] ?? d.type} />
-                <DetailItem label="Interested in"
-                  value={d.interested_in || d.category_key || "—"} />
-                <DetailItem className="sm:col-span-2" label="Note"
-                  value={d.note || "—"} />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="space-y-4 lg:col-span-2">
+            <Card className="overflow-hidden">
+              <div className="border-b border-border px-4 py-2.5">
+                <h2 className="text-sm font-semibold text-foreground">
+                  Details
+                </h2>
+              </div>
+              <div className="grid gap-x-6 gap-y-3 px-4 py-3.5 sm:grid-cols-2">
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Mobile
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-foreground">
+                    {d.mobile ? `${d.mobile_country_code} ${d.mobile}` : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Email
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-foreground">
+                    {d.email || "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Lead type
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-foreground">
+                    {LEAD_TYPE_LABELS[d.type] ?? d.type}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Interested in
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-foreground">
+                    {d.interested_in || d.category_key || "—"}
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Note
+                  </p>
+                  <p className="mt-0.5 text-[13px] text-foreground">
+                    {d.note || "—"}
+                  </p>
+                </div>
                 {d.stage === "lost" && d.lost_reason && (
-                  <DetailItem className="sm:col-span-2" label="Lost reason"
-                    value={d.lost_reason} />
+                  <div className="sm:col-span-2">
+                    <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                      Lost reason
+                    </p>
+                    <p className="mt-0.5 text-[13px] text-destructive">
+                      {d.lost_reason}
+                    </p>
+                  </div>
                 )}
               </div>
-            </section>
+            </Card>
 
-            <section className="card">
-              <div className="card-head">
-                <h2 className="card-title">
-                  Comments
+            <Card className="overflow-hidden">
+              <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-foreground">
+                    Comments
+                  </h2>
                   {d.comments.length > 0 && (
-                    <span className="chip ml-2 tabular-nums">
-                      {d.comments.length}</span>
+                    <Badge
+                      variant="secondary"
+                      className="h-5 px-1.5 text-[11px] tabular-nums"
+                    >
+                      {d.comments.length}
+                    </Badge>
                   )}
-                </h2>
+                </div>
                 {d.origin === "channel_partner" && isInhouse && (
-                  <span className="text-xs text-slate-500">
+                  <span className="text-[11px] text-muted-foreground">
                     Your notes here are hidden from the partner
                   </span>
                 )}
               </div>
-              <div className="space-y-2 px-5 py-4">
+              <div className="space-y-2.5 p-4">
                 {d.comments.length === 0 && (
-                  <p className="rounded-control border border-dashed border-line
-                    px-4 py-5 text-center text-sm text-slate-500">
+                  <p className="rounded-md border border-dashed border-border px-4 py-4 text-center text-xs text-muted-foreground">
                     No comments yet.
                   </p>
                 )}
                 {d.comments.map((c, i) => (
-                  <div key={i}
-                    className="rounded-control border border-line px-3.5 py-3">
-                    <div className="flex items-center justify-between gap-2
-                      text-xs text-slate-500">
-                      <span className="font-medium text-slate-700">
+                  <div
+                    key={i}
+                    className="rounded-md border border-border px-3.5 py-2.5"
+                  >
+                    <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
+                      <span className="font-medium text-foreground">
                         {c.author_name}
                         {c.author_role === "channel_partner" && (
-                          <span className="chip ml-1.5">Channel partner</span>
+                          <Badge
+                            variant="secondary"
+                            className="ml-1.5 h-4 px-1.5 text-[10px]"
+                          >
+                            Channel partner
+                          </Badge>
                         )}
                       </span>
                       <span>{formatDateTime(c.created_at)}</span>
                     </div>
-                    <p className="mt-1.5 text-sm leading-relaxed text-slate-700">
-                      {c.body}</p>
+                    <p className="mt-1 text-[13px] leading-relaxed text-foreground">
+                      {c.body}
+                    </p>
                   </div>
                 ))}
                 <div className="flex gap-2 pt-1">
-                  <input className="input flex-1" placeholder="Add a comment…"
+                  <Input
+                    className="flex-1"
+                    placeholder="Add a comment…"
                     value={comment}
                     onChange={(e) => setComment(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && comment.trim())
                         addComment.mutate();
-                    }} />
-                  <button className="btn-primary"
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-9"
                     disabled={!comment.trim() || addComment.isPending}
-                    onClick={() => addComment.mutate()}>
+                    onClick={() => addComment.mutate()}
+                  >
                     Post
-                  </button>
+                  </Button>
                 </div>
               </div>
-            </section>
+            </Card>
           </div>
 
-          {/* Right: reminders, and only reminders (owner 2026-08-04). Stage
-              moved into the header, which leaves this column doing one job
-              instead of being a stack of unrelated small cards. */}
-          <div className="space-y-5">
-            <section className="card">
-              <LeadRemindersPanel leadId={id} canEdit={d.can_edit}
-                onChanged={refresh} />
-            </section>
+          <div className="space-y-4">
+            <Card className="overflow-hidden">
+              <LeadRemindersPanel
+                leadId={id}
+                canEdit={d.can_edit}
+                onChanged={refresh}
+              />
+            </Card>
           </div>
         </div>
       )}

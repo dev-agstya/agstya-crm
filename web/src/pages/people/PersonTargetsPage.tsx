@@ -4,14 +4,11 @@ import { isAxiosError } from "axios";
 import { usersApi } from "../../api/endpoints";
 import { RecordPage } from "../../components/RecordPage";
 import { TargetsBody } from "../../components/TargetsBody";
+import { Card } from "@/components/ui/card";
 
-/**
- * One person's targets, as a page (this was a dialog until 2026-08-03).
- *
- * Back goes to the PERSON, not to the list — you arrived here from their
- * record, and their record is what you want when you are done.
- */
-export default function PersonTargetsPage({ kind }: {
+export default function PersonTargetsPage({
+  kind,
+}: {
   kind: "employee" | "channel_partner";
 }) {
   const { id = "" } = useParams();
@@ -23,8 +20,8 @@ export default function PersonTargetsPage({ kind }: {
     queryFn: async () => (await usersApi.get(id)).data,
   });
   const u = person.data;
-  const missing = isAxiosError(person.error)
-    && person.error.response?.status === 404;
+  const missing =
+    isAxiosError(person.error) && person.error.response?.status === 404;
 
   return (
     <RecordPage
@@ -38,7 +35,11 @@ export default function PersonTargetsPage({ kind }: {
       onRetry={() => person.refetch()}
       notFound={missing}
     >
-      {u && <div className="card card-body"><TargetsBody user={u} /></div>}
+      {u && (
+        <Card className="p-4 sm:p-5">
+          <TargetsBody user={u} />
+        </Card>
+      )}
     </RecordPage>
   );
 }

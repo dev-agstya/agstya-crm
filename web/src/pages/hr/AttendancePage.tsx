@@ -45,7 +45,6 @@ import { useAuth } from "../../store/auth";
 import type { AttendanceCorrection, AttendanceDay } from "../../lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type View = "mine" | "today" | "month" | "corrections";
@@ -174,52 +173,54 @@ export default function AttendancePage() {
   const pendingCount = pendingTotal.data ?? 0;
 
   const monthBar = (
-    <Card>
-      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-3.5">
-        <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center justify-between gap-2">
+      <div className="flex items-center gap-1">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 bg-card"
+          aria-label="Previous month"
+          onClick={() => setMonth(shiftMonth(month, -1))}
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <span className="min-w-[8.5rem] text-center text-sm font-semibold text-foreground">
+          {monthLabel(month)}
+        </span>
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-8 w-8 bg-card"
+          aria-label="Next month"
+          disabled={isCurrentMonth(month)}
+          onClick={() => setMonth(shiftMonth(month, 1))}
+        >
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        {!isCurrentMonth(month) && (
           <Button
-            variant="outline"
-            size="icon"
-            aria-label="Previous month"
-            onClick={() => setMonth(shiftMonth(month, -1))}
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="min-w-[9rem] text-center text-sm font-semibold text-foreground">
-            {monthLabel(month)}
-          </span>
-          <Button
-            variant="outline"
-            size="icon"
-            aria-label="Next month"
-            disabled={isCurrentMonth(month)}
-            onClick={() => setMonth(shiftMonth(month, 1))}
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          {!isCurrentMonth(month) && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setMonth(monthKey(new Date()))}
-            >
-              This month
-            </Button>
-          )}
-        </div>
-        {canExport && view === "month" && (
-          <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
-            disabled={exportRegister.isPending}
-            onClick={() => exportRegister.mutate()}
+            className="h-8 px-2 text-xs"
+            onClick={() => setMonth(monthKey(new Date()))}
           >
-            <Download className="mr-1.5 h-4 w-4" />
-            {exportRegister.isPending ? "Preparing..." : "Export register"}
+            This month
           </Button>
         )}
-      </CardContent>
-    </Card>
+      </div>
+      {canExport && view === "month" && (
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8"
+          disabled={exportRegister.isPending}
+          onClick={() => exportRegister.mutate()}
+        >
+          <Download className="mr-1 h-3.5 w-3.5" />
+          {exportRegister.isPending ? "Preparing..." : "Export register"}
+        </Button>
+      )}
+    </div>
   );
 
   const correctionCols: Column<AttendanceCorrection>[] = [
@@ -249,7 +250,7 @@ export default function AttendancePage() {
       key: "time",
       header: "Requested Time",
       cell: (c) => (
-        <span className="whitespace-nowrap text-sm tabular-nums text-foreground">
+        <span className="whitespace-nowrap tabular-nums text-foreground">
           {c.requested_clock_in ? formatTime(c.requested_clock_in) : "—"} –{" "}
           {c.requested_clock_out ? formatTime(c.requested_clock_out) : "—"}
         </span>
@@ -268,16 +269,16 @@ export default function AttendancePage() {
                   ? "destructive"
                   : "secondary"
             }
-            className={
+            className={`h-5 px-1.5 text-[10px] ${
               c.status === "approved"
                 ? "bg-emerald-600 text-white hover:bg-emerald-600"
                 : ""
-            }
+            }`}
           >
             {LEAVE_STATUS_LABELS[c.status]}
           </Badge>
           {c.decided_by_name && (
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground">
               by {c.decided_by_name}
             </p>
           )}
@@ -293,22 +294,24 @@ export default function AttendancePage() {
         c.status === "pending" &&
         canManage &&
         c.user_id !== String(user?.id) ? (
-          <div className="flex justify-end gap-2">
+          <div className="flex justify-end gap-1.5">
             <Button
               variant="outline"
               size="sm"
+              className="h-7 px-2 text-xs"
               disabled={decide.isPending}
               onClick={() => decide.mutate({ id: c.id, approve: false })}
             >
-              <X className="mr-1 h-3.5 w-3.5" />
+              <X className="mr-1 h-3 w-3" />
               Reject
             </Button>
             <Button
               size="sm"
+              className="h-7 px-2 text-xs"
               disabled={decide.isPending}
               onClick={() => decide.mutate({ id: c.id, approve: true })}
             >
-              <Check className="mr-1 h-3.5 w-3.5" />
+              <Check className="mr-1 h-3 w-3" />
               Approve
             </Button>
           </div>
@@ -317,24 +320,27 @@ export default function AttendancePage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
-        eyebrow="Workplace HR"
         title="Attendance"
         subtitle={
           isOwner
-            ? "Team attendance status, monthly register, and correction requests."
-            : "Clock in when you start and clock out when you finish."
+            ? "Team status & monthly register"
+            : "Daily clock-in & attendance log"
         }
         actions={
-          <Button variant="outline" onClick={() => navigate("/hr/leave")}>
-            <Calendar className="mr-1.5 h-4 w-4" />
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8"
+            onClick={() => navigate("/hr/leave")}
+          >
+            <Calendar className="mr-1 h-3.5 w-3.5" />
             Leave
           </Button>
         }
       />
 
-      {/* Employees see the punch panel; owners do not clock in */}
       {!isOwner && (
         <PunchPanel
           onChanged={() => qc.invalidateQueries({ queryKey: ["hr", "month"] })}
@@ -342,25 +348,78 @@ export default function AttendancePage() {
       )}
 
       {canSeeTeam && (
-        <Tabs value={view} onValueChange={(v) => setView2(v as View)}>
-          <TabsList className="w-full justify-start overflow-x-auto">
-            {!isOwner && <TabsTrigger value="mine">My Attendance</TabsTrigger>}
-            <TabsTrigger value="today">Today's Status</TabsTrigger>
-            <TabsTrigger value="month">Monthly Register</TabsTrigger>
-            <TabsTrigger value="corrections" className="gap-2">
-              Corrections
-              {pendingCount > 0 && (
-                <Badge variant="secondary" className="px-1.5 py-0 text-[11px]">
-                  {pendingCount}
-                </Badge>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Tabs value={view} onValueChange={(v) => setView2(v as View)}>
+            <TabsList className="h-8 flex-wrap">
+              {!isOwner && (
+                <TabsTrigger value="mine" className="h-6 px-2.5 text-xs">
+                  My Attendance
+                </TabsTrigger>
               )}
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
+              <TabsTrigger value="today" className="h-6 px-2.5 text-xs">
+                Today's Status
+              </TabsTrigger>
+              <TabsTrigger value="month" className="h-6 px-2.5 text-xs">
+                Monthly Register
+              </TabsTrigger>
+              <TabsTrigger
+                value="corrections"
+                className="h-6 gap-1.5 px-2.5 text-xs"
+              >
+                Corrections
+                {pendingCount > 0 && (
+                  <Badge
+                    variant="secondary"
+                    className="h-4 px-1 text-[10px]"
+                  >
+                    {pendingCount}
+                  </Badge>
+                )}
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          {view === "today" && (
+            <div className="flex items-center gap-1">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 bg-card"
+                aria-label="Previous day"
+                onClick={() => setDay(shiftDay(day, -1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[9.5rem] text-center text-sm font-semibold text-foreground">
+                {dayLabel(day)} · {monthLabel(day.slice(0, 7))}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 bg-card"
+                aria-label="Next day"
+                disabled={day >= todayKey()}
+                onClick={() => setDay(shiftDay(day, 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              {day !== todayKey() && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => setDay(todayKey())}
+                >
+                  Today
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {view === "mine" && (
-        <div className="space-y-5">
+        <div className="space-y-3">
           {whose && mine.data && (
             <div className="flex items-center gap-3">
               <span className="text-sm font-semibold text-foreground">
@@ -369,6 +428,7 @@ export default function AttendancePage() {
               <Button
                 variant="outline"
                 size="sm"
+                className="h-7 px-2.5 text-xs"
                 onClick={() => setWhose("")}
               >
                 Back to {isOwner ? "team" : "my attendance"}
@@ -407,41 +467,7 @@ export default function AttendancePage() {
       )}
 
       {view === "today" && canSeeTeam && (
-        <div className="space-y-5">
-          <Card>
-            <CardContent className="flex flex-wrap items-center gap-2 p-3.5">
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Previous day"
-                onClick={() => setDay(shiftDay(day, -1))}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <span className="min-w-[10rem] text-center text-sm font-semibold text-foreground">
-                {dayLabel(day)} · {monthLabel(day.slice(0, 7))}
-              </span>
-              <Button
-                variant="outline"
-                size="icon"
-                aria-label="Next day"
-                disabled={day >= todayKey()}
-                onClick={() => setDay(shiftDay(day, 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              {day !== todayKey() && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setDay(todayKey())}
-                >
-                  Today
-                </Button>
-              )}
-            </CardContent>
-          </Card>
-
+        <div>
           {today.isError ? (
             <ErrorState onRetry={() => today.refetch()} />
           ) : today.isLoading ? (
@@ -461,7 +487,7 @@ export default function AttendancePage() {
       )}
 
       {view === "month" && canSeeTeam && (
-        <div className="space-y-5">
+        <div className="space-y-3">
           {monthBar}
           {grid.isError ? (
             <ErrorState onRetry={() => grid.refetch()} />

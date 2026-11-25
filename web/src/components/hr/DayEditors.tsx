@@ -2,38 +2,31 @@ import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { attendanceApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
-import { Field, Modal } from "../ui";
+import { FormField } from "../shared/FormSection";
 import { toast } from "../Toast";
 import { STATUS_LABELS, dayLabel, toTimeInput } from "../../lib/hr";
 import type { AttendanceDay } from "../../lib/types";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 
-/*
-  The two ways a wrong day gets fixed.
-
-  They are deliberately DIFFERENT dialogs rather than one with a mode, because
-  they are different acts:
-
-    * A MANAGER'S EDIT writes the day immediately and demands a REASON. It is
-      one person making a claim about another person's working hours, and at
-      month end it is what the pay is worked out from — so the audit row and
-      that sentence are the only evidence of why the register says what it says.
-
-    * AN EMPLOYEE'S CORRECTION asks for the change. It cannot force a status, it
-      is always about their own day, and it lands in a queue. There is no
-      `user_id` on the request at all — raising one for somebody else IS the
-      manager's edit, and the two must not be reachable from the same form.
-
-  One dialog with a `canEdit` branch would blur that, and the blur is exactly
-  how "ask" quietly becomes "set".
-*/
-
-// The statuses a manager may force. A subset of AttendanceStatus on purpose:
-// `not_marked` is what a day is when nothing has happened (you CLEAR an
-// override rather than setting one), and holiday / week off belong to the
-// calendar — forcing one for a single person would leave that day looking like
-// a holiday nobody else got.
 const MANUAL_STATUSES: { value: string; label: string }[] = [
-  { value: "", label: "Let the timings decide" },
+  { value: "__auto__", label: "Let the timings decide" },
   { value: "present", label: STATUS_LABELS.present },
   { value: "half_day", label: STATUS_LABELS.half_day },
   { value: "absent", label: STATUS_LABELS.absent },
@@ -41,10 +34,13 @@ const MANUAL_STATUSES: { value: string; label: string }[] = [
   { value: "on_leave", label: STATUS_LABELS.on_leave },
 ];
 
-/* ------------------------------------------------------- a manager's edit -- */
-
 export function EditDayDialog({
-  open, onClose, day, userId, userName, onSaved,
+  open,
+  onClose,
+  day,
+  userId,
+  userName,
+  onSaved,
 }: {
   open: boolean;
   onClose: () => void;
@@ -56,32 +52,32 @@ export function EditDayDialog({
   const qc = useQueryClient();
   const [clockIn, setClockIn] = useState("");
   const [clockOut, setClockOut] = useState("");
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("__auto__");
   const [note, setNote] = useState("");
   const [reason, setReason] = useState("");
 
-  // Re-seed whenever a different day is opened. Without this the dialog carries
-  // the previous row's times into the next one, which is a very quiet way to
-  // write the wrong hours onto somebody's Tuesday.
   useEffect(() => {
     if (!day) return;
     setClockIn(toTimeInput(day.clock_in));
     setClockOut(toTimeInput(day.clock_out));
-    setStatus(day.status === "not_marked" ? "" : "");
+    setStatus("__auto__");
     setNote(day.note ?? "");
     setReason("");
   }, [day?.day, day?.record_id]);
 
   const save = useMutation({
-    mutationFn: async () => (await attendanceApi.editDay({
-      user_id: userId,
-      day: day!.day,
-      clock_in: clockIn,
-      clock_out: clockOut,
-      status,
-      note,
-      reason: reason.trim(),
-    })).data,
+    mutationFn: async () =>
+      (
+        await attendanceApi.editDay({
+          user_id: userId,
+          day: day!.day,
+          clock_in: clockIn,
+          clock_out: clockOut,
+          status: status === "__auto__" ? "" : status,
+          note,
+          reason: reason.trim(),
+        })
+      ).data,
     onSuccess: () => {
       toast.success(`${dayLabel(day!.day)} updated.`);
       qc.invalidateQueries({ queryKey: ["hr"] });
@@ -95,61 +91,99 @@ export function EditDayDialog({
   const canSave = reason.trim().length >= 3 && !save.isPending;
 
   return (
-    <Modal open={open} onClose={onClose}
-      title={`Edit ${dayLabel(day.day)}`}
-      subtitle={`${userName} — this is recorded in the audit trail.`}
-      footer={
-        <>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!canSave}
-            onClick={() => save.mutate()}>
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit {dayLabel(day.day)}</DialogTitle>
+          <DialogDescription>
+            {userName} — this is recorded in the audit trail.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid grid-cols-1 gap-3 py-1 sm:grid-cols-2">
+          <FormField label="Clock in" hint="Leave blank to clear it.">
+            <Input
+              type="time"
+              value={clockIn}
+              onChange={(e) => setClockIn(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Clock out">
+            <Input
+              type="time"
+              value={clockOut}
+              onChange={(e) => setClockOut(e.target.value)}
+            />
+          </FormField>
+          <FormField
+            label="Force the status"
+            className="sm:col-span-2"
+            hint="Only when the timings cannot say it — a client visit, or a day somebody worked from home."
+          >
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MANUAL_STATUSES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+          <FormField
+            label="Note"
+            className="sm:col-span-2"
+            hint="Shown on the day itself. Optional."
+          >
+            <Input
+              value={note}
+              maxLength={500}
+              onChange={(e) => setNote(e.target.value)}
+            />
+          </FormField>
+          <FormField
+            label="Why are you changing this?"
+            required
+            className="sm:col-span-2"
+            hint="Recorded against your name in the audit trail, and shown to the employee."
+          >
+            <Textarea
+              rows={2}
+              value={reason}
+              maxLength={300}
+              placeholder="Forgot to clock out — confirmed they left at 19:10"
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </FormField>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!canSave}
+            onClick={() => save.mutate()}
+          >
             {save.isPending ? "Saving…" : "Save the day"}
-          </button>
-        </>
-      }>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Clock in"
-          hint="Leave blank to clear it.">
-          <input type="time" className="input" value={clockIn}
-            onChange={(e) => setClockIn(e.target.value)} />
-        </Field>
-        <Field label="Clock out">
-          <input type="time" className="input" value={clockOut}
-            onChange={(e) => setClockOut(e.target.value)} />
-        </Field>
-        <Field label="Force the status" className="sm:col-span-2"
-          hint="Only when the timings cannot say it — a client visit, or a day
-            somebody worked from home.">
-          <select className="select" value={status}
-            onChange={(e) => setStatus(e.target.value)}>
-            {MANUAL_STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Note" className="sm:col-span-2"
-          hint="Shown on the day itself. Optional.">
-          <input className="input" value={note} maxLength={500}
-            onChange={(e) => setNote(e.target.value)} />
-        </Field>
-        {/* MANDATORY, and the server refuses without it. This is the only
-            evidence of why somebody's hours were changed. */}
-        <Field label="Why are you changing this?" required
-          className="sm:col-span-2"
-          hint="Recorded against your name in the audit trail, and shown to the
-            employee.">
-          <textarea className="input" rows={2} value={reason} maxLength={300}
-            placeholder="Forgot to clock out — confirmed they left at 19:10"
-            onChange={(e) => setReason(e.target.value)} />
-        </Field>
-      </div>
-    </Modal>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
-/* ---------------------------------------------- an employee's correction -- */
-
-export function RaiseCorrectionDialog({ open, onClose, day, onSaved }: {
+export function RaiseCorrectionDialog({
+  open,
+  onClose,
+  day,
+  onSaved,
+}: {
   open: boolean;
   onClose: () => void;
   day: AttendanceDay | null;
@@ -168,12 +202,15 @@ export function RaiseCorrectionDialog({ open, onClose, day, onSaved }: {
   }, [day?.day, day?.record_id]);
 
   const send = useMutation({
-    mutationFn: async () => (await attendanceApi.raiseCorrection({
-      day: day!.day,
-      clock_in: clockIn || null,
-      clock_out: clockOut || null,
-      reason: reason.trim(),
-    })).data,
+    mutationFn: async () =>
+      (
+        await attendanceApi.raiseCorrection({
+          day: day!.day,
+          clock_in: clockIn || null,
+          clock_out: clockOut || null,
+          reason: reason.trim(),
+        })
+      ).data,
     onSuccess: () => {
       toast.success("Sent. Your manager will see it in their queue.");
       qc.invalidateQueries({ queryKey: ["hr"] });
@@ -184,47 +221,69 @@ export function RaiseCorrectionDialog({ open, onClose, day, onSaved }: {
   });
 
   if (!day) return null;
-  // The server enforces all three of these; the button follows them so nobody
-  // presses it into a 422 they could have been told about while typing.
   const hasTime = !!(clockIn || clockOut);
   const canSend = hasTime && reason.trim().length >= 3 && !send.isPending;
 
   return (
-    <Modal open={open} onClose={onClose}
-      title={`Ask to fix ${dayLabel(day.day)}`}
-      subtitle="Your manager approves it, and the change is applied for you."
-      footer={
-        <>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" disabled={!canSend}
-            onClick={() => send.mutate()}>
-            {send.isPending ? "Sending…" : "Send the request"}
-          </button>
-        </>
-      }>
-      {day.missed_punch_out && (
-        <div className="note-due mb-4">
-          This day was closed automatically at the end of your shift because
-          there was no clock-out. Put the time you actually left below.
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Ask to fix {dayLabel(day.day)}</DialogTitle>
+          <DialogDescription>
+            Your manager approves it, and the change is applied for you.
+          </DialogDescription>
+        </DialogHeader>
+
+        {day.missed_punch_out && (
+          <div className="rounded-md border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-900">
+            This day was closed automatically at the end of your shift because
+            there was no clock-out. Put the time you actually left below.
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 gap-3 py-1 sm:grid-cols-2">
+          <FormField
+            label="Clock in"
+            hint="Leave it as it is if this one was right."
+          >
+            <Input
+              type="time"
+              value={clockIn}
+              onChange={(e) => setClockIn(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Clock out">
+            <Input
+              type="time"
+              value={clockOut}
+              onChange={(e) => setClockOut(e.target.value)}
+            />
+          </FormField>
+          <FormField label="What happened?" required className="sm:col-span-2">
+            <Textarea
+              rows={2}
+              value={reason}
+              maxLength={300}
+              placeholder="Left at 19:10 for a client visit and forgot to clock out"
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </FormField>
         </div>
-      )}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Clock in"
-          hint="Leave it as it is if this one was right.">
-          <input type="time" className="input" value={clockIn}
-            onChange={(e) => setClockIn(e.target.value)} />
-        </Field>
-        <Field label="Clock out">
-          <input type="time" className="input" value={clockOut}
-            onChange={(e) => setClockOut(e.target.value)} />
-        </Field>
-        <Field label="What happened?" required className="sm:col-span-2">
-          <textarea className="input" rows={2} value={reason} maxLength={300}
-            placeholder="Left at 19:10 for a client visit and forgot to clock
-              out"
-            onChange={(e) => setReason(e.target.value)} />
-        </Field>
-      </div>
-    </Modal>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" size="sm" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            disabled={!canSend}
+            onClick={() => send.mutate()}
+          >
+            {send.isPending ? "Sending…" : "Send request"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

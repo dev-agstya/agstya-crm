@@ -1,49 +1,37 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { attendanceApi, leaveApi, payslipsApi } from "../../api/endpoints";
-import { Icon } from "../Icon";
-import {
-  CardSkeleton, DetailItem, EmptyState, ErrorState, Section, StatCard, StatRow,
-  TableSkeleton,
-} from "../ui";
+import { DataTable } from "../shared/DataTable";
+import { EmptyState } from "../shared/EmptyState";
+import { ErrorState } from "../shared/ErrorState";
+import { FormSection } from "../shared/FormSection";
+import { CardGridSkeleton, TableSkeleton } from "../shared/LoadingSkeleton";
 import { AttendanceMonthTable } from "./AttendanceMonth";
 import { AdjustBalanceDialog } from "./LeaveForm";
 import { EditDayDialog } from "./DayEditors";
 import {
-  LEAVE_STATUS_LABELS, balanceTone, formatDays, isCurrentMonth,
-  leaveRangeLabel, leaveStatusBadge, monthKey, monthLabel, shiftMonth,
+  LEAVE_STATUS_LABELS,
+  formatDays,
+  isCurrentMonth,
+  leaveRangeLabel,
+  leaveStatusBadge,
+  monthKey,
+  monthLabel,
+  shiftMonth,
 } from "../../lib/hr";
 import {
-  PAYSLIP_STATUS_LABELS, payDays, payslipBadge, payslipMonthLabel,
+  PAYSLIP_STATUS_LABELS,
+  payDays,
+  payslipBadge,
+  payslipMonthLabel,
 } from "../../lib/payroll";
 import { formatINR } from "../../lib/format";
 import { useAuth } from "../../store/auth";
-import type { AttendanceDay, UserRow } from "../../lib/types";
-
-/*
-  The HR tab on an employee's record (owner H7).
-
-  A TAB, NOT A PAGE — the owner has been explicit twice about not wanting
-  "random pages for each and every shit thing", and this is the same call the
-  Team tab got: everything about ONE person belongs on that person's record,
-  rather than making a manager filter three separate screens by their name.
-
-  It answers the four questions a manager has about somebody at month end, in
-  the order they ask them: what does this month add up to, how much leave do
-  they have, what is on their register, and have they been paid.
-
-  THE SALARY IS NO LONGER A REFERENCE FIGURE. It was, from 2026-08-20 to
-  2026-08-24 — stored and read by nothing, because the owner had dropped the
-  calculation. They reversed that, so the salary at the top is now the INPUT to
-  the payslips at the bottom, and a record with no salary on it is a record the
-  pay run will stop on. That is why the empty case says so.
-
-  The salary is ABSENT from the payload without `view_salary` — the server
-  strips it rather than the client hiding it — so `undefined` here means "not
-  allowed to see" as often as it means "not set", and the copy says so rather
-  than rendering a confident blank.
-*/
+import type { AttendanceDay, LeaveRequest, UserRow } from "../../lib/types";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export function PersonHrPanel({ user }: { user: UserRow }) {
   const { has, user: me } = useAuth();
@@ -77,167 +65,314 @@ export function PersonHrPanel({ user }: { user: UserRow }) {
   const profile = user.employee_profile;
 
   return (
-    <div className="space-y-6">
-      {/* ------------------------------------------------- the reference -- */}
-      <Section title="Employment">
+    <div className="space-y-4">
+      <FormSection title="Employment">
         <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <DetailItem label="Joined"
-            value={profile?.date_of_joining
-              ? new Date(profile.date_of_joining).toLocaleDateString("en-IN", {
-                day: "2-digit", month: "short", year: "numeric" })
-              : <span className="text-slate-400">not recorded</span>} />
-          <DetailItem label="Monthly salary"
-            value={canSeeSalary
-              ? (profile?.monthly_salary_paise != null
-                ? formatINR(profile.monthly_salary_paise)
-                : <span className="text-slate-400">not set</span>)
-              : <span className="text-slate-400">hidden</span>} />
-          <DetailItem label="Shift"
-            value={profile?.shift_start && profile?.shift_end
-              ? `${profile.shift_start} – ${profile.shift_end}`
-              : <span className="text-slate-400">agency default</span>} />
-          <DetailItem label="Leave earned"
-            value={b ? `${b.monthly_accrual} a month`
-              : <span className="text-slate-400">—</span>} />
+          <div>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Joined
+            </p>
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              {profile?.date_of_joining ? (
+                new Date(profile.date_of_joining).toLocaleDateString("en-IN", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              ) : (
+                <span className="text-muted-foreground">not recorded</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Monthly salary
+            </p>
+            <p className="mt-0.5 text-sm font-medium tabular-nums text-foreground">
+              {canSeeSalary ? (
+                profile?.monthly_salary_paise != null ? (
+                  formatINR(profile.monthly_salary_paise)
+                ) : (
+                  <span className="text-muted-foreground">not set</span>
+                )
+              ) : (
+                <span className="text-muted-foreground">hidden</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Shift
+            </p>
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              {profile?.shift_start && profile?.shift_end ? (
+                `${profile.shift_start} – ${profile.shift_end}`
+              ) : (
+                <span className="text-muted-foreground">agency default</span>
+              )}
+            </p>
+          </div>
+          <div>
+            <p className="text-[11px] font-medium text-muted-foreground">
+              Leave earned
+            </p>
+            <p className="mt-0.5 text-sm font-medium text-foreground">
+              {b ? (
+                `${b.monthly_accrual} a month`
+              ) : (
+                <span className="text-muted-foreground">—</span>
+              )}
+            </p>
+          </div>
         </div>
         {canSeeSalary && profile?.monthly_salary_paise == null && (
-          // Said here rather than left blank, because this is the field the pay
-          // run will stop on. A payslip with no salary comes out at zero and
-          // cannot be finalised.
-          <p className="note-out mt-3">
+          <p className="mt-3 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
             No salary on this record, so no payslip can be worked out. Set it on
             the Profile tab.
           </p>
         )}
-      </Section>
+      </FormSection>
 
-      {/* --------------------------------------------------- the payslip -- */}
       <PayslipStrip user={user} />
 
-      {/* ----------------------------------------------------- the month -- */}
-      <Section title="This month"
-        action={
+      <FormSection
+        title="This month"
+        actions={
           <div className="flex items-center gap-1">
-            <button className="icon-btn" aria-label="Previous month" title="Previous month"
-              onClick={() => setMonth(shiftMonth(month, -1))}>
-              <Icon.ChevronLeft size={14} />
-            </button>
-            <span className="min-w-[8rem] text-center text-sm text-slate-700">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              aria-label="Previous month"
+              onClick={() => setMonth(shiftMonth(month, -1))}
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+            <span className="min-w-[7.5rem] text-center text-xs font-medium text-foreground">
               {monthLabel(month)}
             </span>
-            <button className="icon-btn" aria-label="Next month" title="Next month"
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              className="h-7 w-7"
+              aria-label="Next month"
               disabled={isCurrentMonth(month)}
-              onClick={() => setMonth(shiftMonth(month, 1))}>
-              <Icon.ChevronRight size={14} />
-            </button>
+              onClick={() => setMonth(shiftMonth(month, 1))}
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
           </div>
-        }>
+        }
+      >
         {attendance.isError ? (
           <ErrorState onRetry={() => attendance.refetch()} />
         ) : attendance.isLoading ? (
-          <CardSkeleton count={4} />
+          <CardGridSkeleton count={4} />
         ) : s ? (
           <>
-            <StatRow cols={4}>
-              <StatCard label="Payable days" value={String(s.payable_days)}
-                hint={`of ${s.total_days} calendar days`} />
-              <StatCard label="Present" value={String(s.present + s.wfh)}
-                hint={s.half_days
-                  ? `+ ${s.half_days} half day${s.half_days === 1 ? "" : "s"}`
-                  : undefined} />
-              <StatCard label="Absent" value={String(s.absent)}
-                tone={s.absent > 0 ? "out" : undefined} />
-              <StatCard label="Late marks" value={String(s.late_marks)}
-                tone={s.late_penalty_days > 0 ? "due" : undefined}
-                hint={s.late_penalty_days > 0
-                  ? `${s.late_penalty_days} day off the count` : undefined} />
-            </StatRow>
+            <div className="grid grid-cols-2 divide-y divide-border rounded-lg border border-border bg-muted/20 sm:grid-cols-4 sm:divide-x sm:divide-y-0">
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Payable days
+                </p>
+                <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
+                  {s.payable_days}
+                  <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                    / {s.total_days}
+                  </span>
+                </p>
+              </div>
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Present
+                </p>
+                <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
+                  {s.present + s.wfh}
+                  {s.half_days > 0 && (
+                    <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                      + {s.half_days} half
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Absent
+                </p>
+                <p
+                  className={`mt-0.5 text-base font-semibold tabular-nums ${
+                    s.absent > 0 ? "text-destructive" : "text-foreground"
+                  }`}
+                >
+                  {s.absent}
+                </p>
+              </div>
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Late marks
+                </p>
+                <p
+                  className={`mt-0.5 text-base font-semibold tabular-nums ${
+                    s.late_penalty_days > 0
+                      ? "text-amber-700"
+                      : "text-foreground"
+                  }`}
+                >
+                  {s.late_marks}
+                  {s.late_penalty_days > 0 && (
+                    <span className="ml-1 text-[11px] font-normal text-muted-foreground">
+                      ({s.late_penalty_days}d off)
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
             {s.unresolved_days > 0 && (
-              <div className="note-due mt-4">
+              <div className="mt-3 rounded-md border border-amber-200 bg-amber-50/70 px-3 py-2 text-xs text-amber-900">
                 {s.unresolved_days} day{s.unresolved_days === 1 ? "" : "s"} in
                 this month still {s.unresolved_days === 1 ? "needs" : "need"} a
                 decision — a missed clock-out, or a past day with nothing on it.
-                Clear {s.unresolved_days === 1 ? "it" : "them"} before working
-                out the month.
               </div>
             )}
           </>
         ) : null}
-      </Section>
+      </FormSection>
 
-      {/* ---------------------------------------------------- the leave -- */}
-      <Section title="Leave"
-        action={canManageLeave ? (
-          <button className="btn-secondary btn-sm"
-            onClick={() => setAdjusting(true)}>
-            Adjust balance
-          </button>
-        ) : undefined}>
+      <FormSection
+        title="Leave"
+        actions={
+          canManageLeave ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-7 px-2.5 text-xs"
+              onClick={() => setAdjusting(true)}
+            >
+              Adjust balance
+            </Button>
+          ) : undefined
+        }
+      >
         {balance.isError ? (
           <ErrorState onRetry={() => balance.refetch()} />
         ) : balance.isLoading ? (
-          <CardSkeleton count={3} />
+          <CardGridSkeleton count={3} />
         ) : b ? (
-          <>
-            <StatRow cols={3}>
-              <StatCard label="Available" value={formatDays(b.available)}
-                tone={balanceTone(b.available)} hint={b.leave_year_label} />
-              <StatCard label="Taken" value={formatDays(b.used)} />
-              <StatCard label="Waiting" value={formatDays(b.pending_days)}
-                tone={b.pending_days > 0 ? "due" : undefined} />
-            </StatRow>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 divide-x divide-border rounded-lg border border-border bg-muted/20">
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Available
+                </p>
+                <p
+                  className={`mt-0.5 text-base font-semibold tabular-nums ${
+                    b.available > 0
+                      ? "text-emerald-700"
+                      : b.available < 0
+                        ? "text-destructive"
+                        : "text-foreground"
+                  }`}
+                >
+                  {formatDays(b.available)}
+                </p>
+              </div>
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Taken
+                </p>
+                <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
+                  {formatDays(b.used)}
+                </p>
+              </div>
+              <div className="px-3 py-2">
+                <p className="text-[11px] font-medium text-muted-foreground">
+                  Waiting
+                </p>
+                <p
+                  className={`mt-0.5 text-base font-semibold tabular-nums ${
+                    b.pending_days > 0 ? "text-amber-700" : "text-foreground"
+                  }`}
+                >
+                  {formatDays(b.pending_days)}
+                </p>
+              </div>
+            </div>
 
             {(leaves.data?.items ?? []).length > 0 && (
-              <div className="mt-4 overflow-x-auto scrollbar-light">
-                <table className="table table-dense">
-                  <thead>
-                    <tr>
-                      <th>When</th>
-                      <th>Reason</th>
-                      <th className="num">Days</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(leaves.data?.items ?? []).slice(0, 8).map((r) => (
-                      <tr key={r.id}>
-                        <td className="whitespace-nowrap">
-                          {leaveRangeLabel(r.start_date, r.end_date,
-                            r.day_part)}
-                        </td>
-                        <td className="truncate" title={r.reason}>{r.reason}</td>
-                        <td className="num">{r.days}</td>
-                        <td>
-                          <span className={leaveStatusBadge(r.status)}>
-                            {LEAVE_STATUS_LABELS[r.status]}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                data={(leaves.data?.items ?? []).slice(0, 8)}
+                keyField={(r: LeaveRequest) => r.id}
+                columns={[
+                  {
+                    key: "when",
+                    header: "When",
+                    cell: (r) => (
+                      <span className="whitespace-nowrap text-xs font-medium text-foreground">
+                        {leaveRangeLabel(r.start_date, r.end_date, r.day_part)}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "reason",
+                    header: "Reason",
+                    cell: (r) => (
+                      <span
+                        className="block max-w-[220px] truncate text-xs text-muted-foreground"
+                        title={r.reason}
+                      >
+                        {r.reason}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "days",
+                    header: "Days",
+                    align: "right",
+                    cell: (r) => (
+                      <span className="text-xs font-medium tabular-nums text-foreground">
+                        {r.days}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "status",
+                    header: "Status",
+                    cell: (r) => (
+                      <span className={leaveStatusBadge(r.status)}>
+                        {LEAVE_STATUS_LABELS[r.status]}
+                      </span>
+                    ),
+                  },
+                ]}
+              />
             )}
-          </>
+          </div>
         ) : null}
-      </Section>
+      </FormSection>
 
-      {/* -------------------------------------------------- the register -- */}
-      <Section title="Register"
-        action={
-          <Link className="btn-ghost btn-sm"
-            to={`/hr/attendance?view=today`}>
-            Open Attendance <Icon.ChevronRight size={13} />
-          </Link>
-        }>
+      <FormSection
+        title="Register"
+        actions={
+          <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+            <Link to="/hr/attendance?view=today">
+              Open Attendance <ChevronRight className="ml-1 h-3.5 w-3.5" />
+            </Link>
+          </Button>
+        }
+      >
         {attendance.isError ? (
           <ErrorState onRetry={() => attendance.refetch()} />
         ) : attendance.isLoading ? (
           <TableSkeleton cols={6} />
         ) : (attendance.data?.days.length ?? 0) === 0 ? (
-          <EmptyState title="Nothing recorded"
-            icon={<Icon.Calendar size={20} />}
-            hint="No attendance for this month yet." />
+          <EmptyState
+            icon={<Calendar className="h-5 w-5" />}
+            title="Nothing recorded"
+            description="No attendance for this month yet."
+          />
         ) : (
           <AttendanceMonthTable
             days={attendance.data!.days}
@@ -245,32 +380,24 @@ export function PersonHrPanel({ user }: { user: UserRow }) {
             onEdit={canManageAttendance ? (d) => setEditing(d) : undefined}
           />
         )}
-      </Section>
+      </FormSection>
 
       <EditDayDialog
-        open={!!editing} onClose={() => setEditing(null)} day={editing}
-        userId={user.id} userName={user.full_name} />
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        day={editing}
+        userId={user.id}
+        userName={user.full_name}
+      />
       <AdjustBalanceDialog
-        open={adjusting} onClose={() => setAdjusting(false)}
-        user={{ id: user.id, name: user.full_name }} />
+        open={adjusting}
+        onClose={() => setAdjusting(false)}
+        user={{ id: user.id, name: user.full_name }}
+      />
     </div>
   );
 }
 
-/* --------------------------------------------------------------- payslips -- */
-
-/**
- * This person's last few payslips, on their own record.
- *
- * A STRIP, not a table: the question here is "have they been paid", which is
- * three rows and a link. The full history and everything you can DO to a
- * payslip live on /hr/payslips, and putting a second pay desk on a record tab
- * is how the two start disagreeing about what "finalised" means.
- *
- * Shown only to somebody who may read this person's payslips — their own record
- * needs no flag, anybody else's needs `view_payslips`. Without it the server
- * 403s, so the strip is not drawn rather than drawn and refused.
- */
 function PayslipStrip({ user }: { user: UserRow }) {
   const { has, user: me } = useAuth();
   const mine = me?.id === user.id;
@@ -278,8 +405,7 @@ function PayslipStrip({ user }: { user: UserRow }) {
 
   const slips = useQuery({
     queryKey: ["payslips", "of", user.id],
-    queryFn: async () =>
-      (await payslipsApi.list({ user_id: user.id })).data,
+    queryFn: async () => (await payslipsApi.list({ user_id: user.id })).data,
     enabled: allowed,
   });
 
@@ -287,39 +413,46 @@ function PayslipStrip({ user }: { user: UserRow }) {
 
   const rows = (slips.data?.items ?? []).slice(0, 4);
   return (
-    <Section title="Payslips"
-      action={
-        <Link to={mine ? "/hr/payslips" : "/hr/payslips?view=run"}
-          className="btn-ghost btn-sm">
-          All payslips <Icon.ChevronRight size={14} />
-        </Link>
-      }>
+    <FormSection
+      title="Payslips"
+      actions={
+        <Button asChild variant="ghost" size="sm" className="h-7 px-2 text-xs">
+          <Link to={mine ? "/hr/payslips" : "/hr/payslips?view=run"}>
+            All payslips <ChevronRight className="ml-1 h-3.5 w-3.5" />
+          </Link>
+        </Button>
+      }
+    >
       {slips.isError ? (
         <ErrorState onRetry={() => slips.refetch()} />
       ) : slips.isLoading ? (
         <TableSkeleton cols={3} rows={2} />
       ) : rows.length === 0 ? (
-        <EmptyState title="No payslips yet"
-          hint="The first one is generated on the 1st of next month, from this
-            month's attendance." />
+        <EmptyState
+          title="No payslips yet"
+          description="The first one is generated on the 1st of next month, from this month's attendance."
+        />
       ) : (
-        <div className="overflow-hidden rounded-control border border-line">
+        <Card className="overflow-hidden">
           <table className="w-full">
             <tbody>
               {rows.map((p) => (
-                <tr key={p.id}
-                  className="border-b border-line-soft last:border-0">
-                  <td className="px-3 py-2 text-sm text-slate-700">
-                    <Link to={`/hr/payslips?slip=${p.id}`}
-                      className="font-medium text-slate-900 hover:underline">
+                <tr
+                  key={p.id}
+                  className="border-b border-border/60 last:border-0"
+                >
+                  <td className="px-3 py-2 text-[13px]">
+                    <Link
+                      to={`/hr/payslips?slip=${p.id}`}
+                      className="font-medium text-foreground hover:text-primary hover:underline"
+                    >
                       {payslipMonthLabel(p.month)}
                     </Link>
-                    <span className="ml-2 text-xs text-slate-500">
+                    <span className="ml-2 text-xs text-muted-foreground">
                       {payDays(p.payable_days)} payable days
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-right text-sm tabular-nums
-                    text-slate-800">
+                  <td className="px-3 py-2 text-right text-[13px] font-medium tabular-nums text-foreground">
                     {formatINR(p.net_payable_paise)}
                   </td>
                   <td className="px-3 py-2 text-right">
@@ -331,8 +464,8 @@ function PayslipStrip({ user }: { user: UserRow }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
-    </Section>
+    </FormSection>
   );
 }

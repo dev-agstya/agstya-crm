@@ -4,9 +4,11 @@ import { isAxiosError } from "axios";
 import { usersApi } from "../../api/endpoints";
 import { RecordPage } from "../../components/RecordPage";
 import { AnalyticsBody } from "../../components/AnalyticsBody";
+import { Card } from "@/components/ui/card";
 
-/** Six months of target performance for one person, as a page. */
-export default function PersonPerformancePage({ kind }: {
+export default function PersonPerformancePage({
+  kind,
+}: {
   kind: "employee" | "channel_partner";
 }) {
   const { id = "" } = useParams();
@@ -18,8 +20,8 @@ export default function PersonPerformancePage({ kind }: {
     queryFn: async () => (await usersApi.get(id)).data,
   });
   const u = person.data;
-  const missing = isAxiosError(person.error)
-    && person.error.response?.status === 404;
+  const missing =
+    isAxiosError(person.error) && person.error.response?.status === 404;
 
   return (
     <RecordPage
@@ -33,9 +35,9 @@ export default function PersonPerformancePage({ kind }: {
       notFound={missing}
     >
       {u && (
-        <div className="card card-body">
+        <Card className="p-4 sm:p-5">
           <AnalyticsBody assigneeId={u.id} />
-        </div>
+        </Card>
       )}
     </RecordPage>
   );

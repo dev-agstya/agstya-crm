@@ -1,56 +1,53 @@
-import { Icon } from "../Icon";
+import { ChevronRight, Users } from "lucide-react";
+import { DataTable, Column } from "../shared/DataTable";
+import { EmptyState } from "../shared/EmptyState";
 import {
-  EmptyState, Ledger, LedgerRow, LTh, ListShell, MobileCard,
-  PersonCell, StatCard, StatRow,
-} from "../ui";
-import {
-  STATUS_LABELS, STATUS_LETTER, formatDuration, formatTime, statusBadge,
-  statusCellTone, statusRail,
+  STATUS_LABELS,
+  STATUS_LETTER,
+  formatDuration,
+  formatTime,
+  statusBadge,
+  statusCellTone,
 } from "../../lib/hr";
+import { initials } from "../../lib/format";
 import type {
-  AttendanceStatus, TeamDay, TeamMonth, TeamMonthRow,
+  AttendanceStatus,
+  TeamDay,
+  TeamMemberDay,
+  TeamMonth,
+  TeamMonthRow,
 } from "../../lib/types";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
-/*
-  The two team views.
-
-  TODAY'S BOARD answers "who is in", which is a question with a five-second
-  shelf life — so it is a list of people with the clock on it, sorted so the
-  rows that need attention are already at the top rather than needing a filter.
-
-  THE MONTH GRID answers "what does this month add up to", which is the question
-  the pay is worked out from. It is people down the side and days across the
-  top, one letter per day, with the payable-days figure at the end of the row —
-  so a manager reads thirty people's months without opening thirty records.
-
-  The grid is the ONE place in this module that scrolls sideways. That is
-  deliberate and it is the exception the ledger rule allows for: thirty-one
-  columns is not "too many columns" in the sense the rule is about (facts that
-  should have stacked) — they are one fact repeated thirty-one times, and there
-  is no stacking that makes a month shorter than a month.
-*/
-
-/* --------------------------------------------------------- today's board -- */
-
-// Rows that need attention first. Absent and unpaid leave at the top, then the
-// people who have not arrived, then late, then everybody who is simply working.
-// A board sorted alphabetically makes you read all thirty rows to find the two
-// that matter.
 const URGENCY: Record<AttendanceStatus, number> = {
-  absent: 0, leave_unpaid: 1, not_marked: 2, half_day: 3,
-  on_leave: 4, present: 5, wfh: 5, week_off: 6, holiday: 6,
+  absent: 0,
+  leave_unpaid: 1,
+  not_marked: 2,
+  half_day: 3,
+  on_leave: 4,
+  present: 5,
+  wfh: 5,
+  week_off: 6,
+  holiday: 6,
 };
 
-export function TeamDayBoard({ data, onOpen }: {
+export function TeamDayBoard({
+  data,
+  onOpen,
+}: {
   data: TeamDay;
   onOpen: (userId: string) => void;
 }) {
   if (data.members.length === 0) {
     return (
-      <EmptyState title="No employees yet"
-        icon={<Icon.Users size={20} />}
-        hint="Attendance is recorded for employee accounts. Add somebody on the
-          Employees page and they will appear here." />
+      <EmptyState
+        icon={<Users className="h-6 w-6" />}
+        title="No employees yet"
+        description="Attendance is recorded for employee accounts. Add somebody on the Employees page and they will appear here."
+      />
     );
   }
 
@@ -59,212 +56,230 @@ export function TeamDayBoard({ data, onOpen }: {
     return d !== 0 ? d : a.name.localeCompare(b.name);
   });
 
+  const columns: Column<TeamMemberDay>[] = [
+    {
+      key: "employee",
+      header: "Employee",
+      cell: (m) => (
+        <div className="flex items-center gap-2.5">
+          <Avatar className="h-7 w-7">
+            <AvatarFallback className="bg-primary/10 text-[11px] font-semibold text-primary">
+              {initials(m.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate font-medium text-foreground">{m.name}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {m.designation || m.code}
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (m) => (
+        <div className="flex flex-wrap items-center gap-1">
+          <span className={statusBadge(m.status)}>
+            {STATUS_LABELS[m.status]}
+          </span>
+          {m.on_break && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+              On break
+            </Badge>
+          )}
+          {m.is_late && (
+            <Badge
+              variant="secondary"
+              className="h-4 bg-amber-100 px-1.5 text-[10px] text-amber-800"
+            >
+              {formatDuration(m.late_minutes)} late
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "in",
+      header: "In",
+      align: "center",
+      cell: (m) => (
+        <span className="whitespace-nowrap tabular-nums text-foreground">
+          {formatTime(m.clock_in) || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "out",
+      header: "Out",
+      align: "center",
+      cell: (m) => (
+        <span className="whitespace-nowrap tabular-nums text-foreground">
+          {m.clock_in && !m.clock_out ? (
+            <span className="text-muted-foreground">Still in</span>
+          ) : (
+            formatTime(m.clock_out) || "—"
+          )}
+        </span>
+      ),
+    },
+    {
+      key: "worked",
+      header: "Worked",
+      align: "right",
+      cell: (m) => (
+        <span className="font-medium tabular-nums text-foreground">
+          {formatDuration(m.worked_minutes) || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      mobileLabel: false,
+      cell: (m) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 px-2 text-xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen(m.user_id);
+          }}
+        >
+          Month
+          <ChevronRight className="ml-0.5 h-3.5 w-3.5" />
+        </Button>
+      ),
+    },
+  ];
+
   return (
-    <>
-      {/* Counted server-side and read here. The tiles and the rows under them
-          are the same screen; two derivations of "how many are late" is how
-          they end up saying different things. */}
-      <StatRow cols={4}>
-        <StatCard label="Clocked in" value={String(data.in_count)}
-          icon="Check"
-          tooltip="Employees who have punched in for today's shift" />
-        <StatCard label="Late" value={String(data.late_count)}
-          tone={data.late_count > 0 ? "due" : undefined}
-          tooltip="Employees who clocked in after their assigned shift start time" />
-        <StatCard label="On leave" value={String(data.leave_count)}
-          tooltip="Employees with approved paid or unpaid leave for today" />
-        <StatCard label="Not in yet"
-          value={String(data.not_in_count + data.absent_count)}
-          tone={data.absent_count > 0 ? "out" : undefined}
-          tooltip="Employees who haven't clocked in yet today or are marked absent"
-          hint={data.absent_count > 0
-            ? `${data.absent_count} marked absent` : undefined} />
-      </StatRow>
+    <div className="space-y-3">
+      {/* Slim summary strip instead of 4 big KPI cards */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-md border border-border bg-card px-3.5 py-2 text-xs text-muted-foreground">
+        <span>
+          Clocked in:{" "}
+          <strong className="text-foreground tabular-nums">
+            {data.in_count}
+          </strong>
+        </span>
+        <span>
+          Late:{" "}
+          <strong
+            className={`tabular-nums ${
+              data.late_count > 0 ? "text-amber-600" : "text-foreground"
+            }`}
+          >
+            {data.late_count}
+          </strong>
+        </span>
+        <span>
+          On leave:{" "}
+          <strong className="text-foreground tabular-nums">
+            {data.leave_count}
+          </strong>
+        </span>
+        <span>
+          Not in yet:{" "}
+          <strong
+            className={`tabular-nums ${
+              data.absent_count > 0 ? "text-red-600" : "text-foreground"
+            }`}
+          >
+            {data.not_in_count + data.absent_count}
+          </strong>
+          {data.absent_count > 0 && ` (${data.absent_count} absent)`}
+        </span>
+      </div>
 
       {(data.is_week_off || data.holiday_name) && (
-        <div className="note mt-4">
+        <div className="rounded-md border border-border bg-muted/40 px-3.5 py-2 text-xs text-muted-foreground">
           {data.holiday_name
-            ? `${data.holiday_name} — the office is closed, so nobody is
-               expected in.`
-            : "A week off — the office is closed, so nobody is expected in."}
+            ? `${data.holiday_name} — the office is closed today.`
+            : "Week off — the office is closed today."}
         </div>
       )}
 
-      <div className="mt-5">
-        <ListShell
-          bare
-          cards={rows.map((m) => (
-            <MobileCard key={m.user_id} to={`/people/employees/${m.user_id}`}
-              rail={statusRail(m.status,
-                { missedPunchOut: m.missed_punch_out })}
-              title={m.name}
-              meta={m.designation || m.code}
-              right={
-                <span className={statusBadge(m.status)}>
-                  {STATUS_LABELS[m.status]}
-                </span>
-              }
-              footer={m.clock_in
-                ? `In ${formatTime(m.clock_in)}${m.clock_out
-                  ? ` · Out ${formatTime(m.clock_out)}` : ""}`
-                : undefined}
-            />
-          ))}
-          table={
-            <Ledger
-              head={
-                <>
-                  <LTh>Employee</LTh>
-                  <LTh>Status</LTh>
-                  <LTh>In</LTh>
-                  <LTh>Out</LTh>
-                  <LTh align="right">Worked</LTh>
-                  <LTh />
-                </>
-              }
-            >
-              {rows.map((m) => (
-                <LedgerRow key={m.user_id} onClick={() => onOpen(m.user_id)}>
-                  <td className={statusRail(m.status,
-                    { missedPunchOut: m.missed_punch_out })
-                    ? `rail-${statusRail(m.status,
-                      { missedPunchOut: m.missed_punch_out })}` : ""}>
-                    <PersonCell name={m.name}
-                      sub={m.designation || m.code} />
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap items-center gap-1">
-                      <span className={statusBadge(m.status)}>
-                        {STATUS_LABELS[m.status]}
-                      </span>
-                      {m.on_break && (
-                        <span className="badge-neutral">On a break</span>
-                      )}
-                      {m.is_late && (
-                        <span className="badge-due">
-                          {formatDuration(m.late_minutes)} late
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap text-[13px] tabular-nums
-                    text-slate-700">
-                    {formatTime(m.clock_in)}
-                  </td>
-                  <td className="whitespace-nowrap text-[13px] tabular-nums
-                    text-slate-700">
-                    {m.clock_in && !m.clock_out
-                      ? <span className="text-slate-400">still in</span>
-                      : formatTime(m.clock_out)}
-                  </td>
-                  <td>
-                    <span className="ledger-figure">
-                      {formatDuration(m.worked_minutes)}
-                    </span>
-                  </td>
-                  <td>
-                    <div className="flex justify-end">
-                      <button className="btn-ghost btn-sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onOpen(m.user_id);
-                        }}>
-                        Month <Icon.ChevronRight size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </LedgerRow>
-              ))}
-            </Ledger>
-          }
-        />
-      </div>
-    </>
+      <DataTable
+        data={rows}
+        columns={columns}
+        keyField={(m) => m.user_id}
+        onRowClick={(m) => onOpen(m.user_id)}
+      />
+    </div>
   );
 }
 
-/* ------------------------------------------------------------ month grid -- */
-
-export function TeamMonthGrid({ data, onOpen }: {
+export function TeamMonthGrid({
+  data,
+  onOpen,
+}: {
   data: TeamMonth;
   onOpen: (userId: string) => void;
 }) {
   if (data.rows.length === 0) {
     return (
-      <EmptyState title="No employees yet"
-        icon={<Icon.Users size={20} />}
-        hint="Attendance is recorded for employee accounts." />
+      <EmptyState
+        icon={<Users className="h-6 w-6" />}
+        title="No employees yet"
+        description="Attendance is recorded for employee accounts."
+      />
     );
   }
   const dayCount = data.rows[0]?.days.length ?? 0;
 
   return (
-    <div className="card overflow-hidden">
-      {/* The exception, and the only one in this module: thirty-one columns are
-          one fact repeated, not facts that should have stacked. The name column
-          is sticky so a row stays identifiable at the far end of the month. */}
-      <div className="overflow-x-auto scrollbar-light">
-        <table className="table table-dense min-w-[52rem]">
+    <Card className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full min-w-[52rem] border-collapse text-xs">
           <thead>
-            <tr>
-              <th className="sticky left-0 z-raised bg-white">Employee</th>
+            <tr className="border-b border-border bg-muted/50 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              <th className="sticky left-0 z-raised bg-muted/95 px-3 py-2 text-left">
+                Employee
+              </th>
               {Array.from({ length: dayCount }, (_, i) => (
-                <th key={i} className="px-1 text-center">{i + 1}</th>
+                <th
+                  key={i}
+                  className="px-1 py-2 text-center font-medium tabular-nums"
+                >
+                  {i + 1}
+                </th>
               ))}
-              <th className="text-right">Payable</th>
+              <th className="px-3 py-2 text-right">Payable</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-border">
             {data.rows.map((r: TeamMonthRow) => (
-              <tr key={r.user_id} className="row-link"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") onOpen(r.user_id);
-                }}
-                onClick={() => onOpen(r.user_id)}>
-                <td className="sticky left-0 z-raised bg-white">
-                  <span className="block truncate font-medium text-slate-900">
-                    {r.name}
-                  </span>
-                  <span className="block truncate text-xs text-slate-500">
-                    {r.designation || r.code}
-                  </span>
+              <tr
+                key={r.user_id}
+                onClick={() => onOpen(r.user_id)}
+                className="cursor-pointer transition-colors hover:bg-muted/40"
+              >
+                <td className="sticky left-0 z-raised bg-card px-3 py-2 font-medium text-foreground">
+                  <span className="block max-w-[10rem] truncate">{r.name}</span>
                 </td>
                 {r.days.map((d) => (
-                  <td key={d.day} className="p-0.5 text-center">
-                    <span title={`${d.day} — ${STATUS_LABELS[d.status]}`}
-                      className={`inline-flex h-6 w-6 items-center
-                        justify-center rounded text-[10px] font-semibold
-                        ${statusCellTone(d.status)}`}>
-                      {STATUS_LETTER[d.status]}
-                    </span>
+                  <td
+                    key={d.day}
+                    title={`${d.day}: ${STATUS_LABELS[d.status]}`}
+                    className={`px-1 py-2 text-center font-semibold ${statusCellTone(
+                      d.status
+                    )}`}
+                  >
+                    {STATUS_LETTER[d.status]}
                   </td>
                 ))}
-                <td className="num">
-                  <span className="font-semibold tabular-nums text-slate-900">
-                    {r.summary.payable_days}
-                  </span>
-                  <span className="block text-xs text-slate-500">
-                    of {r.summary.total_days}
-                  </span>
+                <td className="px-3 py-2 text-right font-semibold tabular-nums text-foreground">
+                  {r.summary.payable_days}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t
-        border-line px-5 py-3 text-xs text-slate-500">
-        <span><b className="text-money-in">P</b> Present</span>
-        <span><b className="text-due">H</b> Half day</span>
-        <span><b className="text-money-out">A</b> Absent</span>
-        <span><b>L</b> Paid leave</span>
-        <span><b className="text-money-out">LU</b> Unpaid leave</span>
-        <span><b className="text-money-in">W</b> Work from home</span>
-        <span><b>HO</b> Holiday</span>
-        <span><b>·</b> Week off</span>
-        <span><b>–</b> Not marked</span>
-      </div>
-    </div>
+    </Card>
   );
 }
