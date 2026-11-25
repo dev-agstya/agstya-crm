@@ -110,7 +110,6 @@ export default function BrokersPage() {
   return (
     <div className="space-y-4">
       <PageHeader
-        eyebrow="Catalog"
         title="Brokers"
         subtitle="Brokerages & commission rate cards"
         actions={

@@ -336,9 +336,8 @@ function RenewForm({
       <PageHeader
         backTo="/renewals"
         backLabel="Back to renewals"
-        eyebrow={policy.customer_name || "Renewal"}
         title={`Renew ${policy.policy_number || policy.code}`}
-        subtitle={[cat?.label, policy.insurer_name].filter(Boolean).join(" · ")}
+        subtitle={[policy.customer_name, cat?.label, policy.insurer_name].filter(Boolean).join(" · ")}
       />
 
       <form onSubmit={onSubmit} className="grid gap-6 lg:grid-cols-12">

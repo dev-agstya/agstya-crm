@@ -188,7 +188,6 @@ export default function PoliciesPage() {
       <div>
         <PageHeader
           title="Policy access requests"
-          eyebrow="Policies"
           subtitle="Time-limited access to policies outside your desk."
           actions={
             <Button variant="outline" size="sm" onClick={() => setAccessView(false)}>

@@ -158,7 +158,6 @@ export default function PolicyTypesPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Catalog"
         title="Policy Types"
         subtitle="Manage insurance categories, sub-type trees, custom fields, and booking field order."
         actions={

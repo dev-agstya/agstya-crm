@@ -2,138 +2,199 @@ import { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { FileText, RefreshCw, Search } from "lucide-react";
 import { portalApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { PageHeader } from "../../components/PageHeader";
 import { RecordPage } from "../../components/RecordPage";
-import { Icon } from "../../components/Icon";
-import {
-  ErrorState, EmptyState, Pagination, SearchInput, StatusBadge, TableSkeleton,
-} from "../../components/ui";
+import { DataTable, Column } from "../../components/shared/DataTable";
+import { EmptyState } from "../../components/shared/EmptyState";
+import { ErrorState } from "../../components/shared/ErrorState";
+import { StatusBadge } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import {
-  DateFilter, periodParams, type PeriodValue,
+  DateFilter,
+  periodParams,
+  type PeriodValue,
 } from "../../components/finance/DateFilter";
 import { formatDate, formatINR } from "../../lib/format";
-import {
-  CardMoney, DetailRow, DocumentList, ListShell, MobileCard, SectionCard,
-} from "./shared";
-
-/*
-  A partner's own policies — READ ONLY, always.
-
-  A partner cannot create, edit or delete a policy and never could usefully:
-  the policy number, the insurer and the rate are all outputs of work the
-  agency does. What they need is to see what they have sold and what it earned
-  them, and to hand the document to the customer.
-*/
+import { DetailRow, DocumentList, SectionCard } from "./shared";
+import type { PortalPolicy } from "../../lib/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export function PortalPoliciesPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [q, setQ] = useState("");
   const [period, setPeriod] = useState<PeriodValue>({ period: "" });
 
   const list = useQuery({
     queryKey: ["portal", "policies", page, q, period],
-    queryFn: async () => (await portalApi.policies({
-      page, page_size: 20, q: q || undefined,
-      ...(period.period ? periodParams(period) : {}),
-    })).data,
+    queryFn: async () =>
+      (
+        await portalApi.policies({
+          page,
+          page_size: 20,
+          q: q || undefined,
+          ...(period.period ? periodParams(period) : {}),
+        })
+      ).data,
   });
   const rows = list.data?.items ?? [];
 
-  return (
-    <div>
-      <PageHeader title="My Policies"
-        subtitle="Every policy credited to you, and what you earned on it." />
+  const columns: Column<PortalPolicy>[] = [
+    {
+      key: "policy",
+      header: "Policy",
+      cell: (p) => (
+        <div className="flex items-center gap-1.5">
+          <span className="font-medium text-foreground">
+            {p.policy_number || p.code}
+          </span>
+          {p.is_renewal && (
+            <Badge variant="secondary" className="h-4 px-1.5 text-[10px]">
+              renewal
+            </Badge>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "customer",
+      header: "Customer",
+      cell: (p) => (
+        <span className="text-[13px] text-foreground">
+          {p.customer_name || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      cell: (p) => (
+        <span className="text-[13px] text-muted-foreground">
+          {p.category_label}
+        </span>
+      ),
+    },
+    {
+      key: "premium",
+      header: "Premium",
+      align: "right",
+      cell: (p) => (
+        <span className="tabular-nums text-[13px] text-foreground">
+          {formatINR(p.premium_amount)}
+        </span>
+      ),
+    },
+    {
+      key: "earned",
+      header: "You earned",
+      align: "right",
+      cell: (p) => (
+        <span className="font-semibold tabular-nums text-emerald-700">
+          {formatINR(p.my_earning)}
+        </span>
+      ),
+    },
+    {
+      key: "expires",
+      header: "Expires",
+      cell: (p) => (
+        <span className="whitespace-nowrap text-[13px] text-muted-foreground">
+          {formatDate(p.expiry_date)}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (p) => <StatusBadge value={p.status} />,
+    },
+  ];
 
-      <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center">
-        <SearchInput value={q}
-          onChange={(v) => { setQ(v); setPage(1); }}
-          placeholder="Policy number…" />
-        <DateFilter value={period}
-          onChange={(v) => { setPeriod(v); setPage(1); }} />
+  return (
+    <div className="space-y-3">
+      <PageHeader
+        title="My Policies"
+        subtitle="Every policy credited to you, and what you earned on it."
+      />
+
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="relative w-full sm:w-64">
+          <Search className="pointer-events-none absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={q}
+            onChange={(e) => {
+              setQ(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Policy number…"
+            className="pl-8"
+          />
+        </div>
+        <DateFilter
+          value={period}
+          onChange={(v) => {
+            setPeriod(v);
+            setPage(1);
+          }}
+        />
       </div>
 
-      {list.isError ? <ErrorState onRetry={() => list.refetch()} /> : list.isLoading ? (
-        <div className="card card-body"><TableSkeleton cols={5} /></div>
+      {list.isError ? (
+        <ErrorState onRetry={() => list.refetch()} />
+      ) : !list.isLoading && rows.length === 0 ? (
+        <EmptyState
+          icon={<FileText className="h-5 w-5" />}
+          title="No policies yet"
+          description="When Agastya books a policy credited to you, it shows up here with your earning on it."
+        />
       ) : (
-        <ListShell
-          empty={rows.length === 0 ? (
-            <EmptyState
-              icon={<Icon.Policy size={20} />}
-              title="No policies yet"
-              hint="When Agastya books a policy credited to you, it shows up
-                here with your earning on it." />
-          ) : undefined}
-          cards={rows.map((p) => (
-            <MobileCard key={p.id} to={`/portal/policies/${p.id}`}
-              title={p.policy_number || p.code}
-              meta={<>{p.customer_name || "—"} · {p.category_label}</>}
-              right={<CardMoney label="you earned" value={p.my_earning}
-                tone="in" />}
-              footer={
-                <span className="flex items-center justify-between gap-2">
-                  <span>Premium {formatINR(p.premium_amount)}</span>
-                  <StatusBadge value={p.status} />
-                </span>
-              } />
-          ))}
-          table={
-            <table>
-              <thead>
-                <tr>
-                  <th>Policy</th>
-                  <th>Customer</th>
-                  <th>Type</th>
-                  <th className="num">Premium</th>
-                  <th className="num">You earned</th>
-                  <th>Expires</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((p) => (
-                  <PolicyRow key={p.id} p={p} />
-                ))}
-              </tbody>
-            </table>
-          } />
+        <DataTable
+          data={rows}
+          columns={columns}
+          keyField={(p) => p.id}
+          loading={list.isLoading}
+          page={page}
+          pageSize={20}
+          total={list.data?.total ?? 0}
+          onPageChange={setPage}
+          onRowClick={(p) => navigate(`/portal/policies/${p.id}`)}
+          renderMobileCard={(p) => (
+            <div className="space-y-1.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">
+                    {p.policy_number || p.code}
+                  </p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {p.customer_name || "—"} · {p.category_label}
+                  </p>
+                </div>
+                <div className="shrink-0 text-right">
+                  <p className="text-[10px] uppercase text-muted-foreground">
+                    you earned
+                  </p>
+                  <p className="text-sm font-semibold tabular-nums text-emerald-700">
+                    {formatINR(p.my_earning)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-1.5 text-xs">
+                <span>Premium {formatINR(p.premium_amount)}</span>
+                <StatusBadge value={p.status} />
+              </div>
+            </div>
+          )}
+        />
       )}
-
-      <Pagination page={page} pageSize={20} total={list.data?.total ?? 0}
-        onChange={setPage} />
     </div>
   );
 }
-
-function PolicyRow({ p }: { p: import("../../lib/types").PortalPolicy }) {
-  const navigate = useNavigate();
-  return (
-    <tr className="row-link"
-      tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === "Enter") navigate(`/portal/policies/${p.id}`);
-      }}
-      onClick={() => navigate(`/portal/policies/${p.id}`)}>
-      <td className="font-medium text-slate-900">
-        {p.policy_number || p.code}
-        {p.is_renewal && (
-          <span className="ml-2 chip">renewal</span>
-        )}
-      </td>
-      <td>{p.customer_name || "—"}</td>
-      <td>{p.category_label}</td>
-      <td className="num">{formatINR(p.premium_amount)}</td>
-      <td className="num font-semibold text-money-in">
-        {formatINR(p.my_earning)}</td>
-      <td className="whitespace-nowrap">{formatDate(p.expiry_date)}</td>
-      <td><StatusBadge value={p.status} /></td>
-    </tr>
-  );
-}
-
-/* ------------------------------------------------------------------ detail -- */
 
 export function PortalPolicyDetailPage() {
   const { id = "" } = useParams();
@@ -145,8 +206,8 @@ export function PortalPolicyDetailPage() {
     queryFn: async () => (await portalApi.policy(id)).data,
   });
   const p = policy.data;
-  const missing = isAxiosError(policy.error)
-    && policy.error.response?.status === 404;
+  const missing =
+    isAxiosError(policy.error) && policy.error.response?.status === 404;
 
   const openDoc = async (docId: string) => {
     try {
@@ -157,19 +218,21 @@ export function PortalPolicyDetailPage() {
     }
   };
 
-  // Only the fields the type actually collected, labelled as the agency
-  // labelled them.
-  const details = Object.entries(p?.details ?? {})
-    .filter(([, v]) => v !== null && v !== "" && v !== undefined);
+  const details = Object.entries(p?.details ?? {}).filter(
+    ([, v]) => v !== null && v !== "" && v !== undefined
+  );
 
   return (
     <RecordPage
       backTo="/portal/policies"
       backLabel="Back to my policies"
-      title={p ? (p.policy_number || p.code) : "Policy"}
+      title={p ? p.policy_number || p.code : "Policy"}
       documentTitle={p?.policy_number || p?.code || "Policy"}
-      subtitle={p ? [p.customer_name, p.insurer_name].filter(Boolean).join(" · ")
-        : undefined}
+      subtitle={
+        p
+          ? [p.customer_name, p.insurer_name].filter(Boolean).join(" · ")
+          : undefined
+      }
       badges={p && <StatusBadge value={p.status} />}
       loading={policy.isLoading}
       error={missing ? undefined : policy.error}
@@ -178,23 +241,28 @@ export function PortalPolicyDetailPage() {
     >
       {p && (
         <div className="space-y-4">
-          {/* What they earned, first — everything else is context for it. */}
-          <div className="card px-4 py-4 sm:px-5">
-            <p className="text-caption font-semibold uppercase text-slate-500">
-              You earned on this policy</p>
-            <p className="mt-1 text-metric-sm tabular-nums text-money-in
-              sm:text-3xl">{formatINR(p.my_earning)}</p>
-          </div>
+          <Card className="px-4 py-3.5 sm:px-5">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              You earned on this policy
+            </p>
+            <p className="mt-0.5 text-2xl font-bold tabular-nums text-emerald-700 sm:text-3xl">
+              {formatINR(p.my_earning)}
+            </p>
+          </Card>
 
           <SectionCard title="Policy">
             <DetailRow label="Policy number">
-              {p.policy_number || "—"}</DetailRow>
+              {p.policy_number || "—"}
+            </DetailRow>
             <DetailRow label="Customer">
               {p.customer_name || "—"}
               {p.customer_mobile && (
-                <a href={`tel:${p.customer_mobile}`}
-                  className="ml-2 text-slate-500 underline">
-                  {p.customer_mobile}</a>
+                <a
+                  href={`tel:${p.customer_mobile}`}
+                  className="ml-2 text-primary underline"
+                >
+                  {p.customer_mobile}
+                </a>
               )}
             </DetailRow>
             <DetailRow label="Insurer">{p.insurer_name || "—"}</DetailRow>
@@ -203,19 +271,23 @@ export function PortalPolicyDetailPage() {
               {p.subcategory_label ? ` · ${p.subcategory_label}` : ""}
             </DetailRow>
             <DetailRow label="Premium">
-              {formatINR(p.premium_amount)}</DetailRow>
+              {formatINR(p.premium_amount)}
+            </DetailRow>
             <DetailRow label="Sum insured">
-              {p.sum_insured ? formatINR(p.sum_insured) : "—"}</DetailRow>
+              {p.sum_insured ? formatINR(p.sum_insured) : "—"}
+            </DetailRow>
             <DetailRow label="Cover">
               {formatDate(p.start_date)} — {formatDate(p.expiry_date)}
             </DetailRow>
-            {p.days_to_expiry != null && p.days_to_expiry >= 0
-              && p.days_to_expiry <= 60 && (
-              <DetailRow label="Renewal">
-                <span className="text-due">
-                  {p.days_to_expiry} days left</span>
-              </DetailRow>
-            )}
+            {p.days_to_expiry != null &&
+              p.days_to_expiry >= 0 &&
+              p.days_to_expiry <= 60 && (
+                <DetailRow label="Renewal">
+                  <span className="text-amber-700">
+                    {p.days_to_expiry} days left
+                  </span>
+                </DetailRow>
+              )}
           </SectionCard>
 
           {details.length > 0 && (
@@ -229,21 +301,20 @@ export function PortalPolicyDetailPage() {
           )}
 
           <SectionCard title="Documents">
-            <DocumentList documents={p.documents} onOpen={openDoc}
-              emptyLabel="No documents have been attached to this policy yet." />
+            <DocumentList
+              documents={p.documents}
+              onOpen={openDoc}
+              emptyLabel="No documents have been attached to this policy yet."
+            />
           </SectionCard>
 
-          {/* "Report a claim" was the first button here until claims were
-              paused on 2026-08-19. `open_claims` still comes down on the
-              serialiser and is deliberately not rendered — the number is true,
-              but there is now no screen it can lead to. */}
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <button className="btn-secondary flex-1"
-              onClick={() => navigate(
-                `/portal/quotes/new?renewal=${p.id}`)}>
-              <Icon.Refresh size={16} /> Ask for a renewal quote
-            </button>
-          </div>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() => navigate(`/portal/quotes/new?renewal=${p.id}`)}
+          >
+            <RefreshCw className="mr-1.5 h-4 w-4" /> Ask for a renewal quote
+          </Button>
         </div>
       )}
     </RecordPage>

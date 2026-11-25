@@ -168,7 +168,6 @@ export default function AuditPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Administration"
         title="Audit Log"
         subtitle="Activity history across the agency"
         actions={

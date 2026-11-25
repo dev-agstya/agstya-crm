@@ -58,7 +58,6 @@ export default function ChannelPartnersPage() {
   return (
     <div className="space-y-3">
       <PageHeader
-        eyebrow="People"
         title="Channel Partners"
         subtitle={
           view === "team"

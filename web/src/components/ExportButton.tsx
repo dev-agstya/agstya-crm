@@ -1,17 +1,19 @@
 import { useState } from "react";
 import type { AxiosResponse } from "axios";
-import { Icon } from "./Icon";
+import { Download } from "lucide-react";
 import { toast } from "./Toast";
 import { apiError } from "../api/client";
 import { downloadBlob } from "../lib/download";
 import { useAuth } from "../store/auth";
+import { Button } from "@/components/ui/button";
 
-// Excel export button (owner 2026-07-17: Excel only, no CSV). One click →
-// downloads the .xlsx of the current (filtered) list. Hidden unless the user
-// holds `export_data`. `onExport("excel")` calls the matching blob endpoint.
-export function ExportButton({ onExport, filename, label = "Export" }: {
+export function ExportButton({
+  onExport,
+  filename,
+  label = "Export",
+}: {
   onExport: (fmt: "excel") => Promise<AxiosResponse>;
-  filename: string;            // without extension
+  filename: string;
   label?: string;
 }) {
   const { has } = useAuth();
@@ -31,9 +33,16 @@ export function ExportButton({ onExport, filename, label = "Export" }: {
   };
 
   return (
-    <button className="btn-secondary" disabled={busy}
-      onClick={run}>
-      <Icon.Download size={16} /> {busy ? "Exporting…" : label}
-    </button>
+    <Button
+      type="button"
+      variant="outline"
+      size="sm"
+      className="h-8 text-xs"
+      disabled={busy}
+      onClick={run}
+    >
+      <Download className="mr-1.5 h-3.5 w-3.5" />{" "}
+      {busy ? "Exporting…" : label}
+    </Button>
   );
 }

@@ -8,6 +8,8 @@ import {
 import { apiError } from "../../api/client";
 import { FormPage } from "../../components/RecordPage";
 import { Field, FileUpload, Toggle } from "../../components/ui";
+import { Button } from "../../components/ui/button";
+import { Plus } from "lucide-react";
 import { Icon } from "../../components/Icon";
 import { DateInput } from "../../components/DateInput";
 import { SearchSelect } from "../../components/SearchSelect";
@@ -523,10 +525,14 @@ export default function PolicyFormPage() {
                     No customer on file for {quote.data.customer_name} (
                     {quote.data.customer_mobile}).
                   </span>
-                  <button type="button" className="btn-secondary btn-sm"
-                    onClick={() => setAddingCustomer(true)}>
-                    <Icon.Plus size={14} /> Add this customer
-                  </button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setAddingCustomer(true)}
+                  >
+                    <Plus className="mr-1 h-3.5 w-3.5" /> Add this customer
+                  </Button>
                 </div>
               )}
             </div>

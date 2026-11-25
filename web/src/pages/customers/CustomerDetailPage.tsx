@@ -100,9 +100,8 @@ export default function CustomerDetailPage() {
       <PageHeader
         backTo="/customers"
         backLabel="Back to customers"
-        eyebrow={c?.code}
         title={c?.name ?? "Customer"}
-        subtitle={c ? `Added by ${c.created_by_name || "—"}` : undefined}
+        subtitle={c ? [c.code, `Added by ${c.created_by_name || "—"}`].filter(Boolean).join(" · ") : undefined}
         actions={
           canEdit &&
           c && (

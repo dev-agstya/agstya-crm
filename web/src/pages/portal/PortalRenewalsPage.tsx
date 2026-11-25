@@ -1,25 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { RefreshCw } from "lucide-react";
 import { portalApi } from "../../api/endpoints";
 import { PageHeader } from "../../components/PageHeader";
-import { Icon } from "../../components/Icon";
-import { ErrorState, EmptyState, TableSkeleton } from "../../components/ui";
+import { DataTable, Column } from "../../components/shared/DataTable";
+import { EmptyState } from "../../components/shared/EmptyState";
+import { ErrorState } from "../../components/shared/ErrorState";
 import { formatDate, formatINR } from "../../lib/format";
-import { ListShell, MobileCard } from "./shared";
-
-/*
-  A partner's own book, expiring soonest first.
-
-  The highest-value screen in the portal: it is the agency's renewal book being
-  chased for free by the person who sold it. Every row carries the customer's
-  phone number as a tap-to-call link, because the action this page exists to
-  cause is a phone call.
-*/
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 function urgency(days: number) {
-  if (days <= 7) return { tone: "text-money-out", label: "this week" };
-  if (days <= 30) return { tone: "text-due", label: "this month" };
-  return { tone: "text-slate-600", label: "" };
+  if (days <= 7) return { tone: "text-destructive", label: "this week" };
+  if (days <= 30) return { tone: "text-amber-700", label: "this month" };
+  return { tone: "text-muted-foreground", label: "" };
 }
 
 export default function PortalRenewalsPage() {
@@ -30,109 +24,160 @@ export default function PortalRenewalsPage() {
   });
   const rows = list.data ?? [];
 
-  return (
-    <div>
-      <PageHeader title="Renewals"
-        subtitle="Your policies coming up for renewal in the next 60 days." />
+  type RenewalRow = (typeof rows)[number];
 
-      {list.isError ? <ErrorState onRetry={() => list.refetch()} /> : list.isLoading ? (
-        <div className="card card-body"><TableSkeleton cols={5} /></div>
+  const columns: Column<RenewalRow>[] = [
+    {
+      key: "customer",
+      header: "Customer",
+      cell: (r) => (
+        <div>
+          <span className="font-medium text-foreground">
+            {r.customer_name || "—"}
+          </span>
+          {r.customer_mobile && (
+            <a
+              href={`tel:${r.customer_mobile}`}
+              onClick={(e) => e.stopPropagation()}
+              className="ml-2 text-xs text-primary underline"
+            >
+              {r.customer_mobile}
+            </a>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "policy",
+      header: "Policy",
+      cell: (r) => (
+        <span className="font-mono text-xs text-foreground">
+          {r.policy_number || r.code}
+        </span>
+      ),
+    },
+    {
+      key: "type",
+      header: "Type",
+      cell: (r) => (
+        <span className="text-[13px] text-muted-foreground">
+          {r.category_label}
+        </span>
+      ),
+    },
+    {
+      key: "premium",
+      header: "Premium",
+      align: "right",
+      cell: (r) => (
+        <span className="font-medium tabular-nums text-foreground">
+          {formatINR(r.premium_amount)}
+        </span>
+      ),
+    },
+    {
+      key: "expires",
+      header: "Expires",
+      cell: (r) => {
+        const u = urgency(r.days_left);
+        return (
+          <span className="whitespace-nowrap text-[13px]">
+            {formatDate(r.expiry_date)}
+            <span className={`ml-2 text-xs font-medium ${u.tone}`}>
+              {r.days_left}d
+            </span>
+          </span>
+        );
+      },
+    },
+    {
+      key: "action",
+      header: "",
+      align: "right",
+      cell: (r) =>
+        r.quote_requested ? (
+          <Badge variant="secondary" className="h-5 px-2 text-[11px]">
+            quote asked
+          </Badge>
+        ) : (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7 px-2.5 text-xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/portal/quotes/new?renewal=${r.policy_id}`);
+            }}
+          >
+            <RefreshCw className="mr-1 h-3 w-3" /> Ask for a quote
+          </Button>
+        ),
+    },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <PageHeader
+        title="Renewals"
+        subtitle="Your policies coming up for renewal in the next 60 days."
+      />
+
+      {list.isError ? (
+        <ErrorState onRetry={() => list.refetch()} />
+      ) : !list.isLoading && rows.length === 0 ? (
+        <EmptyState
+          icon={<RefreshCw className="h-5 w-5" />}
+          title="Nothing due"
+          description="No policy of yours expires in the next 60 days."
+        />
       ) : (
-        <ListShell
-          empty={rows.length === 0 ? (
-            <EmptyState
-              icon={<Icon.Refresh size={20} />}
-              title="Nothing due"
-              hint="No policy of yours expires in the next 60 days." />
-          ) : undefined}
-          cards={rows.map((r) => {
+        <DataTable
+          data={rows}
+          columns={columns}
+          keyField={(r) => r.policy_id}
+          loading={list.isLoading}
+          onRowClick={(r) => navigate(`/portal/policies/${r.policy_id}`)}
+          renderMobileCard={(r) => {
             const u = urgency(r.days_left);
             return (
-              <MobileCard key={r.policy_id}
-                to={`/portal/policies/${r.policy_id}`}
-                title={r.customer_name || r.policy_number || r.code}
-                meta={<>{r.category_label} · {r.policy_number || r.code}</>}
-                right={
-                  <>
-                    <span className={`block whitespace-nowrap text-sm
-                      font-semibold ${u.tone}`}>{r.days_left}d left</span>
-                    <span className="block text-xs text-slate-500">
-                      {formatDate(r.expiry_date)}</span>
-                  </>
-                }
-                footer={
-                  <span className="flex items-center justify-between gap-2">
-                    <span>Premium {formatINR(r.premium_amount)}</span>
-                    {r.quote_requested
-                      ? <span className="chip">quote asked</span>
-                      : <span className="font-medium text-slate-700">
-                          Ask for a quote</span>}
-                  </span>
-                } />
+              <div className="space-y-1.5">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-foreground">
+                      {r.customer_name || r.policy_number || r.code}
+                    </p>
+                    <p className="truncate text-xs text-muted-foreground">
+                      {r.category_label} · {r.policy_number || r.code}
+                    </p>
+                  </div>
+                  <div className="shrink-0 text-right">
+                    <span
+                      className={`block whitespace-nowrap text-xs font-semibold ${u.tone}`}
+                    >
+                      {r.days_left}d left
+                    </span>
+                    <span className="block text-[11px] text-muted-foreground">
+                      {formatDate(r.expiry_date)}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between gap-2 border-t border-border/60 pt-1.5 text-xs">
+                  <span>Premium {formatINR(r.premium_amount)}</span>
+                  {r.quote_requested ? (
+                    <Badge variant="secondary" className="h-5 px-2 text-[10px]">
+                      quote asked
+                    </Badge>
+                  ) : (
+                    <span className="font-medium text-primary">
+                      Ask for a quote
+                    </span>
+                  )}
+                </div>
+              </div>
             );
-          })}
-          table={
-            <table>
-              <thead>
-                <tr>
-                  <th>Customer</th>
-                  <th>Policy</th>
-                  <th>Type</th>
-                  <th className="num">Premium</th>
-                  <th>Expires</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => {
-                  const u = urgency(r.days_left);
-                  return (
-                    <tr key={r.policy_id} className="row-link"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") navigate(`/portal/policies/${r.policy_id}`);
-                      }}
-                      onClick={() =>
-                        navigate(`/portal/policies/${r.policy_id}`)}>
-                      <td>
-                        <span className="font-medium text-slate-900">
-                          {r.customer_name || "—"}</span>
-                        {r.customer_mobile && (
-                          <a href={`tel:${r.customer_mobile}`}
-                            onClick={(e) => e.stopPropagation()}
-                            className="ml-2 text-xs text-slate-500 underline">
-                            {r.customer_mobile}</a>
-                        )}
-                      </td>
-                      <td>{r.policy_number || r.code}</td>
-                      <td>{r.category_label}</td>
-                      <td className="num">{formatINR(r.premium_amount)}</td>
-                      <td className="whitespace-nowrap">
-                        {formatDate(r.expiry_date)}
-                        <span className={`ml-2 text-xs font-medium ${u.tone}`}>
-                          {r.days_left}d
-                        </span>
-                      </td>
-                      <td className="num">
-                        {r.quote_requested ? (
-                          <span className="chip">quote asked</span>
-                        ) : (
-                          <button className="btn-secondary btn-sm"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              navigate(
-                                `/portal/quotes/new?renewal=${r.policy_id}`);
-                            }}>
-                            <Icon.Refresh size={14} /> Ask for a quote
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          } />
+          }}
+        />
       )}
     </div>
   );

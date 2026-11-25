@@ -93,7 +93,6 @@ export default function DocumentsPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-4">
       <PageHeader
-        eyebrow="Workplace HR"
         title="My Documents"
         subtitle="Personal KYC & certificates (max 10 MB each)"
       />

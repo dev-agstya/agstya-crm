@@ -34,7 +34,6 @@ export default function MyOrganizationPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Administration"
         title="Roles & Permissions"
         subtitle="Reusable permission bundles for staff"
         actions={

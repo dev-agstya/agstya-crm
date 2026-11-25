@@ -101,7 +101,6 @@ export default function InsurersPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Catalog"
         title="Insurers"
         subtitle="Insurance companies"
         actions={

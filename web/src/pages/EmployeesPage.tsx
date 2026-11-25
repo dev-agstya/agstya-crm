@@ -60,7 +60,6 @@ export default function EmployeesPage() {
   return (
     <div className="space-y-3">
       <PageHeader
-        eyebrow="People"
         title="Employees"
         subtitle={
           view === "performance"

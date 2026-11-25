@@ -1,5 +1,7 @@
 import { Icon } from "../Icon";
 import { Segmented } from "../ui";
+import { Button } from "../ui/button";
+import { X } from "lucide-react";
 import { PartyPicker, type Party } from "../pickers";
 import { formatDate, formatINR } from "../../lib/format";
 
@@ -95,13 +97,17 @@ export function StatementRowCard({
         because "we don't want to delete any of the transactions actually".
       */}
       {onRemove && (
-        <button type="button"
-          className="icon-btn absolute right-2 top-2"
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-2 h-7 w-7 text-slate-400 hover:text-slate-700"
           aria-label={removeLabel ?? "Remove this transaction"}
           title={removeLabel ?? "Remove this transaction"}
-          onClick={onRemove}>
-          <Icon.X size={14} />
-        </button>
+          onClick={onRemove}
+        >
+          <X className="h-3.5 w-3.5" />
+        </Button>
       )}
 
       <div className="flex flex-wrap items-start gap-x-4 gap-y-2 pr-8">

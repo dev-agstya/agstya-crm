@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Icon } from "../Icon";
+import { Button } from "../ui/button";
+import { Search } from "lucide-react";
 import { SearchResults } from "../SearchResults";
 
 /*
@@ -124,14 +126,20 @@ export function TopBarSearch() {
       {/* Below `sm:`, the collapsed state is an icon. Pressing it expands the
           field in place — the bar rearranges, nothing overlays. */}
       {!expanded && (
-        <button type="button" aria-label="Search" title="Search"
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          aria-label="Search"
+          title="Search"
           onClick={() => {
             setExpanded(true);
             requestAnimationFrame(() => inputRef.current?.focus());
           }}
-          className="icon-btn border-transparent sm:hidden">
-          <Icon.Search size={19} />
-        </button>
+          className="h-8 w-8 sm:hidden"
+        >
+          <Search className="h-4 w-4" />
+        </Button>
       )}
 
       <div className={`${expanded ? "flex" : "hidden sm:flex"}
