@@ -1,4 +1,6 @@
 import { ReactNode } from "react";
+import { ShieldCheck } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDocumentTitle } from "../../lib/useDocumentTitle";
 
 export function AuthShell({
@@ -13,54 +15,39 @@ export function AuthShell({
   useDocumentTitle(title);
 
   return (
-    <div className="flex min-h-screen bg-canvas">
-      {/* Brand panel. Flat ink, not a gradient — the design system allows one
-          dark surface and no gradients anywhere. */}
-      <div className="relative hidden w-1/2 flex-col justify-between
-        overflow-hidden bg-ink p-12 text-white lg:flex">
-        <div className="flex items-center">
+    <div className="flex min-h-screen flex-col items-center justify-center bg-muted/40 px-4 py-10">
+      <div className="w-full max-w-md space-y-6">
+        {/* Brand lockup */}
+        <div className="flex flex-col items-center text-center">
           <img
             src="/agastya_hindi_full_logo.png"
             alt="Agstya Associate"
             className="h-11 w-auto object-contain"
           />
-        </div>
-        <div>
-          <h1 className="text-display">
-            Daily operations,<br />beautifully organised.
-          </h1>
-          <p className="mt-4 max-w-md leading-relaxed text-white/60">
-            All in one secure portal.
-          </p>
-        </div>
-        <p className="text-secondary text-white/40">
-          © {new Date().getFullYear()} Agstya Associate · Secure agency portal
-        </p>
-        {/* Two faint discs for depth. Kept very low contrast so they read as
-            texture rather than as decoration competing with the type. */}
-        <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64
-          rounded-full bg-white/[0.06]" />
-        <div className="pointer-events-none absolute -bottom-24 right-10 h-72
-          w-72 rounded-full bg-white/[0.04]" />
-      </div>
-
-      {/* Form panel */}
-      <div className="flex w-full items-center justify-center p-6 lg:w-1/2">
-        <div className="w-full max-w-md">
-          <div className="mb-8 flex items-center lg:hidden">
-            <img
-              src="/agastya_hindi_full_logo.png"
-              alt="Agstya Associate"
-              className="h-9 w-auto object-contain"
-            />
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <span>Agstya Associate Portal</span>
           </div>
-          <h2 className="text-page-title text-slate-900">{title}</h2>
-          {subtitle && (
-            <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
-              {subtitle}</p>
-          )}
-          <div className="mt-8">{children}</div>
         </div>
+
+        {/* Main Card */}
+        <Card className="shadow-sm">
+          <CardHeader className="space-y-1 pb-4">
+            <CardTitle className="text-xl font-bold tracking-tight">
+              {title}
+            </CardTitle>
+            {subtitle && (
+              <CardDescription className="text-sm">
+                {subtitle}
+              </CardDescription>
+            )}
+          </CardHeader>
+          <CardContent>{children}</CardContent>
+        </Card>
+
+        <p className="text-center text-xs text-muted-foreground">
+          © {new Date().getFullYear()} Agstya Associate · All rights reserved
+        </p>
       </div>
     </div>
   );

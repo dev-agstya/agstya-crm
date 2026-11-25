@@ -1,9 +1,13 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
 import { AuthShell } from "./AuthShell";
 import { authApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
-import { Spinner } from "../../components/ui";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate();
@@ -20,7 +24,8 @@ export default function ForgotPasswordPage() {
       const res = await authApi.forgot(email.trim(), "email");
       setMsg(res.data.detail);
       setTimeout(
-        () => navigate(`/reset-password?email=${encodeURIComponent(email.trim())}`),
+        () =>
+          navigate(`/reset-password?email=${encodeURIComponent(email.trim())}`),
         1200
       );
     } catch (err) {
@@ -33,36 +38,53 @@ export default function ForgotPasswordPage() {
   return (
     <AuthShell
       title="Reset your password"
-      subtitle="Enter your email and we'll send you a verification code"
+      subtitle="Enter your email address and we'll send a 6-digit verification code"
     >
       <form onSubmit={submit} className="space-y-4">
         {error && (
-          <div className="note-out">{error}</div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
         {msg && (
-          <div className="note-in">{msg}</div>
+          <Alert className="border-emerald-200 bg-emerald-50 text-emerald-900">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+            <AlertDescription>{msg}</AlertDescription>
+          </Alert>
         )}
-        <div>
-          <label className="label">Email address</label>
-          <input
+
+        <div className="space-y-1.5">
+          <Label htmlFor="forgot-email">Email address</Label>
+          <Input
+            id="forgot-email"
             type="email"
-            className="input"
+            autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
             autoFocus
-            placeholder="you@agastyacrm.com"
+            placeholder="name@agstyaassociate.in"
           />
         </div>
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? <Spinner /> : "Send reset code"}
-        </button>
+
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending code...
+            </>
+          ) : (
+            "Send reset code"
+          )}
+        </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500">
-        <Link to="/login" className="font-medium text-slate-900 hover:text-brand-700">
+
+      <div className="mt-5 text-center text-sm">
+        <Link to="/login" className="font-medium text-primary hover:underline">
           Back to sign in
         </Link>
-      </p>
+      </div>
     </AuthShell>
   );
 }

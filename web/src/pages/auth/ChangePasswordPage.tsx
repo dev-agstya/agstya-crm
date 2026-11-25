@@ -1,11 +1,15 @@
 import { FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { AuthShell } from "./AuthShell";
 import { authApi } from "../../api/endpoints";
 import { tokenStore, apiError } from "../../api/client";
 import { useAuth } from "../../store/auth";
-import { Spinner } from "../../components/ui";
 import { toast } from "../../components/Toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ChangePasswordPage() {
   const navigate = useNavigate();
@@ -49,39 +53,74 @@ export default function ChangePasswordPage() {
       title={forced ? "Set a new password" : "Change password"}
       subtitle={
         forced
-          ? "For your security, set a new password before continuing."
+          ? "For your security, please set a new password before continuing."
           : "Update your account password."
       }
     >
       <form onSubmit={submit} className="space-y-4">
         {error && (
-          <div className="note-out">{error}</div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-        <div>
-          <label className="label">
+
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-current">
             {forced ? "Temporary password" : "Current password"}
-          </label>
-          <input type="password" className="input" value={current}
-            onChange={(e) => setCurrent(e.target.value)} required autoFocus />
+          </Label>
+          <Input
+            id="cp-current"
+            type="password"
+            value={current}
+            onChange={(e) => setCurrent(e.target.value)}
+            required
+            autoFocus
+          />
         </div>
-        <div>
-          <label className="label">New password</label>
-          <input type="password" className="input" value={password}
-            onChange={(e) => setPassword(e.target.value)} required
-            placeholder="Min 8 chars, letters + numbers" />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-new">New password</Label>
+          <Input
+            id="cp-new"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="At least 8 characters with letters & numbers"
+          />
         </div>
-        <div>
-          <label className="label">Confirm new password</label>
-          <input type="password" className="input" value={confirm}
-            onChange={(e) => setConfirm(e.target.value)} required />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-confirm">Confirm new password</Label>
+          <Input
+            id="cp-confirm"
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+          />
         </div>
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? <Spinner /> : "Update password"}
-        </button>
-        <button type="button" onClick={cancel}
-          className="btn-secondary w-full">
+
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Updating...
+            </>
+          ) : (
+            "Update password"
+          )}
+        </Button>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={cancel}
+          className="w-full"
+        >
           Sign out
-        </button>
+        </Button>
       </form>
     </AuthShell>
   );

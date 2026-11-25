@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import {
   Navigate, Route, Routes, useLocation, useNavigate, useParams,
 } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "./store/auth";
 import { tokenStore } from "./api/client";
 import { ToastHost, toast } from "./components/Toast";
@@ -175,7 +176,7 @@ export default function App() {
   if (!initialized) return <PageLoader />;
 
   return (
-    <>
+    <TooltipProvider delayDuration={200}>
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -472,6 +473,6 @@ export default function App() {
       </Routes>
       <ToastHost />
       <ConfirmHost />
-    </>
+    </TooltipProvider>
   );
 }

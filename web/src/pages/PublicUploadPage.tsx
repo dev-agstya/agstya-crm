@@ -1,13 +1,20 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import axios from "axios";
-import { Icon } from "../components/Icon";
-import { Spinner } from "../components/ui";
+import {
+  AlertCircle,
+  CheckCircle2,
+  FileText,
+  Loader2,
+  ShieldCheck,
+  Upload,
+} from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 const BASE = import.meta.env.VITE_API_BASE_URL || "";
-
-// Mirrors routers/public.py — the server refuses anything outside this set and
-// anything over the cap, so we say so here instead of after a round-trip.
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024;
 
 const EXTENSION_TYPES: Record<string, string> = {
@@ -20,7 +27,6 @@ const EXTENSION_TYPES: Record<string, string> = {
   heif: "image/heif",
 };
 
-/** Content type from the filename, for browsers that report an empty file.type. */
 function guessContentType(filename: string): string {
   const ext = filename.split(".").pop()?.toLowerCase() ?? "";
   return EXTENSION_TYPES[ext] ?? "";
@@ -46,7 +52,8 @@ export default function PublicUploadPage() {
       .get(`${BASE}/api/public/upload/${token}`)
       .then((r) => setInfo(r.data))
       .catch((e) =>
-        setError(e.response?.data?.detail || "This link is invalid or expired."))
+        setError(e.response?.data?.detail || "This link is invalid or expired.")
+      )
       .finally(() => setLoading(false));
   }, [token]);
 
@@ -54,9 +61,6 @@ export default function PublicUploadPage() {
     setUploading(true);
     setError("");
     try {
-      // The browser leaves file.type empty for some files (and for anything
-      // dragged from certain apps). The server now REFUSES a blank type, so
-      // fall back to the extension rather than sending "".
       const contentType = file.type || guessContentType(file.name);
       if (file.size > MAX_UPLOAD_BYTES) {
         setError("That file is larger than 20 MB. Please upload a smaller one.");
@@ -66,14 +70,12 @@ export default function PublicUploadPage() {
         `${BASE}/api/public/upload/${token}/presign`,
         { filename: file.name, content_type: contentType, doc_key: key, label }
       );
-      // Presigned POST (not PUT): S3 itself enforces the signed content-type
-      // and size range, so an oversized or wrong-typed upload is rejected at
-      // the bucket instead of being taken on trust.
       const form = new FormData();
       for (const [k, v] of Object.entries(
         presign.data.fields as Record<string, string>
-      ))
+      )) {
         form.append(k, v);
+      }
       form.append("file", file);
       await axios.post(presign.data.upload_url, form);
 
@@ -81,107 +83,132 @@ export default function PublicUploadPage() {
         s3_key: presign.data.s3_key,
         filename: file.name,
         content_type: contentType,
+        size_bytes: file.size,
         doc_key: key,
         label,
       });
-      setDone((d) => [...d, label]);
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } } };
-      setError(err.response?.data?.detail || "Upload failed. Please try again.");
+      setDone((d) => [...d, key || label]);
+    } catch (e: any) {
+      setError(
+        e.response?.data?.detail || "Upload failed. Please try again."
+      );
     } finally {
       setUploading(false);
     }
   };
 
-  if (loading)
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Spinner className="h-8 w-8 text-slate-900" />
-      </div>
-    );
-
   return (
-    <div className="min-h-screen bg-slate-50 py-10">
-      <div className="mx-auto max-w-lg px-4">
-        <div className="mb-6 flex items-center justify-center">
+    <div className="min-h-screen bg-muted/40 px-4 py-10">
+      <div className="mx-auto max-w-lg space-y-6">
+        <div className="flex flex-col items-center text-center">
           <img
             src="/agastya_hindi_full_logo.png"
             alt="Agstya Associate"
             className="h-10 w-auto object-contain"
           />
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <span>Secure Document Upload</span>
+          </div>
         </div>
 
-        {error ? (
-          <div className="card p-8 text-center">
-            <div className="mx-auto mb-3 w-fit rounded-full bg-money-out/10 p-3 text-money-out">
-              <Icon.X size={28} />
-            </div>
-            <p className="font-medium text-slate-700">{error}</p>
-          </div>
-        ) : (
-          <div className="card p-8">
-            <h1 className="text-page-title text-slate-900">
-              Hello {info?.customer_name}
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              Please upload the documents requested below. Your files are stored
-              securely.
-            </p>
-            {info?.message && (
-              <p className="mt-4 rounded-control bg-slate-100 px-4 py-3 text-sm text-slate-900">
-                {info.message}
+        <Card className="shadow-sm">
+          {loading ? (
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                Checking upload link...
               </p>
-            )}
+            </CardContent>
+          ) : error && !info ? (
+            <CardContent className="py-10 text-center">
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            </CardContent>
+          ) : info ? (
+            <>
+              <CardHeader>
+                <CardTitle>Upload Documents</CardTitle>
+                <CardDescription>
+                  Requested for <strong>{info.customer_name}</strong>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {info.message && (
+                  <Alert>
+                    <FileText className="h-4 w-4" />
+                    <AlertDescription>{info.message}</AlertDescription>
+                  </Alert>
+                )}
 
-            <div className="mt-6 space-y-3">
-              {(info?.requested_docs || []).map((d, i) => {
-                const label = d.label || d.key || `Document ${i + 1}`;
-                const uploaded = done.includes(label);
-                return (
-                  <div key={i}
-                    className="flex items-center justify-between rounded-control border
-                      border-line px-4 py-3">
-                    <div className="flex items-center gap-3">
-                      {uploaded ? (
-                        <span className="text-money-in"><Icon.Check size={20} /></span>
-                      ) : (
-                        <span className="text-slate-300"><Icon.Policy size={20} /></span>
-                      )}
-                      <span className="text-sm font-medium text-slate-700">{label}</span>
-                    </div>
-                    {uploaded ? (
-                      <span className="text-xs font-medium text-money-in">Uploaded</span>
-                    ) : (
-                      <label className="btn-secondary cursor-pointer px-3 py-1 text-xs">
-                        <Icon.Download size={14} /> Choose file
-                        <input type="file" className="hidden" disabled={uploading}
-                          accept=".pdf,.jpg,.jpeg,.png"
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) upload(f, label, d.key);
-                          }} />
-                      </label>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                {error && (
+                  <Alert variant="destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    <AlertDescription>{error}</AlertDescription>
+                  </Alert>
+                )}
 
-            {uploading && (
-              <div className="mt-4 flex items-center gap-2 text-sm text-slate-900">
-                <Spinner /> Uploading…
-              </div>
-            )}
-
-            {done.length > 0 &&
-              done.length === (info?.requested_docs.length || 0) && (
-                <p className="mt-6 rounded-control bg-money-in/10 px-4 py-3 text-center text-sm
-                  font-medium text-money-in">
-                  All documents uploaded. Thank you!
-                </p>
-              )}
-          </div>
-        )}
+                <div className="space-y-3">
+                  {(info.requested_docs.length > 0
+                    ? info.requested_docs
+                    : [{ label: "Document" }]
+                  ).map((doc, i) => {
+                    const id = doc.key || doc.label || `doc-${i}`;
+                    const label = doc.label || doc.key || "Document";
+                    const uploaded = done.includes(id);
+                    return (
+                      <div
+                        key={id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-card p-3.5"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-foreground">
+                            {label}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            PDF, JPG, PNG (max 20 MB)
+                          </p>
+                        </div>
+                        {uploaded ? (
+                          <Badge className="gap-1 bg-emerald-600 text-white hover:bg-emerald-600">
+                            <CheckCircle2 className="h-3.5 w-3.5" />
+                            Uploaded
+                          </Badge>
+                        ) : (
+                          <Button
+                            asChild
+                            size="sm"
+                            variant="outline"
+                            disabled={uploading}
+                            className="cursor-pointer"
+                          >
+                            <label>
+                              <Upload className="mr-1.5 h-3.5 w-3.5" />
+                              {uploading ? "Uploading..." : "Choose file"}
+                              <input
+                                type="file"
+                                accept=".pdf,.jpg,.jpeg,.png,.webp,.heic,.heif"
+                                className="hidden"
+                                disabled={uploading}
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) upload(f, label, doc.key);
+                                  e.target.value = "";
+                                }}
+                              />
+                            </label>
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </>
+          ) : null}
+        </Card>
       </div>
     </div>
   );

@@ -1,10 +1,14 @@
 import { FormEvent, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { AlertCircle, Loader2 } from "lucide-react";
 import { AuthShell } from "./AuthShell";
 import { authApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
-import { Spinner } from "../../components/ui";
 import { toast } from "../../components/Toast";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
@@ -26,7 +30,7 @@ export default function ResetPasswordPage() {
     setLoading(true);
     try {
       await authApi.reset(email.trim(), otp.trim(), password);
-      toast.success("Password reset. Please sign in.");
+      toast.success("Password reset successfully. Please sign in.");
       navigate("/login");
     } catch (err) {
       setError(apiError(err));
@@ -42,17 +46,28 @@ export default function ResetPasswordPage() {
     >
       <form onSubmit={submit} className="space-y-4">
         {error && (
-          <div className="note-out">{error}</div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
         )}
-        <div>
-          <label className="label">Email address</label>
-          <input type="email" className="input" value={email}
-            onChange={(e) => setEmail(e.target.value)} required />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-email">Email address</Label>
+          <Input
+            id="reset-email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
         </div>
-        <div>
-          <label className="label">Verification code</label>
-          <input
-            className="input tracking-[0.5em] text-center text-lg"
+
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-otp">6-digit code</Label>
+          <Input
+            id="reset-otp"
+            className="text-center text-lg font-semibold tracking-[0.4em]"
             value={otp}
             onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
             maxLength={6}
@@ -60,26 +75,47 @@ export default function ResetPasswordPage() {
             placeholder="000000"
           />
         </div>
-        <div>
-          <label className="label">New password</label>
-          <input type="password" className="input" value={password}
-            onChange={(e) => setPassword(e.target.value)} required
-            placeholder="Min 8 chars, letters + numbers" />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-password">New password</Label>
+          <Input
+            id="reset-password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            placeholder="At least 8 characters with letters & numbers"
+          />
         </div>
-        <div>
-          <label className="label">Confirm new password</label>
-          <input type="password" className="input" value={confirm}
-            onChange={(e) => setConfirm(e.target.value)} required />
+
+        <div className="space-y-1.5">
+          <Label htmlFor="reset-confirm">Confirm new password</Label>
+          <Input
+            id="reset-confirm"
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+          />
         </div>
-        <button type="submit" className="btn-primary w-full" disabled={loading}>
-          {loading ? <Spinner /> : "Reset password"}
-        </button>
+
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>
+          {loading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            "Reset password"
+          )}
+        </Button>
       </form>
-      <p className="mt-6 text-center text-sm text-slate-500">
-        <Link to="/login" className="font-medium text-slate-900 hover:text-brand-700">
+
+      <div className="mt-5 text-center text-sm">
+        <Link to="/login" className="font-medium text-primary hover:underline">
           Back to sign in
         </Link>
-      </p>
+      </div>
     </AuthShell>
   );
 }
