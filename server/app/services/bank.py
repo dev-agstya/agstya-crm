@@ -45,6 +45,8 @@ CASH_EFFECT: dict[LedgerTxnType, int] = {
     LedgerTxnType.PARTNER_ADVANCE: -1,       # cash advanced to a partner
     LedgerTxnType.REFUND: -1,                # we paid someone back
     LedgerTxnType.EXPENSE: -1,               # salary, rent, …
+    LedgerTxnType.CUSTOM_PAYMENT_OUT: -1,    # cash given to custom party (You Gave) -> bank decreases
+    LedgerTxnType.CUSTOM_PAYMENT_IN: +1,     # cash received from custom party (You Got) -> bank increases
     # PREMIUM_DUE / PREMIUM_PAID_BY_AGENCY / REWARD_CANCELLED / DISCOUNT /
     # TDS_DEDUCTED: accrual or informational, deliberately absent.
     # ADJUSTMENT: absent on purpose — a correction only moves cash when the

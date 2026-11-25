@@ -1198,3 +1198,61 @@ export const policyAccessApi = {
   cancel: (id: string) =>
     api.post<{ detail: string }>(`/api/policy-access/${id}/cancel`, {}),
 };
+
+/* ================================================ custom parties / khata */
+export const customPartiesApi = {
+  list: (params: { q?: string; category?: string } = {}) =>
+    api.get<import("../lib/types").CustomPartiesOverview>(
+      `/api/finance/custom-parties${qs(params)}`
+    ),
+  create: (body: {
+    name: string;
+    phone?: string;
+    category?: string;
+    notes?: string;
+    opening_balance_paise?: number;
+    bank_account_id?: string;
+  }) =>
+    api.post<import("../lib/types").CustomParty>(
+      "/api/finance/custom-parties",
+      body
+    ),
+  get: (partyId: string) =>
+    api.get<import("../lib/types").CustomPartyDetail>(
+      `/api/finance/custom-parties/${partyId}`
+    ),
+  update: (
+    partyId: string,
+    body: {
+      name?: string;
+      phone?: string;
+      category?: string;
+      notes?: string;
+    }
+  ) =>
+    api.put<import("../lib/types").CustomParty>(
+      `/api/finance/custom-parties/${partyId}`,
+      body
+    ),
+  archive: (partyId: string) =>
+    api.delete<{ message: string }>(`/api/finance/custom-parties/${partyId}`),
+  recordTxn: (
+    partyId: string,
+    body: {
+      direction: "gave" | "got";
+      amount_paise: number;
+      bank_account_id?: string;
+      occurred_at?: string;
+      note?: string;
+      reference?: string;
+    }
+  ) =>
+    api.post<import("../lib/types").CustomTransaction>(
+      `/api/finance/custom-parties/${partyId}/transactions`,
+      body
+    ),
+  deleteTxn: (txnId: string) =>
+    api.delete<{ message: string }>(
+      `/api/finance/custom-parties/transactions/${txnId}`
+    ),
+};

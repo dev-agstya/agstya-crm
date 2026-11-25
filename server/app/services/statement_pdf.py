@@ -53,6 +53,7 @@ _KIND_TITLE = {
     "partner": "Channel Partner Statement",
     "customer": "Customer Statement",
     "broker": "Broker Statement",
+    "custom": "Custom Party (Khata) Statement",
     # The business report reuses this chrome. It runs to several pages now that
     # it carries the policy list and the partner ledgers, and without an entry
     # here every continuation page would head itself "Statement".
@@ -542,16 +543,55 @@ def render_statement_pdf(data: dict) -> bytes:
     pdf = _Statement(data)
     pdf.add_page()
 
-    kind = data.get("kind", "partner")
+    kind = data.get("kind") or data.get("section") or "partner"
     if kind == "customer":
         _render_customer(pdf, data)
     elif kind == "broker":
         _render_broker(pdf, data)
+    elif kind == "custom":
+        _render_custom_party(pdf, data)
     else:
         _render_partner(pdf, data)
 
     _sign_off(pdf)
     return bytes(pdf.output())
+
+
+def _render_custom_party(pdf: _Statement, data: dict) -> None:
+    pdf.header_block(
+        data.get("name") or data.get("label") or "Custom Party",
+        subtitle=f"Category: {data.get('category', 'General')}",
+        contact=[f"Phone: {data.get('phone')}"] if data.get("phone") else [],
+    )
+    pdf.period_badge(data.get("period_label"))
+    balance = data.get("net_balance") or data.get("closing_balance") or 0
+    pdf.stat_tiles([
+        ("Total Given (You Gave)", pdf.money.plain(data.get("total_gave") or 0)),
+        ("Total Received (You Got)", pdf.money.plain(data.get("total_got") or 0)),
+        ("Net Balance", pdf.money.plain(balance)),
+    ])
+    txns = data.get("transactions") or []
+    if txns:
+        pdf.section("Khata Transactions")
+        widths = _scaled(pdf, [15, 30, 20, 15, 15, 15])
+        aligns = ["LEFT", "LEFT", "LEFT", "RIGHT", "RIGHT", "RIGHT"]
+        headings = ["Date", "Description", "Ref", "You Gave", "You Got", "Balance"]
+        table_rows = []
+        for t in txns:
+            table_rows.append([
+                pdf.dt(t["date"]),
+                t.get("note") or t.get("type", "—"),
+                t.get("reference") or "—",
+                pdf.money.plain(t.get("gave", 0)) if t.get("gave") else "—",
+                pdf.money.plain(t.get("got", 0)) if t.get("got") else "—",
+                pdf.money.signed(t.get("balance", 0)),
+            ])
+        _table(pdf, headings, widths, aligns, table_rows)
+
+    caption = ("Settled — account balance is zero" if balance == 0
+               else "Recoverable by you (They owe you)" if balance > 0
+               else "Payable to them (You owe them)")
+    pdf.closing("Net Balance", balance, caption, positive_is_good=True)
 
 
 def _sign_off(pdf: _Statement) -> None:

@@ -31,15 +31,16 @@ const SECTIONS: {
   { value: "broker", label: "Brokers", icon: "Insurer" },
   { value: "partner", label: "Channel Partners", icon: "Wallet" },
   { value: "customer", label: "Customers", icon: "Customers" },
+  { value: "custom", label: "Khata (Parties)", icon: "Users" },
 ];
 
 const NET_PARTY: Record<BalanceSheetSection, NetParty> = {
-  broker: "broker", partner: "partner", customer: "customer",
+  broker: "broker", partner: "partner", customer: "customer", custom: "custom",
 };
 
 // The party kind the Record Payment modal expects.
 const PAYMENT_KIND: Record<BalanceSheetSection, PaymentParty["kind"]> = {
-  broker: "broker", partner: "channel_partner", customer: "customer",
+  broker: "broker", partner: "channel_partner", customer: "customer", custom: "custom",
 };
 
 // The sign/colour rule lives in lib/tone. It used to be re-declared here, on
@@ -187,6 +188,11 @@ function metricsFor(d: BalanceSheetDetail): {
     { label: "Profit Contribution", value: formatINR(d.house_profit),
       tone: "text-money-in" },
   ];
+  if (d.section === "custom") return [
+    { label: "Total Paid Out (Gave)", value: formatINR(d.reward_earned), tone: "text-money-out", sub: "Money given to party" },
+    { label: "Total Received (Got)", value: formatINR(d.reward_received), tone: "text-money-in", sub: "Money received from party" },
+    { label: "Net Position", value: formatINR(Math.abs(d.net_balance)), tone: d.net_balance >= 0 ? "text-money-in" : "text-money-out", sub: d.net_balance >= 0 ? "Party owes agency" : "Agency owes party" },
+  ];
   return [   // customer
     policiesTile,
     { label: "Discount Given", value: formatINR(d.discount) },
@@ -268,8 +274,9 @@ function DetailPanel({ section, id, period }: {
               )}
             </div>
             <p className="mt-0.5 text-xs text-slate-500">
-              {d.total_policies} {d.total_policies === 1 ? "policy" : "policies"}
-              {" · "}{periodLabel(period)}
+              {section === "custom"
+                ? `Khata Ledger · ${periodLabel(period)}`
+                : `${d.total_policies} ${d.total_policies === 1 ? "policy" : "policies"} · ${periodLabel(period)}`}
             </p>
           </div>
         </div>
@@ -277,11 +284,17 @@ function DetailPanel({ section, id, period }: {
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t
           border-line/70 pt-3">
           {canPay && (
-            <button onClick={() => nav(`/finance/transactions/new?${
-            new URLSearchParams({ party_kind: PAYMENT_KIND[section],
-              party_id: id,
-              party_label: d.code ? `${d.label} (${d.code})` : d.label,
-            })}`)}
+            <button onClick={() => {
+              if (section === "custom") {
+                nav(`/finance/custom-parties?id=${id}&action=pay`);
+              } else {
+                nav(`/finance/transactions/new?${
+                  new URLSearchParams({ party_kind: PAYMENT_KIND[section],
+                    party_id: id,
+                    party_label: d.code ? `${d.label} (${d.code})` : d.label,
+                  })}`);
+              }
+            }}
               className="btn-secondary">
               <Icon.Plus size={15} /> Record Payment</button>
           )}
@@ -302,39 +315,37 @@ function DetailPanel({ section, id, period }: {
       </div>
 
 
-      {/* Policies by category */}
-      <div className="card card-body">
-        <p className="mb-3 text-sm font-medium text-slate-600">
-          Policies by type</p>
-        {d.by_category.length === 0 ? (
-          <p className="text-sm text-slate-500">No policies in this period.</p>
-        ) : (
-          <div className="space-y-2.5">
-            {d.by_category.map((c, i) => (
-              <div key={c.key} className="flex items-center gap-3 text-sm">
-                <span className="w-36 shrink-0 truncate text-slate-600"
-                  title={c.label}>{c.label}</span>
-                <div className="relative h-5 flex-1 rounded bg-slate-100">
-                  {/* One hue per policy type, in rank order — the same ramp the
-                      "Premium by category" donut on Reports uses, so the two
-                      screens colour Motor the same way. It was one flat black
-                      bar per row until 2026-08-19. */}
-                  <div className="absolute inset-y-0 left-0 rounded"
-                    style={{ width: `${Math.max(3, c.premium / catMax * 100)}%`,
-                      background: catColor(i) }} />
+      {/* Policies by category (not applicable for custom khata parties) */}
+      {section !== "custom" && (
+        <div className="card card-body">
+          <p className="mb-3 text-sm font-medium text-slate-600">
+            Policies by type</p>
+          {d.by_category.length === 0 ? (
+            <p className="text-sm text-slate-500">No policies in this period.</p>
+          ) : (
+            <div className="space-y-2.5">
+              {d.by_category.map((c, i) => (
+                <div key={c.key} className="flex items-center gap-3 text-sm">
+                  <span className="w-36 shrink-0 truncate text-slate-600"
+                    title={c.label}>{c.label}</span>
+                  <div className="relative h-5 flex-1 rounded bg-slate-100">
+                    <div className="absolute inset-y-0 left-0 rounded"
+                      style={{ width: `${Math.max(3, c.premium / catMax * 100)}%`,
+                        background: catColor(i) }} />
+                  </div>
+                  <span className="w-10 shrink-0 text-right text-xs text-slate-500">
+                    {Math.round(c.premium / catTotal * 100)}%</span>
+                  <span className="w-12 shrink-0 text-right text-xs text-slate-500">
+                    {c.policies}p</span>
+                  <span className="w-24 shrink-0 text-right font-medium
+                    tabular-nums text-slate-700">
+                    {formatINR(c.premium)}</span>
                 </div>
-                <span className="w-10 shrink-0 text-right text-xs text-slate-500">
-                  {Math.round(c.premium / catTotal * 100)}%</span>
-                <span className="w-12 shrink-0 text-right text-xs text-slate-500">
-                  {c.policies}p</span>
-                <span className="w-24 shrink-0 text-right font-medium
-                  tabular-nums text-slate-700">
-                  {formatINR(c.premium)}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Broker: insurer-company-wise breakdown of business placed */}
       {d.section === "broker" && d.profiles.length > 0 && (

@@ -322,12 +322,13 @@ export type PolicyStatus =
 export type BuyerType = "direct" | "channel_partner";
 export type PayerType = "agency" | "channel_partner" | "customer";
 export type SettlementStatus = "pending" | "partial" | "settled";
-export type PartyType = "channel_partner" | "customer" | "broker" | "expense";
+export type PartyType = "channel_partner" | "customer" | "broker" | "expense" | "custom";
 export type LedgerTxnType =
   | "premium_due" | "premium_to_insurer" | "premium_paid_by_agency"
   | "premium_collected" | "reward_received" | "tds_deducted"
   | "partner_payout" | "partner_advance" | "refund" | "discount" | "adjustment"
-  | "reward_cancelled" | "expense";
+  | "reward_cancelled" | "expense"
+  | "custom_payment_out" | "custom_payment_in";
 
 export interface PolicyFinance {
   policy_id: string;
@@ -680,7 +681,7 @@ export interface PartnerStatement {
 }
 
 // --- Balance sheets ---
-export type BalanceSheetSection = "broker" | "partner" | "customer";
+export type BalanceSheetSection = "broker" | "partner" | "customer" | "custom";
 
 export interface BalanceSheetItem {
   id: string;
@@ -2958,4 +2959,49 @@ export interface ReassignPreview {
   policy_count: number;
   from_manager?: string | null;
   to_manager?: string | null;
+}
+
+// --- Khata / Custom Parties ---
+export interface CustomParty {
+  id: string;
+  name: string;
+  phone?: string | null;
+  category: string;
+  notes?: string | null;
+  balance_paise: number;
+  total_charged_paise: number;
+  total_settled_paise: number;
+  last_activity?: string | null;
+  is_archived: boolean;
+  created_at: string;
+}
+
+export interface CustomTransaction {
+  id: string;
+  party_id: string;
+  party_name: string;
+  txn_type: string;
+  direction: "gave" | "got";
+  amount_paise: number;
+  bank_account_id?: string | null;
+  bank_account_name?: string | null;
+  bank_delta_paise?: number | null;
+  running_balance_paise: number;
+  note?: string | null;
+  reference?: string | null;
+  occurred_at: string;
+  created_at: string;
+}
+
+export interface CustomPartyDetail {
+  party: CustomParty;
+  transactions: CustomTransaction[];
+}
+
+export interface CustomPartiesOverview {
+  parties: CustomParty[];
+  total_you_will_get_paise: number;
+  total_you_will_give_paise: number;
+  net_balance_paise: number;
+  total_parties: number;
 }

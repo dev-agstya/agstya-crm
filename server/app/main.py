@@ -29,6 +29,7 @@ from app.routers import (
     brokers,
     claims,
     customers,
+    custom_parties,
     documents,
     finance,
     holidays,
@@ -247,7 +248,7 @@ async def health() -> dict:
 # policies applies is the scope policy_access lets somebody out of.
 for r in (auth, roles, users, managers, master, insurers, brokers, rate_rules,
           customers, policies, policy_access, leads, reminders, rewards,
-          wallet, finance, statement_import, pending_txns, banks, targets,
+          wallet, finance, custom_parties, statement_import, pending_txns, banks, targets,
           documents, reports, audit, notifications, system, search,
           settings_router, quotes, claims, announcements, attendance, leave,
           holidays, payslips, portal, public):

@@ -1199,11 +1199,12 @@ export function FilterBar({ children }: { children: ReactNode }) {
  * user cares about is a number they want to drill into.
  */
 export function StatCard({
-  label, value, hint, tone, to, icon, meter,
+  label, value, hint, tooltip, tone, to, icon, meter,
 }: {
   label: string;
   value: ReactNode;
   hint?: ReactNode;
+  tooltip?: string;
   tone?: "in" | "out" | "due";
   to?: string;
   icon?: keyof typeof Icon;
@@ -1217,9 +1218,12 @@ export function StatCard({
   const body = (
     <>
       <div className="flex items-center justify-between gap-2">
-        <p className="text-caption uppercase text-slate-500">{label}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-caption uppercase text-slate-500 truncate">{label}</p>
+          {tooltip && <InfoTooltip text={tooltip} />}
+        </div>
         {Glyph && (
-          <span className="text-slate-300"><Glyph size={15} /></span>
+          <span className="text-slate-300 shrink-0"><Glyph size={15} /></span>
         )}
       </div>
       <p className={`mt-2 break-words text-metric tabular-nums ${colour}`}>

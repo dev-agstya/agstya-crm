@@ -193,19 +193,23 @@ export function AttendanceSummaryTiles({ summary, compact = false }: {
       <StatRow cols={compact ? 3 : 4}>
         <StatCard label="Payable days"
           value={String(summary.payable_days)}
+          tooltip="Total calendar days credited for salary calculation after present days, paid leaves, and approved holidays"
           hint={`of ${summary.total_days} calendar days`} />
         <StatCard label="Present" value={String(summary.present
           + summary.wfh)} icon="Check"
+          tooltip="Days the employee clocked in and completed shift hours"
           hint={summary.half_days
             ? `+ ${summary.half_days} half day${
               summary.half_days === 1 ? "" : "s"}` : undefined} />
         <StatCard label="Leave"
           value={String(summary.on_leave + summary.leave_unpaid)}
           tone={summary.leave_unpaid > 0 ? "due" : undefined}
+          tooltip="Casual, medical, or other approved paid leaves taken this month"
           hint={summary.leave_unpaid > 0
             ? `${summary.leave_unpaid} unpaid` : "all paid"} />
         <StatCard label="Hours worked"
           value={summary.worked_hours ? `${summary.worked_hours}h` : "—"}
+          tooltip="Total productive duration logged across all completed shifts this month"
           icon="Clock" />
       </StatRow>
 
@@ -216,14 +220,17 @@ export function AttendanceSummaryTiles({ summary, compact = false }: {
         || summary.unresolved_days > 0) && (
         <StatRow cols={3}>
           <StatCard label="Absent" value={String(summary.absent)}
+            tooltip="Days the employee was scheduled to work but did not report or punch in"
             tone={summary.absent > 0 ? "out" : undefined} />
           <StatCard label="Late marks" value={String(summary.late_marks)}
+            tooltip="Count of days the employee arrived after grace period"
             tone={summary.late_penalty_days > 0 ? "due" : undefined}
             hint={summary.late_penalty_days > 0
               ? `${summary.late_penalty_days} day off the payable count`
               : "no penalty yet"} />
           <StatCard label="Needs a decision"
             value={String(summary.unresolved_days)}
+            tooltip="Days with missed clock-outs or missing attendance requiring manager action"
             tone={summary.unresolved_days > 0 ? "due" : undefined}
             hint="missed clock-outs and unmarked past days" />
         </StatRow>

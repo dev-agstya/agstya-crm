@@ -32,7 +32,7 @@ from app.models.user import User
 from app.models.wallet import Wallet, WalletTxn
 from app.services import finance_reports as fr
 
-SECTIONS = {"broker", "partner", "customer"}
+SECTIONS = {"broker", "partner", "customer", "custom"}
 
 
 def broker_net_balance(expected: int, received: int,
@@ -176,6 +176,8 @@ async def list_section(section: str, lo: Optional[datetime],
         rows = await _list_brokers(lo, hi)
     elif section == "partner":
         rows = await _list_partners(lo, hi)
+    elif section == "custom":
+        rows = await _list_custom_parties(lo, hi)
     else:
         rows = await _list_customers(lo, hi)
 
@@ -356,6 +358,35 @@ async def _list_customers(lo, hi) -> list[dict]:
     return rows
 
 
+async def _list_custom_parties(lo, hi) -> list[dict]:
+    from app.models.custom_party import CustomParty
+
+    parties_l, balances = await asyncio.gather(
+        CustomParty.find({"is_archived": False}).to_list(),
+        _party_balances(PartyType.CUSTOM),
+    )
+    rows = []
+    for p in parties_l:
+        pid = str(p.id)
+        acct = balances.get(pid)
+        bal = acct.balance_paise if acct else 0
+        charged = acct.total_charged_paise if acct else 0
+        settled = acct.total_settled_paise if acct else 0
+        rows.append({
+            "id": pid,
+            "label": p.name,
+            "code": p.category.title() if p.category else "Khata",
+            "policies": 0,
+            "premium": charged,
+            "earnings": settled,
+            "profit": 0,
+            "net_balance": bal,
+            "outstanding": bal,
+            "wallet_balance": None,
+        })
+    return rows
+
+
 # --- Detail panels -----------------------------------------------------------
 async def detail_section(section: str, entity_id: str, lo: Optional[datetime],
                          hi: Optional[datetime]) -> dict:
@@ -363,7 +394,64 @@ async def detail_section(section: str, entity_id: str, lo: Optional[datetime],
         return await _broker_detail(entity_id, lo, hi)
     if section == "partner":
         return await _partner_detail(entity_id, lo, hi)
+    if section == "custom":
+        return await _custom_party_detail(entity_id, lo, hi)
     return await _customer_detail(entity_id, lo, hi)
+
+
+async def _custom_party_detail(party_id: str, lo, hi) -> dict:
+    from app.models.custom_party import CustomParty
+    from beanie import PydanticObjectId
+
+    party = await CustomParty.get(PydanticObjectId(party_id)) if _oid(party_id) else None
+    acct = await PartyAccount.find_one(
+        PartyAccount.party_type == PartyType.CUSTOM,
+        PartyAccount.party_id == party_id,
+    )
+    balance = acct.balance_paise if acct else 0
+
+    txns = await LedgerTxn.find(
+        LedgerTxn.party_type == PartyType.CUSTOM,
+        LedgerTxn.party_id == party_id,
+    ).to_list()
+
+    gave_in_window = 0
+    got_in_window = 0
+    for t in txns:
+        if not _in_window(t.occurred_at, lo, hi):
+            continue
+        if t.amount_paise >= 0:
+            gave_in_window += t.amount_paise
+        else:
+            got_in_window += -t.amount_paise
+
+    return {
+        "section": "custom",
+        "id": party_id,
+        "label": party.name if party else party_id,
+        "code": party.category.title() if party and party.category else "Khata",
+        "date_from": lo,
+        "date_to": hi,
+        "total_policies": 0,
+        "renewals": 0,
+        "active_policies": 0,
+        "by_category": [],
+        "premium": gave_in_window,
+        "premium_collected": got_in_window,
+        "reward_earned": gave_in_window,
+        "reward_received": got_in_window,
+        "reward_to_receive": 0,
+        "house_profit": 0,
+        "discount": 0,
+        "refund": 0,
+        "avg_reward_pct": None,
+        "outstanding": max(0, balance),
+        "receivable": max(0, balance),
+        "payable": max(0, -balance),
+        "net_balance": balance,
+        "wallet_balance": None,
+        "profiles": [],
+    }
 
 
 def _by_category(cats: dict[str, dict], labels: dict[str, str]) -> list[dict]:
@@ -1341,6 +1429,76 @@ def statement_filename(section: str, label: str, code: Optional[str],
     return f"{prefix}_statement_{slug(label)}_{slug(code or entity_id)}.pdf"
 
 
+async def _custom_party_statement(party_id: str, lo: Optional[datetime],
+                                  hi: Optional[datetime]) -> dict:
+    from app.models.custom_party import CustomParty
+    from beanie import PydanticObjectId
+
+    party = await CustomParty.get(PydanticObjectId(party_id)) if _oid(party_id) else None
+    acct = await PartyAccount.find_one(
+        PartyAccount.party_type == PartyType.CUSTOM,
+        PartyAccount.party_id == party_id,
+    )
+    balance = acct.balance_paise if acct else 0
+
+    txns = await LedgerTxn.find(
+        LedgerTxn.party_type == PartyType.CUSTOM,
+        LedgerTxn.party_id == party_id,
+    ).sort("+occurred_at").to_list()
+
+    opening = 0
+    running = 0
+    rows = []
+    total_gave = 0
+    total_got = 0
+
+    for t in txns:
+        when = _aware(t.occurred_at)
+        if lo and when < lo:
+            opening += t.amount_paise
+            running += t.amount_paise
+            continue
+        if hi and when > hi:
+            continue
+        running += t.amount_paise
+        is_gave = t.amount_paise >= 0
+        if is_gave:
+            total_gave += t.amount_paise
+        else:
+            total_got += -t.amount_paise
+        rows.append({
+            "date": when,
+            "type": "Payment Out" if is_gave else "Payment In",
+            "note": t.note or ("You Gave" if is_gave else "You Got"),
+            "reference": t.reference or "—",
+            "gave": abs(t.amount_paise) if is_gave else 0,
+            "got": abs(t.amount_paise) if not is_gave else 0,
+            "balance": running,
+        })
+
+    return {
+        "section": "custom",
+        "entity_type": "custom",
+        "label": party.name if party else party_id,
+        "code": party.category.title() if party and party.category else "Khata",
+        "name": party.name if party else "Custom Party",
+        "phone": party.phone if party else None,
+        "category": party.category if party else "General",
+        "date_from": lo,
+        "date_to": hi,
+        "opening_balance": opening,
+        "total_gave": total_gave,
+        "total_got": total_got,
+        "total_premium": total_gave,
+        "total_paid": total_got,
+        "net_balance": balance,
+        "closing_balance": balance,
+        "policies": [],
+        "by_category": [],
+        "transactions": rows,
+    }
+
+
 async def build_statement(section: str, entity_id: str, lo: Optional[datetime],
                           hi: Optional[datetime], *,
                           period_label: Optional[str] = None,
@@ -1350,6 +1508,8 @@ async def build_statement(section: str, entity_id: str, lo: Optional[datetime],
         data = await broker_statement(entity_id, lo, hi)
     elif section == "customer":
         data = await customer_statement(entity_id, lo, hi)
+    elif section == "custom":
+        data = await _custom_party_statement(entity_id, lo, hi)
     else:
         data = await partner_statement(entity_id, lo, hi)
     data["period_label"] = period_label

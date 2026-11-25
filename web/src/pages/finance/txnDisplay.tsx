@@ -109,12 +109,14 @@ export const PARTY_LABEL: Record<PartyType, string> = {
   customer: "Customer",
   broker: "Broker",
   expense: "House expense",
+  custom: "Custom party",
 };
 export const ENTITY_OF: Record<PartyType, string> = {
   channel_partner: "partner",
   customer: "customer",
   broker: "broker",
   expense: "",
+  custom: "custom",
 };
 // Rows the server refuses to edit/cancel/delete by hand: auto-managed from the
 // policy.

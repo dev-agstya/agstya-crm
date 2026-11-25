@@ -264,152 +264,179 @@ function RenewForm({ policy, qc, isPartner, navigate }: {
       submitting={save.isPending}
       disabled={!canSave}
       wide
-      maxWidth="max-w-5xl"
+      maxWidth="max-w-7xl"
     >
-      <div className="space-y-6">
-        <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-            1. Placement & Provider
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {!isPartner && (
-              <Field label="Broker" required
-                tooltip="Broker for the renewed term. You can change this if placing through a different broker.">
-                <SearchSelect
-                  options={(brokers.data ?? []).map((b) => ({
-                    value: b.id, label: `${b.name} (${b.short_code})` }))}
-                  value={form.broker_id}
-                  placeholder="Select broker…"
-                  onChange={(v) => set("broker_id", v)} />
-              </Field>
-            )}
-            <Field label="Insurer" required
-              tooltip="Underwriting insurer for this renewal term.">
-              <SearchSelect
-                options={(insurers.data?.items ?? []).map((i) => ({
-                  value: i.id, label: i.name, sub: i.code }))}
-                value={form.insurer_id}
-                placeholder="Select insurer…"
-                onChange={(v) => set("insurer_id", v)} />
-            </Field>
-          </div>
-        </div>
-
-        <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
-            2. Policy Details & Renewal Dates
-          </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="New Gross Premium (₹)" required>
-              <input type="number" step="0.01" className="input" value={form.premium}
-                required placeholder="0.00" onChange={(e) => set("premium", e.target.value)} />
-            </Field>
-            <Field
-              label="Reward Base (₹)"
-              tooltip="Calculated automatically net of 18% GST. Edit if the insurer calculates commission on a different amount."
-            >
-              <input type="number" step="0.01" className="input"
-                value={form.commissionable}
-                placeholder="Net of GST"
-                onChange={(e) => set("commissionable", e.target.value)} />
-            </Field>
-            <Field label="New Policy Number" hint="Optional if not yet issued">
-              <input className="input" value={form.policy_number}
-                placeholder="e.g. POL-2027-1002"
-                onChange={(e) => set("policy_number", e.target.value)} />
-            </Field>
-          </div>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4 pt-3 border-t border-line-soft">
-            <Field label="Start date" required>
-              <DateInput value={form.start_date} required
-                onChange={(v) => set("start_date", v)} />
-            </Field>
-            <Field label="Expiry date" required>
-              <DateInput value={form.expiry_date} required
-                onChange={(v) => set("expiry_date", v)} />
-            </Field>
-          </div>
-        </div>
-
-        {/* Type-specific amounts + other details, carried over from the policy
-            (order set on the Policy Types page). */}
-        <AmountCustomFields title={cat?.label ?? "Policy"}
-          fields={amountCustomFields} details={details} setDetail={setDetail}
-          rewardBaseField={rewardBaseField}
-          setRewardBaseField={setRewardBaseField} />
-        <OtherCustomFields title={cat?.label ?? "Policy"}
-          fields={otherCustomFields} details={details} setDetail={setDetail} />
-
-        <div className="rounded-control bg-slate-50 p-4">
-          <p className="mb-3 text-sm font-medium text-slate-600">
-            {isPartner ? "Your reward" : "Reward rates"}</p>
-          {rate && rate.source !== "none"
-            && (!isPartner || !!rate.partner_value) && (
-            <div className="note mb-3 flex flex-wrap items-center gap-2 text-xs">
-              <Icon.Tag size={14} />
-              <span>Current rate:{" "}
-                {!isPartner && (
-                  <b>{rate.agency_basis === "percent"
-                    ? `${(rate.agency_value / 100).toFixed(2)}% agency`
-                    : `₹${(rate.agency_value / 100).toFixed(0)} agency`}</b>
-                )}
-                {rate.partner_value
-                  ? `${isPartner ? "" : ", "}${(rate.partner_value / 100)
-                      .toFixed(2)}% partner`
-                  : ""}
-              </span>
-              <span className="text-slate-500">({RATE_SOURCE_LABEL[rate.source]})</span>
-              {showApply && (
-                <button type="button" onClick={applyRate}
-                  className="ml-auto font-medium underline">Apply</button>
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* Left Column: Form Inputs & Document Uploads */}
+        <div className="space-y-6 lg:col-span-7">
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              1. Placement & Provider
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {!isPartner && (
+                <Field label="Broker" required
+                  tooltip="Broker for the renewed term. You can change this if placing through a different broker.">
+                  <SearchSelect
+                    options={(brokers.data ?? []).map((b) => ({
+                      value: b.id, label: `${b.name} (${b.short_code})` }))}
+                    value={form.broker_id}
+                    placeholder="Select broker…"
+                    onChange={(v) => set("broker_id", v)} />
+                </Field>
               )}
-            </div>
-          )}
-          <div className="grid grid-cols-2 gap-4">
-            {!isPartner && (
-              <Field label="Agency %">
-                <input type="number" step="0.01" className="input"
-                  value={form.agency_value}
-                  onChange={(e) => set("agency_value", e.target.value)} />
+              <Field label="Insurer" required
+                tooltip="Underwriting insurer for this renewal term.">
+                <SearchSelect
+                  options={(insurers.data?.items ?? []).map((i) => ({
+                    value: i.id, label: i.name, sub: i.code }))}
+                  value={form.insurer_id}
+                  placeholder="Select insurer…"
+                  onChange={(v) => set("insurer_id", v)} />
               </Field>
-            )}
-            <Field label={isPartner ? "Your reward %" : "Channel Partner %"}>
-              <input type="number" step="0.01" className="input"
-                value={form.partner_value}
-                onChange={(e) => set("partner_value", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              2. Policy Details & Renewal Dates
+            </h3>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="New Gross Premium (₹)" required>
+                <input type="number" step="0.01" className="input" value={form.premium}
+                  required placeholder="0.00" onChange={(e) => set("premium", e.target.value)} />
+              </Field>
+              <Field
+                label="Premium before tax (₹)"
+                tooltip="Calculated automatically net of 18% GST. Edit if the insurer calculates commission on a different amount."
+              >
+                <input type="number" step="0.01" className="input"
+                  value={form.commissionable}
+                  placeholder="Premium before tax"
+                  onChange={(e) => set("commissionable", e.target.value)} />
+              </Field>
+            </div>
+
+            <div className="mt-4">
+              <Field label="New Policy Number" hint="Optional if not yet issued">
+                <input className="input" value={form.policy_number}
+                  placeholder="e.g. POL-2027-1002"
+                  onChange={(e) => set("policy_number", e.target.value)} />
+              </Field>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 mt-4 pt-3 border-t border-line-soft">
+              <Field label="Start date" required>
+                <DateInput value={form.start_date} required
+                  onChange={(v) => set("start_date", v)} />
+              </Field>
+              <Field label="Expiry date" required>
+                <DateInput value={form.expiry_date} required
+                  onChange={(v) => set("expiry_date", v)} />
+              </Field>
+            </div>
+          </div>
+
+          {/* Type-specific amounts + other details, carried over from the policy
+              (order set on the Policy Types page). */}
+          <AmountCustomFields title={cat?.label ?? "Policy"}
+            fields={amountCustomFields} details={details} setDetail={setDetail}
+            rewardBaseField={rewardBaseField}
+            setRewardBaseField={setRewardBaseField} />
+          <OtherCustomFields title={cat?.label ?? "Policy"}
+            fields={otherCustomFields} details={details} setDetail={setDetail} />
+
+          {/* Policy PDF is mandatory on a renewal too, with the type's document
+              slots right after it (owner 2026-07-24). */}
+          <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              3. Policy Documents & Uploads
+            </h3>
+            <Field label="Policy PDF" required>
+              <FileUpload
+                file={pdfFile}
+                onChange={setPdfFile}
+                accept="application/pdf,.pdf"
+                hint="Upload the renewed policy document (PDF up to 20 MB)"
+              />
             </Field>
+
+            {/* Carry last year's supporting paperwork across. Above the upload
+                slots, because it changes what those slots are asking for. */}
+            {carriedKeys.size > 0 && (
+              <div className="rounded-control border border-line px-3 py-3 mb-4">
+                <ToggleField checked={copyDocs} onChange={setCopyDocs}
+                  label={`Bring forward ${carriedKeys.size} document${
+                    carriedKeys.size === 1 ? "" : "s"} from the expiring policy`} />
+                <p className="mt-1 text-xs text-slate-500">
+                  {[...carriedKeys].map((k) =>
+                    requiredDocs.find((d) => d.key === k)?.label ?? k).join(", ")}.
+                  {" "}Attach a file below to replace any of them. The policy PDF is
+                  never carried forward.
+                </p>
+              </div>
+            )}
+
+            <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
+              setDocFiles={setDocFiles} />
           </div>
         </div>
 
-        {/* Policy PDF is mandatory on a renewal too, with the type's document
-            slots right after it (owner 2026-07-24). */}
-        <Field label="Policy PDF" required>
-          <FileUpload
-            file={pdfFile}
-            onChange={setPdfFile}
-            accept="application/pdf,.pdf"
-            hint="Upload the renewed policy document (PDF up to 20 MB)"
-          />
-        </Field>
-        {/* Carry last year's supporting paperwork across. Above the upload
-            slots, because it changes what those slots are asking for. */}
-        {carriedKeys.size > 0 && (
-          <div className="rounded-control border border-line px-3 py-3">
-            <ToggleField checked={copyDocs} onChange={setCopyDocs}
-              label={`Bring forward ${carriedKeys.size} document${
-                carriedKeys.size === 1 ? "" : "s"} from the expiring policy`} />
-            <p className="mt-1 text-xs text-slate-500">
-              {[...carriedKeys].map((k) =>
-                requiredDocs.find((d) => d.key === k)?.label ?? k).join(", ")}.
-              {" "}Attach a file below to replace any of them. The policy PDF is
-              never carried forward.
+        {/* Right Sticky Column: Reward Rates & Summary Card */}
+        <div className="space-y-4 lg:col-span-5 lg:sticky lg:top-4 self-start">
+          <div className="rounded-control border border-line bg-white p-5 shadow-xs">
+            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-3">
+              {isPartner ? "Your Commission Rate" : "Commission & Reward Rates"}
+            </h3>
+
+            {rate && rate.source !== "none"
+              && (!isPartner || !!rate.partner_value) && (
+              <div className="note mb-4 flex flex-wrap items-center gap-2 text-xs">
+                <Icon.Tag size={14} />
+                <span>Current rate:{" "}
+                  {!isPartner && (
+                    <b>{rate.agency_basis === "percent"
+                      ? `${(rate.agency_value / 100).toFixed(2)}% agency`
+                      : `₹${(rate.agency_value / 100).toFixed(0)} agency`}</b>
+                  )}
+                  {rate.partner_value
+                    ? `${isPartner ? "" : ", "}${(rate.partner_value / 100)
+                        .toFixed(2)}% partner`
+                    : ""}
+                </span>
+                <span className="text-slate-500">({RATE_SOURCE_LABEL[rate.source]})</span>
+                {showApply && (
+                  <button type="button" onClick={applyRate}
+                    className="ml-auto font-medium underline">Apply</button>
+                )}
+              </div>
+            )}
+
+            <div className="space-y-4">
+              {!isPartner && (
+                <Field label="Agency Commission %">
+                  <input type="number" step="0.01" className="input"
+                    value={form.agency_value}
+                    placeholder="e.g. 15.0"
+                    onChange={(e) => set("agency_value", e.target.value)} />
+                </Field>
+              )}
+              <Field label={isPartner ? "Your reward %" : "Channel Partner %"}>
+                <input type="number" step="0.01" className="input"
+                  value={form.partner_value}
+                  placeholder="e.g. 10.0"
+                  onChange={(e) => set("partner_value", e.target.value)} />
+              </Field>
+            </div>
+          </div>
+
+          <div className="rounded-control border border-line-soft bg-white p-4 shadow-xs text-xs text-slate-500 space-y-1.5">
+            <p className="font-semibold text-slate-800 text-sm">Seamless Renewal Ledger</p>
+            <p>
+              Renewing books the new term immediately into the accounts ledger and marks the expiring policy as renewed.
             </p>
           </div>
-        )}
-
-        <RequiredDocuments docs={requiredDocs} docFiles={docFiles}
-          setDocFiles={setDocFiles} />
-
+        </div>
       </div>
     </FormPage>
   );

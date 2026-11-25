@@ -142,6 +142,8 @@ export const NAV: NavSection[] = [
         anyPerm: ["view_transactions"] },
       { to: "/finance/balance-sheet", label: "Balance Sheet", icon: "Receipt",
         anyPerm: ["view_balance_sheet"] },
+      { to: "/finance/custom-parties", label: "Khata (Parties)", icon: "Users",
+        anyPerm: ["view_balance_sheet"] },
       { to: "/finance/tds", label: "TDS", icon: "Receipt",
         anyPerm: ["view_tds"] },
       // Its own permission, not view_finance: the ledger says who owes what,
@@ -295,6 +297,7 @@ const ALL_USERS: Gate = { partner: true, employeeAny: true };
 const EXTRA_GATES: Record<string, Gate> = {
   "/settings": ALL_USERS,
   "/help": ALL_USERS,
+  "/finance/custom-parties/:id": { anyPerm: ["view_balance_sheet"] },
   "/finance/entity": { anyPerm: ["view_balance_sheet"] },
   "/portal/profile": { partnerOnly: true },
   // Submitting / correcting a policy. Not a nav entry — it is reached from the

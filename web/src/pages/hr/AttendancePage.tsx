@@ -229,11 +229,11 @@ export default function AttendancePage() {
             value={view}
             onChange={(v) => setView2(v as View)}
             options={[
-              ...(user?.account_type !== "owner" ? [{ value: "mine", label: "My attendance", icon: "User" as const }] : []),
-              { value: "today", label: "Today", icon: "Users" },
-              { value: "month", label: "Month grid", icon: "Grid" },
+              ...(user?.account_type !== "owner" ? [{ value: "mine", label: "My Attendance", icon: "User" as const }] : []),
+              { value: "today", label: "Today's Status", icon: "Users" },
+              { value: "month", label: "Monthly Register", icon: "Grid" },
               {
-                value: "corrections", label: "Corrections",
+                value: "corrections", label: "Correction Requests",
                 icon: "CheckSquare",
                 count: pendingCount || undefined,
               },

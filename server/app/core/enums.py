@@ -348,6 +348,7 @@ class PartyType(str, Enum):
     # The agency itself — used for house expenses (salary, rent, …). Never carries
     # a receivable/payable position; excluded from every party-balance view.
     EXPENSE = "expense"
+    CUSTOM = "custom"                     # KhataBook / custom party (personal, friend, vendor, etc.)
 
 
 class LedgerTxnType(str, Enum):
@@ -390,6 +391,9 @@ class LedgerTxnType(str, Enum):
     # never reaches profit (services/finance_profit only counts EXPENSE rows).
     # Its bank effect is the row's own sign — see services/bank.cash_delta.
     TRANSFER = "transfer"
+    # KhataBook / custom party cash movement:
+    CUSTOM_PAYMENT_OUT = "custom_payment_out"  # cash given to custom party (You Gave) -> bank decreases
+    CUSTOM_PAYMENT_IN = "custom_payment_in"    # cash received from custom party (You Got) -> bank increases
 
 
 class BankAccountType(str, Enum):

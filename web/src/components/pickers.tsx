@@ -107,7 +107,7 @@ export function PolicyPicker({
 
 /* ---------------------------------------------------------------- parties -- */
 
-export type PartyKind = "customer" | "broker" | "channel_partner";
+export type PartyKind = "customer" | "broker" | "channel_partner" | "custom";
 export interface Party {
   id: string;
   label: string;
@@ -116,7 +116,7 @@ export interface Party {
 }
 
 const KIND_LABEL: Record<PartyKind, string> = {
-  customer: "Customer", broker: "Broker", channel_partner: "Channel Partner",
+  customer: "Customer", broker: "Broker", channel_partner: "Channel Partner", custom: "Custom Party",
 };
 
 /** One search box across customers + brokers + channel partners. */

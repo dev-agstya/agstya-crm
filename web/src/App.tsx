@@ -61,6 +61,7 @@ import PolicyFormPage from "./pages/policies/PolicyFormPage";
 import FinanceOverviewPage from "./pages/FinanceOverviewPage";
 import FinanceReportsPage from "./pages/FinanceReportsPage";
 import BalanceSheetPage from "./pages/BalanceSheetPage";
+import CustomPartiesPage from "./pages/finance/CustomPartiesPage";
 import EntityFinancePage from "./pages/EntityFinancePage";
 import RenewalsPage from "./pages/RenewalsPage";
 import RenewPolicyPage from "./pages/renewals/RenewPolicyPage";
@@ -370,6 +371,12 @@ export default function App() {
           <Route path="/finance/balance-sheet"
             element={<Guard path="/finance/balance-sheet">
               <BalanceSheetPage /></Guard>} />
+          <Route path="/finance/custom-parties"
+            element={<Guard path="/finance/custom-parties">
+              <CustomPartiesPage /></Guard>} />
+          <Route path="/finance/custom-parties/:id"
+            element={<Guard path="/finance/custom-parties">
+              <CustomPartiesPage /></Guard>} />
           <Route path="/finance/tds"
             element={<Guard path="/finance/tds"><TdsPage /></Guard>} />
           <Route path="/finance/banks"

@@ -295,6 +295,9 @@ describe("the conversion is finished", () => {
     // produced it. The approval queue it feeds is a VIEW of the Policies page,
     // not a dialog.
     "components/policies/PolicyAccess.tsx",
+    // Adding/editing a custom party or logging "You Gave" / "You Got" payments
+    // directly on the Khata ledger. A separate page would lose the active ledger view.
+    "pages/finance/CustomPartiesPage.tsx",
   ];
 
   it("leaves no unexplained dialog", () => {

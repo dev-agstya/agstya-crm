@@ -39,6 +39,7 @@ def _document_models() -> list:
     from app.models.counter import Counter
     from app.models.broker import Broker
     from app.models.customer import Customer
+    from app.models.custom_party import CustomParty
     from app.models.document import DocumentRecord, DocumentRequest
     from app.models.finance import LedgerTxn, PartyAccount, PolicyFinance, TdsEntry
     from app.models.holiday import Holiday
@@ -67,7 +68,7 @@ def _document_models() -> list:
     from app.models.wallet import Wallet, WalletTxn, WithdrawalRequest
 
     return [
-        User, Role, Customer, Insurer, Broker, Policy, RateRule, Lead,
+        User, Role, Customer, CustomParty, Insurer, Broker, Policy, RateRule, Lead,
         Reminder, Reward, PolicyFinance, LedgerTxn, PartyAccount, TdsEntry,
         BankAccount, Target,
         AttendanceDay, AttendanceCorrection, LeaveRequest, LeaveLedgerRow,

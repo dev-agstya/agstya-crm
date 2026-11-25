@@ -108,18 +108,10 @@ export function PunchPanel({ onChanged }: { onChanged?: () => void }) {
     );
   }
 
-  // Accounts that do not clock in (the owner, and channel partners). Says why
-  // rather than drawing a button that will 400.
+  // Accounts that do not clock in (the owner, and channel partners).
+  // Silently hide the punch card so it doesn't clutter their team overview.
   if (!d.can_punch) {
-    return (
-      <div className="card card-body">
-        <p className="text-card-title text-slate-900">Attendance</p>
-        <p className="mt-1.5 text-sm leading-relaxed text-slate-500">
-          Attendance is recorded for employees. Your account does not clock in —
-          use the Team view to see everybody else's.
-        </p>
-      </div>
-    );
+    return null;
   }
 
   const working = !!d.clock_in && !d.clock_out;

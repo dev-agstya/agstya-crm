@@ -35,10 +35,16 @@ def test_money_out_is_negative_even_though_the_ledger_stores_it_positive():
     LedgerTxnType.PARTNER_ADVANCE,
     LedgerTxnType.REFUND,
     LedgerTxnType.EXPENSE,
+    LedgerTxnType.CUSTOM_PAYMENT_OUT,
 ])
 def test_every_payout_kind_leaves_the_account(txn_type):
     assert bank_svc.cash_delta(txn_type, 25_000) < 0
     assert bank_svc.cash_delta(txn_type, -25_000) < 0   # sign-independent
+
+
+def test_custom_payment_in_credits_the_bank():
+    """Money received from a custom party (friend returning money, loan receipt) credits bank."""
+    assert bank_svc.cash_delta(LedgerTxnType.CUSTOM_PAYMENT_IN, -1_000_000) == 1_000_000
 
 
 # --- The TDS case (the one that would drift every balance) -----------------------

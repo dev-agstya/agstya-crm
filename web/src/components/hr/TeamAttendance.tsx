@@ -66,13 +66,17 @@ export function TeamDayBoard({ data, onOpen }: {
           they end up saying different things. */}
       <StatRow cols={4}>
         <StatCard label="Clocked in" value={String(data.in_count)}
-          icon="Check" />
+          icon="Check"
+          tooltip="Employees who have punched in for today's shift" />
         <StatCard label="Late" value={String(data.late_count)}
-          tone={data.late_count > 0 ? "due" : undefined} />
-        <StatCard label="On leave" value={String(data.leave_count)} />
+          tone={data.late_count > 0 ? "due" : undefined}
+          tooltip="Employees who clocked in after their assigned shift start time" />
+        <StatCard label="On leave" value={String(data.leave_count)}
+          tooltip="Employees with approved paid or unpaid leave for today" />
         <StatCard label="Not in yet"
           value={String(data.not_in_count + data.absent_count)}
           tone={data.absent_count > 0 ? "out" : undefined}
+          tooltip="Employees who haven't clocked in yet today or are marked absent"
           hint={data.absent_count > 0
             ? `${data.absent_count} marked absent` : undefined} />
       </StatRow>

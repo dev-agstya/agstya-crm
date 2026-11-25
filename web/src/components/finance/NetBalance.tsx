@@ -11,7 +11,7 @@ import { moneyTone } from "../../lib/tone";
 // All helpers take the AGENCY-RECEIVABLE value the API returns
 // (>0 = the party owes us, <0 = we owe them).
 
-export type NetParty = "customer" | "partner" | "broker";
+export type NetParty = "customer" | "partner" | "broker" | "custom";
 
 export function netView(receivablePaise: number, party: NetParty): {
   display: number; // signed paise to render
@@ -28,6 +28,12 @@ export function netView(receivablePaise: number, party: NetParty): {
     return v > 0
       ? { display: v, cls: "text-money-in", label: "To receive" }
       : { display: v, cls: "text-money-out", label: "You owe" };
+  }
+  if (party === "custom") {
+    // Khata convention: party owes us (>0) -> money-in (You'll get); agency owes party (<0) -> money-out (You'll give).
+    return v > 0
+      ? { display: v, cls: "text-money-in", label: "You will get" }
+      : { display: v, cls: "text-money-out", label: "You will give" };
   }
   // Customers / channel partners: owes-us shows negative red.
   return v > 0
