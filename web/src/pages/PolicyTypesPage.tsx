@@ -1,36 +1,21 @@
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Edit, Plus, Trash2 } from "lucide-react";
 import { categoriesApi } from "../api/endpoints";
 import { apiError } from "../api/client";
 import { PageHeader } from "../components/PageHeader";
-import { Icon } from "../components/Icon";
-import {
-  ErrorState, EmptyState, TableSkeleton, Toggle as UiToggle,
-} from "../components/ui";
+import { DataTable, Column } from "../components/shared/DataTable";
 import { toast } from "../components/Toast";
 import { askDelete } from "../lib/deleteGuard";
 import { useAuth } from "../store/auth";
-import type { CategoryNode } from "../lib/types";
-
-/* ---------------------------------------------------------------- helpers -- */
+import type { CategoryNode, PolicyCategory } from "../lib/types";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 
 function countNodes(nodes: CategoryNode[]): number {
   return nodes.reduce((n, c) => n + 1 + countNodes(c.children ?? []), 0);
 }
-
-function Toggle({ on, disabled, onClick }: {
-  on: boolean; disabled?: boolean; onClick: () => void;
-}) {
-  return (
-    <UiToggle checked={on} disabled={disabled} onChange={onClick}
-      label={on ? "Active — click to deactivate"
-        : "Inactive — click to activate"} />
-  );
-}
-
-/* ---------------------------------------------------------- add-type modal -- */
-
-/* ----------------------------------------------------------------- page --- */
 
 export default function PolicyTypesPage() {
   const navigate = useNavigate();
@@ -42,112 +27,173 @@ export default function PolicyTypesPage() {
     queryKey: ["categories", "all"],
     queryFn: async () => (await categoriesApi.list(true)).data,
   });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ["categories"] });
   };
 
-  // Deactivating is a plain update. It used to POST to the DELETE route, which
-  // deactivated behind the scenes — a delete that did something else (owner
-  // 2026-07-26). DELETE now means delete, and is owner-only + reference-guarded.
   const deactivate = useMutation({
     mutationFn: (id: string) => categoriesApi.update(id, { active: false }),
-    onSuccess: () => { toast.success("Policy type deactivated."); invalidate(); },
+    onSuccess: () => {
+      toast.success("Policy type deactivated.");
+      invalidate();
+    },
     onError: (e) => toast.error(apiError(e)),
   });
+
   const reactivate = useMutation({
     mutationFn: (id: string) => categoriesApi.update(id, { active: true }),
-    onSuccess: () => { toast.success("Policy type activated."); invalidate(); },
+    onSuccess: () => {
+      toast.success("Policy type activated.");
+      invalidate();
+    },
     onError: (e) => toast.error(apiError(e)),
   });
-  // Permanent removal. The server refuses while any policy or rate-card rule
-  // still names this type, and says which — so the toast is worth reading.
+
   const del = useMutation({
     mutationFn: (id: string) => categoriesApi.remove(id),
-    onSuccess: () => { toast.success("Policy type deleted."); invalidate(); },
+    onSuccess: () => {
+      toast.success("Policy type deleted.");
+      invalidate();
+    },
     onError: (e) => toast.error(apiError(e)),
   });
 
-  return (
-    <div>
-      <PageHeader title="Policy Types"
-        subtitle="Your policy templates and their nested sub-types. Reward % is set per broker code."
-        actions={canManage && (
-          <button className="btn-primary" onClick={() => navigate("/insurance/policy-types/new")}>
-            <Icon.Plus size={18} /> Add Policy Type
-          </button>
-        )} />
-
-      <div className="card">
-        {list.isError ? <ErrorState onRetry={() => list.refetch()} /> : list.isLoading ? (
-          <TableSkeleton cols={4} />
-        ) : (list.data?.length ?? 0) === 0 ? (
-          <EmptyState title="No policy types yet"
-            hint="Add your first policy type (e.g. Life, Motor) to get started." />
+  const columns: Column<PolicyCategory>[] = [
+    {
+      key: "label",
+      header: "Policy Type",
+      cell: (c) => (
+        <div>
+          <p className="font-medium text-foreground">{c.label}</p>
+          <p className="font-mono text-xs text-muted-foreground">{c.key}</p>
+        </div>
+      ),
+    },
+    {
+      key: "subtypes",
+      header: "Sub-types",
+      cell: (c) => {
+        const cnt = countNodes(c.children);
+        return cnt === 0 ? (
+          <span className="text-muted-foreground">None</span>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm table-sticky">
-              <thead>
-                <tr>
-                  <th className="px-5 py-3">Policy type</th>
-                  <th className="px-5 py-3">Sub-types</th>
-                  {canManage && <th className="px-5 py-3 text-right">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {list.data!.map((c) => (
-                  <tr key={c.id} className="border-t border-line-soft hover:bg-slate-50/60">
-                    <td className="px-5 py-3">
-                      <p className="font-medium text-slate-800">{c.label}</p>
-                      <p className="text-xs text-slate-500">{c.key}</p>
-                    </td>
-                    <td className="px-5 py-3 text-slate-600">
-                      {countNodes(c.children) === 0
-                        ? <span className="text-slate-500">None</span>
-                        : `${countNodes(c.children)} sub-type(s)`}
-                    </td>
-                    {canManage && (
-                      <td className="px-5 py-3">
-                        <div className="flex items-center justify-end gap-3">
-                          <Toggle on={c.active}
-                            disabled={deactivate.isPending || reactivate.isPending}
-                            onClick={() => (c.active
-                              ? deactivate.mutate(c.id)
-                              : reactivate.mutate(c.id))} />
-                          <button className="btn-secondary
-                            text-xs" onClick={() => navigate(`/insurance/policy-types/${c.id}`)}>
-                            <Icon.Edit size={14} /> Edit
-                          </button>
-                          {/* Always offered; the links decide. A type nothing
-                              has been booked under is a mistake someone should
-                              be able to clear up — one with policies against it
-                              gets deactivated instead. */}
-                          <button className="icon-btn text-money-out" title="Delete"
-                            disabled={del.isPending}
-                            onClick={async () => {
-                              const choice = await askDelete({
-                                noun: "policy type", name: c.label,
-                                inUse: c.in_use, fallbackLabel: "Deactivate",
-                                fallbackHint: "no new policies can be booked "
-                                  + "under it, and every existing one carries "
-                                  + "on unchanged.",
-                              });
-                              if (choice === "delete") del.mutate(c.id);
-                              if (choice === "fallback" && c.active)
-                                deactivate.mutate(c.id);
-                            }}>
-                            <Icon.Trash size={15} />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+          <Badge variant="secondary">{cnt} sub-types</Badge>
+        );
+      },
+    },
+    {
+      key: "fields",
+      header: "Custom Fields",
+      cell: (c) => (
+        <span className="text-sm text-muted-foreground">
+          {c.custom_fields?.length ?? 0} fields
+        </span>
+      ),
+    },
+    ...(canManage
+      ? [
+          {
+            key: "active",
+            header: "Active",
+            cell: (c: PolicyCategory) => (
+              <div onClick={(e) => e.stopPropagation()}>
+                <Switch
+                  checked={c.active}
+                  disabled={deactivate.isPending || reactivate.isPending}
+                  onCheckedChange={() =>
+                    c.active ? deactivate.mutate(c.id) : reactivate.mutate(c.id)
+                  }
+                  aria-label={`Toggle ${c.label} active status`}
+                />
+              </div>
+            ),
+          },
+          {
+            key: "actions",
+            header: "Actions",
+            align: "right" as const,
+            mobileLabel: false as const,
+            cell: (c: PolicyCategory) => (
+              <div
+                className="flex items-center justify-end gap-2"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/insurance/policy-types/${c.id}`)}
+                >
+                  <Edit className="mr-1.5 h-3.5 w-3.5" />
+                  Manage
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive"
+                  disabled={del.isPending}
+                  onClick={async () => {
+                    const choice = await askDelete({
+                      noun: "policy type",
+                      name: c.label,
+                      inUse: c.in_use,
+                      fallbackLabel: "Deactivate",
+                      fallbackHint:
+                        "no new policies can be booked under it, and existing ones stay intact.",
+                    });
+                    if (choice === "delete") del.mutate(c.id);
+                    if (choice === "fallback" && c.active)
+                      deactivate.mutate(c.id);
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ),
+          },
+        ]
+      : []),
+  ];
 
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Catalog"
+        title="Policy Types"
+        subtitle="Manage insurance categories, sub-type trees, custom fields, and booking field order."
+        actions={
+          canManage && (
+            <Button onClick={() => navigate("/insurance/policy-types/new")}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add policy type
+            </Button>
+          )
+        }
+      />
+
+      <DataTable
+        data={list.data ?? []}
+        columns={columns}
+        keyField={(c) => c.id}
+        onRowClick={
+          canManage
+            ? (c) => navigate(`/insurance/policy-types/${c.id}`)
+            : undefined
+        }
+        loading={list.isLoading}
+        error={list.isError ? "Could not load policy types." : null}
+        onRetry={() => list.refetch()}
+        emptyTitle="No policy types yet"
+        emptyDescription="Add your first policy type (e.g. Motor, Health, Life) to get started."
+        emptyAction={
+          canManage ? (
+            <Button onClick={() => navigate("/insurance/policy-types/new")}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add policy type
+            </Button>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

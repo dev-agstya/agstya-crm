@@ -1,9 +1,20 @@
 import { useNavigate } from "react-router-dom";
+import {
+  Bell,
+  ChevronRight,
+  Clock,
+  Lock,
+  Settings,
+  Shield,
+  User,
+  Users,
+} from "lucide-react";
 import { PageHeader } from "../components/PageHeader";
-import { Icon } from "../components/Icon";
 import { useAuth } from "../store/auth";
-import { formatDateTime, titleCase } from "../lib/format";
-
+import { formatDateTime, initials, titleCase } from "../lib/format";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
@@ -11,102 +22,124 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div>
-      {/* Settings is reached from the account menu, so there is no sidebar
-          entry lit up to say where you are and no obvious way back. The
-          breadcrumb now covers the first (lib/access OFF_NAV_CRUMBS) and this
-          covers the second. */}
-      <PageHeader title="Settings" backTo="/dashboard" backLabel="Dashboard" />
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        title="Settings"
+        subtitle="Manage your profile, sign-in credentials, and agency preferences."
+        backTo="/dashboard"
+        backLabel="Dashboard"
+      />
 
-      <div className="max-w-4xl space-y-6">
-        {/* Profile summary */}
-        <div className="card flex items-center gap-4 p-6">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full
-            bg-ink text-lg font-semibold text-white">
-            {user.full_name.split(" ").slice(0, 2).map((p) => p[0]).join("")}
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-section text-slate-900">
-              {user.full_name}
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-4 p-6">
+          <Avatar className="h-14 w-14">
+            <AvatarFallback className="bg-primary text-lg font-semibold text-primary-foreground">
+              {initials(user.full_name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-lg font-semibold text-foreground">
+                {user.full_name}
+              </p>
+              <Badge variant="secondary">
+                {user.role_name || titleCase(user.account_type)}
+              </Badge>
+            </div>
+            <p className="truncate text-sm text-muted-foreground">
+              {user.email}
             </p>
-            <p className="truncate text-sm text-slate-500">{user.email}</p>
-            <p className="mt-0.5 text-xs text-slate-500">
-              {user.role_name || titleCase(user.account_type)} · {user.code}
+            <p className="mt-1 text-xs text-muted-foreground">
+              ID: {user.code}
               {user.last_login_at &&
-                ` · Last login ${formatDateTime(user.last_login_at)}`}
+                ` · Last signed in ${formatDateTime(user.last_login_at)}`}
             </p>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* Account settings tile */}
-        <div className="card p-6">
-          <div className="mb-4 flex items-center gap-2 text-slate-800">
-            <Icon.Settings size={20} />
-            <h3 className="font-semibold">Account settings</h3>
-          </div>
-          <div className="divide-y divide-line/70">
-            <SettingRow
-              icon="Customers" title="Edit profile"
-              desc="Update your name and phone number"
-              onClick={() => navigate("/settings/profile")} />
-            <SettingRow
-              icon="Bell" title="Edit email"
-              desc="Change your sign-in email address"
-              onClick={() => navigate("/settings/email")} />
-            <SettingRow
-              icon="Shield" title="Change password"
-              desc="Update your account password"
-              onClick={() => navigate("/settings/password")} />
-          </div>
-        </div>
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base font-semibold">
+            <Settings className="h-4 w-4 text-primary" />
+            Account Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="divide-y divide-border p-0">
+          <SettingRow
+            icon={User}
+            title="Edit profile"
+            desc="Update your full name and phone number"
+            onClick={() => navigate("/settings/profile")}
+          />
+          <SettingRow
+            icon={Bell}
+            title="Email address"
+            desc="Change your sign-in email address"
+            onClick={() => navigate("/settings/email")}
+          />
+          <SettingRow
+            icon={Lock}
+            title="Change password"
+            desc="Update your account password"
+            onClick={() => navigate("/settings/password")}
+          />
+        </CardContent>
+      </Card>
 
-        {/* Agency-wide switches. Owner only. The Channel Partner portal moved
-            here on 2026-08-06 from a button above the Channel Partners list — a
-            master switch that signs every partner out at once does not belong
-            above a list of people, it belongs where settings live. Attendance &
-            leave joined it on 2026-08-20 for the same reason: a set-once screen
-            does not earn a sidebar entry. */}
-        {user.account_type === "owner" && (
-          <div className="card p-6">
-            <div className="mb-4 flex items-center gap-2 text-slate-800">
-              <Icon.Users size={20} />
-              <h3 className="font-semibold">Agency settings</h3>
-            </div>
-            <div className="divide-y divide-line/70">
-              <SettingRow
-                icon="Clock" title="Attendance & leave"
-                desc="The shift, what counts as a full day, and the leave policy"
-                onClick={() => navigate("/settings/attendance")} />
-            </div>
-          </div>
-        )}
-      </div>
-
+      {user.account_type === "owner" && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-base font-semibold">
+              <Shield className="h-4 w-4 text-primary" />
+              Agency Settings
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="divide-y divide-border p-0">
+            <SettingRow
+              icon={Clock}
+              title="Attendance & leave policy"
+              desc="Configure office hours, half-day rules, and leave quotas"
+              onClick={() => navigate("/settings/attendance")}
+            />
+            <SettingRow
+              icon={Users}
+              title="Partner portal"
+              desc="Control channel partner portal access and settings"
+              onClick={() => navigate("/settings/partner-portal")}
+            />
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
 
-function SettingRow({ icon, title, desc, onClick }: {
-  icon: keyof typeof Icon; title: string; desc: string; onClick: () => void;
+function SettingRow({
+  icon: IconComp,
+  title,
+  desc,
+  onClick,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  desc: string;
+  onClick: () => void;
 }) {
-  const IconCmp = Icon[icon];
   return (
-    <button onClick={onClick}
-      className="flex w-full items-center gap-4 py-3.5 text-left
-        transition-colors hover:bg-slate-50">
-      <span className="rounded-control bg-slate-100 p-2 text-slate-900">
-        <IconCmp size={18} />
-      </span>
-      <span className="flex-1">
-        <span className="block text-sm font-medium text-slate-700">{title}</span>
-        <span className="block text-xs text-slate-500">{desc}</span>
-      </span>
-      <span className="text-slate-300">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-          <path d="M9 6l6 6-6 6" />
-        </svg>
-      </span>
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex w-full items-center gap-4 px-6 py-4 text-left transition-colors hover:bg-muted/40"
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground">
+        <IconComp className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-foreground">{title}</p>
+        <p className="text-xs text-muted-foreground">{desc}</p>
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
     </button>
   );
 }
