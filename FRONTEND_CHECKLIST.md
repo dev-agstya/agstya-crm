@@ -1,111 +1,79 @@
 # Frontend Redesign & Compactness Checklist
 
 ## Spacing & Density Rules Applied
-- **PageHeader**: Single compact line (`mb-3`, no bottom divider, `text-lg font-bold`), title + inline muted subtitle on left, compact action buttons (`h-8`) on right.
+- **PageHeader**: Single compact line (`mb-3`, no bottom border divider, `text-lg font-bold`), title + inline muted subtitle on left, compact action buttons (`h-8`) on right.
 - **FilterToolbar**: Single compact row (`flex flex-wrap items-center gap-2`, NO Card wrapper/shadow/padding). Search input + 2–3 primary filters + "More filters" `Popover` + active removable filter chips.
-- **DataTable**: Compact rows (`py-2` -> ~40–44px row height, `text-[13px]`), sticky header (`bg-muted/50`), tight cell padding (`px-3 py-2`), pagination footer.
-- **Forms & Cards**: Compact `p-4` cards, `gap-3`/`gap-4` multi-column grids, `h-9` inputs, small clear labels.
-- **AppLayout**: `px-4 py-3 sm:px-5 lg:px-6` main padding; `h-12` compact TopBar.
+- **DataTable**: Compact rows (`py-2` -> ~40–44px row height, `text-[13px]`), sticky header (`bg-muted/80`), tight cell padding (`px-3 py-2`), pagination footer.
+- **Forms & Cards**: Compact `p-4` cards, `gap-x-4 gap-y-3` multi-column grids, `h-9` inputs, small clear labels.
+- **AppLayout**: `px-4 py-3 sm:px-5 lg:px-6` main padding; `h-12` compact TopBar; `overflow-x-hidden` on main column.
 
 ---
 
 ## Inventory & Progress
 
 ### 1. App Shell, Global Popups & Navigation
-- [ ] `AppLayout.tsx` (compact sidebar, mobile Sheet drawer, tight main padding)
-- [ ] `TopBar.tsx` (compact `h-12` bar, breadcrumbs, user dropdown)
-- [ ] `TopBarSearch.tsx` + `SearchResults.tsx` (`Ctrl+K` global search)
-- [ ] `NotificationBell.tsx` (popover + shadcn Dialog detail)
-- [ ] `Confirm.tsx` (`confirmDialog` & `promptDialog` with shadcn Dialog)
-- [ ] `PageHeader.tsx`, `FilterToolbar.tsx`, `DataTable.tsx`, `FormSection.tsx`, `StatCard.tsx`
+- [x] `AppLayout.tsx` (compact light-mode sidebar, mobile Sheet drawer, tight main padding)
+- [x] `TopBar.tsx` (compact `h-12` bar, breadcrumbs, user dropdown)
+- [x] `TopBarSearch.tsx` + `SearchResults.tsx` (`Ctrl+K` global search)
+- [x] `NotificationBell.tsx` (popover + shadcn Dialog detail via `Modal`)
+- [x] `Confirm.tsx` (`confirmDialog` & `promptDialog` with shadcn `Dialog`)
+- [x] `PageHeader.tsx`, `FilterToolbar.tsx`, `DataTable.tsx`, `FormSection.tsx`, `StatCard.tsx`, `InfoTooltip.tsx`
 
 ### 2. Auth, Onboarding & Public
-- [ ] `/login` (`LoginPage.tsx` + `AuthShell.tsx`)
-- [ ] `/forgot-password` (`ForgotPasswordPage.tsx`)
-- [ ] `/reset-password` (`ResetPasswordPage.tsx`)
-- [ ] `/change-password` (`ChangePasswordPage.tsx`)
-- [ ] `/onboarding` (`OnboardingPage.tsx` — 5-step wizard)
-- [ ] `/upload/:token` (`PublicUploadPage.tsx`)
+- [x] `/login` (`LoginPage.tsx` + `AuthShell.tsx`)
+- [x] `/forgot-password` (`ForgotPasswordPage.tsx`)
+- [x] `/reset-password` (`ResetPasswordPage.tsx`)
+- [x] `/change-password` (`ChangePasswordPage.tsx`)
+- [x] `/onboarding` (`OnboardingPage.tsx` — 5-step wizard with `Progress`)
+- [x] `/upload/:token` (`PublicUploadPage.tsx`)
 
 ### 3. Dashboard
-- [ ] `/dashboard` (`DashboardPage.tsx` — Owner, Employee, Channel Partner views)
+- [x] `/dashboard` (`DashboardPage.tsx` — Owner, Employee, Channel Partner views)
 
 ### 4. Work (Leads, Customers, Policies, Renewals, Quotes)
-- [ ] `/leads` (`LeadsListPage.tsx` — compact single-row filter + compact table)
-- [ ] `/leads/new` & `/leads/:id/edit` (`LeadFormPage.tsx`)
-- [ ] `/leads/import` (`LeadImportPage.tsx`)
-- [ ] `/leads/:id` (`LeadDetailPage.tsx` + reminders/stage dialogs)
-- [ ] `/leads/:id/reminders/new` & `/:reminderId` (`LeadReminderFormPage.tsx`)
-- [ ] `/customers` (`CustomersListPage.tsx` — compact single-row filter + compact table)
-- [ ] `/customers/new` & `/customers/:id/edit` (`CustomerFormPage.tsx` — optional mobile)
-- [ ] `/customers/import` (`CustomerImportPage.tsx`)
-- [ ] `/customers/:id` (`CustomerDetailPage.tsx` — Details, Summary, Policies, Documents)
-- [ ] `/policies` (`PoliciesPage.tsx` — compact single-row toolbar + More filters popover + compact table)
-- [ ] `/policies/new` (`PolicyFormPage.tsx` — compact multi-column, "Premium before tax (₹)", QuickAdd dialogs)
-- [ ] `/policies/:id` (`PolicyDetailPage.tsx` + `PolicyDetailBody.tsx` + `PolicyDocuments.tsx`)
-- [ ] `/policies?view=access-requests` (`PolicyAccess.tsx`)
-- [ ] `/renewals` (`RenewalsPage.tsx` — compact KPIs + toolbar + table)
-- [ ] `/renewals/:id` (`RenewPolicyPage.tsx` — editable Broker & Insurer + live rate preview)
-- [ ] `/renewals/:id/history` (`RenewalHistoryPage.tsx`)
-- [ ] `/quotes` (`QuotesPage.tsx` — compact tabs + toolbar + table)
-- [ ] `/quotes/:id` (`QuoteDetailPage.tsx`)
+- [x] `/leads` (`LeadsListPage.tsx` — compact `FilterToolbar` + `DataTable`)
+- [x] `/leads/new` & `/leads/:id/edit` (`LeadFormPage.tsx`)
+- [x] `/leads/import`, `/leads/:id`, `/leads/:id/reminders/*` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
+- [x] `/customers` (`CustomersListPage.tsx` — compact `FilterToolbar` + "More filters" + `DataTable`)
+- [x] `/customers/new` & `/customers/:id/edit` (`CustomerFormPage.tsx` — optional mobile)
+- [x] `/customers/:id` (`CustomerDetailPage.tsx` — shadcn `Tabs`)
+- [x] `/customers/import` (inherits compact `PageHeader`)
+- [x] `/policies` (`PoliciesPage.tsx` — compact `FilterToolbar` + "More filters" + `DataTable`, 13 rows above fold)
+- [x] `/policies/new` (`PolicyFormPage.tsx` — "Premium before tax (₹)", QuickAdd dialogs)
+- [x] `/policies/:id` & `?view=access-requests` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
+- [x] `/renewals` (`RenewalsPage.tsx` — compact `StatCard` + `FilterToolbar` + `DataTable`)
+- [x] `/renewals/:id` (`RenewPolicyPage.tsx` — editable Broker & Insurer + live rate preview)
+- [x] `/renewals/:id/history` (inherits compact `PageHeader`)
+- [x] `/quotes` (`QuotesPage.tsx` — compact `Tabs` + `FilterToolbar` + `DataTable`)
+- [x] `/quotes/:id` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
 
 ### 5. Finance
-- [ ] `/finance` (`FinanceOverviewPage.tsx` — compact KPIs, charts, pending summary)
-- [ ] `/finance/reports` (`FinanceReportsPage.tsx` — paginated >100 users, compact filters + tables)
-- [ ] `/finance/transactions` (`TransactionsPage.tsx` — compact toolbar + More filters + compact table)
-- [ ] `/finance/transactions/new` (`RecordPaymentPage.tsx` + `RecordPaymentForm.tsx`)
-- [ ] `/finance/transactions/import` (`StatementImportPage.tsx`)
-- [ ] `/finance/transactions/pending` (`PendingTransactionsPage.tsx`)
-- [ ] `/finance/transactions/:id` (`TransactionDetailPage.tsx`)
-- [ ] `/finance/balance-sheet` (`BalanceSheetPage.tsx`)
-- [ ] `/finance/custom-parties` & `/:id` (`CustomPartiesPage.tsx` — Khata + Add Party & Log Payment dialogs)
-- [ ] `/finance/entity/:type/:id` (`EntityFinancePage.tsx`)
-- [ ] `/finance/tds` (`TdsPage.tsx`)
-- [ ] `/finance/banks` (`BanksPage.tsx` + `ReconcileDialog.tsx`)
-- [ ] `/finance/banks/new` & `/:id/edit` (`BankAccountFormPage.tsx`)
-- [ ] `/finance/banks/transfer` (`BankTransferPage.tsx`)
-- [ ] `/finance/banks/:id/statement` (`BankStatementPage.tsx`)
+- [x] `/finance` (`FinanceOverviewPage.tsx` — compact `PageHeader` + `Modal` -> `Dialog`)
+- [x] `/finance/reports` (`FinanceReportsPage.tsx` — paginated >100 users, no 422)
+- [x] `/finance/transactions` (`TransactionsPage.tsx` — compact `FilterToolbar` + "More filters" + `DataTable`)
+- [x] `/finance/transactions/new`, `/import`, `/pending`, `/:id` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
+- [x] `/finance/balance-sheet` & `/finance/entity/:type/:id` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
+- [x] `/finance/custom-parties` & `/:id` (`CustomPartiesPage.tsx` — Khata + `Modal` -> `Dialog`)
+- [x] `/finance/tds` (`TdsPage.tsx` — `StatCard` + `DataTable`)
+- [x] `/finance/banks` & `/new`, `/:id/edit`, `/transfer`, `/:id/statement` (inherits compact `PageHeader` & `ReconcileDialog` -> `Dialog`)
 
 ### 6. Workplace HR & People
-- [ ] `/people/employees` (`EmployeesPage.tsx`)
-- [ ] `/people/employees/new` (`AddEmployeePage.tsx`)
-- [ ] `/people/employees/:id` (`PersonDetailPage.tsx`)
-- [ ] `/people/employees/:id/targets` (`PersonTargetsPage.tsx`)
-- [ ] `/people/employees/:id/performance` (`PersonPerformancePage.tsx`)
-- [ ] `/people/partners` (`ChannelPartnersPage.tsx` + `PartnerRoster.tsx`)
-- [ ] `/people/partners/new` (`AddPartnerPage.tsx`)
-- [ ] `/people/partners/:id` (`PersonDetailPage.tsx`)
-- [ ] `/people/partners/:id/targets` (`PersonTargetsPage.tsx`)
-- [ ] `/people/partners/:id/performance` (`PersonPerformancePage.tsx`)
-- [ ] `/targets` (`TargetsPage.tsx`)
-- [ ] `/hr/attendance` (`AttendancePage.tsx` — owner lands on Today, no clock-in; Edit/Correction dialogs)
-- [ ] `/hr/leave` (`LeavePage.tsx` + `LeaveForm.tsx` dialog)
-- [ ] `/hr/payslips` (`PayslipsPage.tsx` + `PayslipDetail.tsx`)
-- [ ] `/hr/holidays` (`HolidaysPage.tsx` + Add/Edit Holiday dialog)
-- [ ] `/documents` (`DocumentsPage.tsx`)
+- [x] `/people/employees` (`EmployeesPage.tsx` — compact `PageHeader` + `Tabs`)
+- [x] `/people/partners` (`ChannelPartnersPage.tsx` — compact `PageHeader` + `Tabs`)
+- [x] `/people/employees/*`, `/people/partners/*`, `/targets` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
+- [x] `/hr/attendance` (`AttendancePage.tsx` — owner lands on Today, no clock-in; `Tabs` + `DataTable` + `Dialog`s)
+- [x] `/hr/leave`, `/hr/payslips`, `/hr/holidays` (inherits compact `PageHeader` & `Modal` -> `Dialog`)
+- [x] `/documents` (`DocumentsPage.tsx` — compact `Card` layout)
 
 ### 7. Administration, Catalog, Settings, Help
-- [ ] `/organization` (`MyOrganizationPage.tsx` — Roles & Permissions)
-- [ ] `/organization/roles/new` & `/:id/edit` (`RoleFormPage.tsx`)
-- [ ] `/insurers` (`InsurersPage.tsx`)
-- [ ] `/insurers/new` & `/:id/edit` (`InsurerFormPage.tsx`)
-- [ ] `/brokers` (`BrokersPage.tsx` + `RateRulesPanel.tsx`)
-- [ ] `/brokers/new` & `/:id/edit` (`BrokerFormPage.tsx`)
-- [ ] `/insurance/policy-types` (`PolicyTypesPage.tsx`)
-- [ ] `/insurance/policy-types/new` & `/:id` (`PolicyTypeFormPage.tsx` — sub-type tree + field order manager)
-- [ ] `/audit` (`AuditPage.tsx`)
-- [ ] `/audit/:id` (`AuditDetailPage.tsx`)
-- [ ] `/settings` (`SettingsPage.tsx`)
-- [ ] `/settings/profile`, `/settings/email`, `/settings/password` (`SettingsFormPages.tsx`)
-- [ ] `/settings/attendance` (`AttendanceSettingsPage.tsx`)
-- [ ] `/settings/partner-portal` (`PartnerPortalSettingsPage.tsx`)
-- [ ] `/help` (`HelpPage.tsx`)
-- [ ] `*` (`NotFoundPage.tsx`)
+- [x] `/organization` & `/organization/roles/*` (`MyOrganizationPage.tsx` — shadcn `Card` + `Badge`)
+- [x] `/insurers` & `/insurers/*` (`InsurersPage.tsx` — compact `FilterToolbar` + `DataTable`)
+- [x] `/brokers` & `/brokers/*` (`BrokersPage.tsx` — compact `FilterToolbar` + `DataTable` + `RateRulesPanel`)
+- [x] `/insurance/policy-types` & `/*` (`PolicyTypesPage.tsx` + `PolicyTypeFormPage.tsx` — sub-type tree + field order manager)
+- [x] `/audit` & `/audit/:id` (`AuditPage.tsx` — compact `FilterToolbar` + "More filters" + `DataTable`)
+- [x] `/settings` & `/settings/*` (`SettingsPage.tsx` — `Avatar` + `Card` groups)
+- [x] `/help` (`HelpPage.tsx` — compact `Select` + `Card`)
+- [x] `*` (`NotFoundPage.tsx`)
 
 ### 8. Channel Partner Portal
-- [ ] `/portal/policies` & `/:id` (`PortalPoliciesPage.tsx`)
-- [ ] `/portal/renewals` (`PortalRenewalsPage.tsx`)
-- [ ] `/portal/quotes`, `/portal/quotes/new`, `/:id` (`PortalQuotesPage.tsx`)
-- [ ] `/portal/earnings` (`PortalEarningsPage.tsx`)
-- [ ] `/portal/notices` (`PortalNoticesPage.tsx`)
+- [x] `/portal/policies`, `/portal/renewals`, `/portal/quotes`, `/portal/earnings`, `/portal/notices` (inherits compact `AppLayout`, `PageHeader`, `Modal` -> `Dialog`)

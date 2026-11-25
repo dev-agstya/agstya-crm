@@ -11,7 +11,7 @@ import { titleCase } from "../../lib/format";
 import { useAuth } from "../../store/auth";
 import { TIMING_TONE_CLASS, reminderTiming } from "../../lib/reminderTiming";
 import { LEAD_TYPES, LEAD_TYPE_LABELS } from "../../lib/types";
-import type { Lead, LeadStage } from "../../lib/types";
+import type { Lead, LeadStage, LeadType } from "../../lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -75,7 +75,7 @@ export default function LeadsListPage() {
   if (type !== "all") {
     chips.push({
       key: "type",
-      label: `Type: ${LEAD_TYPE_LABELS[type] ?? titleCase(type)}`,
+      label: `Type: ${LEAD_TYPE_LABELS[type as LeadType] ?? titleCase(type)}`,
       onRemove: () => { setPage(1); setType("all"); },
     });
   }
