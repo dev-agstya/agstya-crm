@@ -1,4 +1,18 @@
 import { useState } from "react";
+import { AlertCircle, Clock, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormField } from "../../components/shared/FormSection";
+import { DataTable, type Column } from "../../components/shared/DataTable";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
@@ -6,12 +20,7 @@ import { claimsApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { PageHeader } from "../../components/PageHeader";
 import { RecordPage } from "../../components/RecordPage";
-import { Icon } from "../../components/Icon";
-import {
-  EmptyState, ErrorState, Field, Ledger, LedgerCell, LedgerFigure, LedgerRow,
-  ListShell, LTh, MobileCard, Pagination, PersonCell, SearchInput, Segmented,
-  TableSkeleton,
-} from "../../components/ui";
+import { PersonCell, SearchInput, Segmented } from "../../components/ui";
 import { DateInput } from "../../components/DateInput";
 import { toast } from "../../components/Toast";
 import {
@@ -81,13 +90,12 @@ export function ClaimsPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Work"
         title="Claims"
         actions={late > 0 ? (
-          <span className="badge bg-money-out/10 px-2.5 py-1 text-money-out">
-            <Icon.Alert size={13} />
+          <Badge variant="destructive" className="gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
             {late} open past {CLAIM_LATE_DAYS} days
-          </span>
+          </Badge>
         ) : undefined} />
 
       <div>
@@ -103,108 +111,138 @@ export function ClaimsPage() {
             placeholder="Claim, policy, customer…"
             className="max-w-xs flex-1" />
         </div>
-        {list.isError ? <ErrorState onRetry={() => list.refetch()} /> : list.isLoading ? (
-          <TableSkeleton cols={6} />
-        ) : rows.length === 0 ? (
-          <EmptyState
-            icon={<Icon.Shield size={20} />}
-            title="No claims"
-            hint="Claims reported by channel partners, or recorded here by
-              the team, appear in this queue." />
-        ) : (
-          <>
-            <ListShell
-              bare
-              cards={rows.map((c) => {
+        <DataTable
+          data={rows}
+          columns={[
+            {
+              key: "claim",
+              header: "Claim",
+              cell: (c) => {
                 const tone = claimUrgency(c.age_days, c.stage);
                 return (
-                  <MobileCard key={c.id} to={`/claims/${c.id}`}
-                    rail={tone === "late" ? "out"
-                      : tone === "warn" ? "due" : undefined}
-                    title={c.customer_name || c.code}
-                    meta={<>{c.code} · {c.policy_number || "no policy"}</>}
-                    right={
-                      c.settled_amount ? (
-                        <span className="block whitespace-nowrap text-metric-sm
-                          tabular-nums text-money-in">
-                          {formatINR(c.settled_amount)}
-                        </span>
-                      ) : <ClaimStageBadge stage={c.stage} />
+                  <div
+                    className={
+                      tone === "late"
+                        ? "border-l-2 border-red-500 pl-2"
+                        : tone === "warn"
+                        ? "border-l-2 border-amber-500 pl-2"
+                        : ""
                     }
-                    footer={`Open ${c.age_days}d · since ${
-                      formatDate(c.incident_at)}`}
-                  />
+                  >
+                    <p className="font-medium text-slate-900">
+                      {c.customer_name || "—"}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {c.code} · {c.policy_number || "no policy"}
+                    </p>
+                  </div>
                 );
-              })}
-              table={
-                <Ledger
-                  head={
-                    <>
-                      <LTh>Claim</LTh>
-                      <LTh>Reported by</LTh>
-                      <LTh>Open for</LTh>
-                      <LTh align="right">Settled</LTh>
-                      <LTh>Stage</LTh>
-                    </>
-                  }
-                >
-                  {rows.map((c) => {
-                    const tone = claimUrgency(c.age_days, c.stage);
-                    const rail = tone === "late" ? "out" as const
-                      : tone === "warn" ? "due" as const : undefined;
-                    return (
-                      <LedgerRow key={c.id}
-                        onClick={() => navigate(`/claims/${c.id}`)}>
-                        {/* Customer over "code · policy". The policy number was
-                            a column of its own; it identifies the claim, it is
-                            not a fact you compare down the list. */}
-                        <LedgerCell
-                          rail={rail}
-                          to={`/claims/${c.id}`}
-                          title={c.customer_name || "—"}
-                          sub={`${c.code} · ${c.policy_number || "no policy"}`}
-                        />
-
-                        <td>
-                          {c.raised_by_name ? (
-                            <PersonCell name={c.raised_by_name} size="xs"
-                              badges={c.raised_by_side === "partner"
-                                ? <span className="chip">partner</span>
-                                : undefined} />
-                          ) : <span className="text-slate-500">—</span>}
-                        </td>
-
-                        <td className="whitespace-nowrap">
-                          {/* The tints were written inline in three branches.
-                              `.badge-out / -due / -neutral` are the tokens —
-                              same colours, one definition. */}
-                          <span className={tone === "late" ? "badge-out"
-                            : tone === "warn" ? "badge-due" : "badge-neutral"}>
-                            {tone !== "calm" && <Icon.Clock size={12} />}
-                            {c.age_days}d
-                          </span>
-                          <p className="mt-0.5 text-xs text-slate-500">
-                            since {formatDate(c.incident_at)}</p>
-                        </td>
-
-                        {c.settled_amount ? (
-                          <LedgerFigure tone="in"
-                            value={formatINR(c.settled_amount)} />
-                        ) : (
-                          <td className="num text-slate-500">—</td>
-                        )}
-
-                        <td><ClaimStageBadge stage={c.stage} /></td>
-                      </LedgerRow>
-                    );
-                  })}
-                </Ledger>
-              }
-            />
-            <Pagination page={page} pageSize={20}
-              total={list.data?.total ?? 0} onChange={setPage} />
-          </>
-        )}
+              },
+            },
+            {
+              key: "reportedBy",
+              header: "Reported by",
+              cell: (c) =>
+                c.raised_by_name ? (
+                  <PersonCell
+                    name={c.raised_by_name}
+                    size="xs"
+                    badges={
+                      c.raised_by_side === "partner" ? (
+                        <Badge variant="secondary" className="text-[11px]">
+                          partner
+                        </Badge>
+                      ) : undefined
+                    }
+                  />
+                ) : (
+                  <span className="text-slate-500">—</span>
+                ),
+            },
+            {
+              key: "openFor",
+              header: "Open for",
+              cell: (c) => {
+                const tone = claimUrgency(c.age_days, c.stage);
+                return (
+                  <div className="whitespace-nowrap">
+                    <Badge
+                      variant={
+                        tone === "late"
+                          ? "destructive"
+                          : tone === "warn"
+                          ? "outline"
+                          : "secondary"
+                      }
+                      className={
+                        tone === "warn"
+                          ? "border-amber-300 bg-amber-50 text-amber-800"
+                          : ""
+                      }
+                    >
+                      {tone !== "calm" && <Clock className="mr-1 h-3 w-3" />}
+                      {c.age_days}d
+                    </Badge>
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      since {formatDate(c.incident_at)}
+                    </p>
+                  </div>
+                );
+              },
+            },
+            {
+              key: "settled",
+              header: "Settled",
+              align: "right",
+              cell: (c) =>
+                c.settled_amount ? (
+                  <span className="font-semibold tabular-nums text-emerald-700">
+                    {formatINR(c.settled_amount)}
+                  </span>
+                ) : (
+                  <span className="text-slate-400">—</span>
+                ),
+            },
+            {
+              key: "stage",
+              header: "Stage",
+              cell: (c) => <ClaimStageBadge stage={c.stage} />,
+            },
+          ] as Column<(typeof rows)[number]>[]}
+          keyField={(c) => c.id}
+          loading={list.isLoading}
+          error={list.error ? "Could not load claims." : null}
+          onRetry={() => list.refetch()}
+          onRowClick={(c) => navigate(`/claims/${c.id}`)}
+          emptyTitle="No claims"
+          emptyDescription="Claims reported by channel partners, or recorded here by the team, appear in this queue."
+          page={page}
+          pageSize={20}
+          total={list.data?.total ?? 0}
+          onPageChange={setPage}
+          renderMobileCard={(c) => (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <p className="truncate font-medium text-slate-900">
+                  {c.customer_name || c.code}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {c.code} · {c.policy_number || "no policy"}
+                </p>
+                <p className="text-xs text-slate-500">
+                  Open {c.age_days}d · since {formatDate(c.incident_at)}
+                </p>
+              </div>
+              {c.settled_amount ? (
+                <span className="whitespace-nowrap font-semibold tabular-nums text-emerald-700">
+                  {formatINR(c.settled_amount)}
+                </span>
+              ) : (
+                <ClaimStageBadge stage={c.stage} />
+              )}
+            </div>
+          )}
+        />
       </div>
     </div>
   );
@@ -280,18 +318,18 @@ export function ClaimDetailPage() {
 
           {canManage && (
             <SectionCard title="Move it on">
-              <Field label="Message to the partner"
+              <FormField label="Message to the partner"
                 hint="Optional — they see this on their timeline.">
-                <input className="input" value={message}
+                <Input value={message}
                   onChange={(e) => setMessage(e.target.value)} />
-              </Field>
+              </FormField>
               <div className="mt-3 flex flex-wrap gap-2">
                 {STAGES.filter((s) => s !== c.stage).map((s) => (
-                  <button key={s} className="btn-secondary btn-sm"
+                  <Button key={s} variant="outline" size="sm"
                     disabled={move.isPending}
                     onClick={() => move.mutate(s)}>
                     {claimStageLabel(s)}
-                  </button>
+                  </Button>
                 ))}
               </div>
             </SectionCard>
@@ -320,8 +358,7 @@ export function ClaimDetailPage() {
                         <span className="block truncate text-xs text-slate-500">
                           {d.filename}</span>
                       </span>
-                      <Icon.Download size={16}
-                        className="shrink-0 text-slate-500" />
+                      <Download className="h-4 w-4 shrink-0 text-slate-500" />
                     </button>
                   </li>
                 ))}
@@ -386,54 +423,63 @@ function ClaimInsurerPanel({ claim, onDone }: {
   return (
     <SectionCard title="Insurer & assessment">
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Insurer claim number">
-          <input className="input" value={f.insurer_claim_no}
+        <FormField label="Insurer claim number">
+          <Input value={f.insurer_claim_no}
             onChange={(e) => set("insurer_claim_no", e.target.value)} />
-        </Field>
-        <Field label="Settlement">
-          <select className="select" value={f.settlement_mode}
-            onChange={(e) => set("settlement_mode", e.target.value)}>
-            <option value="">—</option>
-            <option value="cashless">Cashless</option>
-            <option value="reimbursement">Reimbursement</option>
-          </select>
-        </Field>
-        <Field label="Surveyor"
+        </FormField>
+        <FormField label="Settlement">
+          <Select
+            value={f.settlement_mode || "__none__"}
+            onValueChange={(v) => set("settlement_mode", v === "__none__" ? "" : v)}
+          >
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="—" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">—</SelectItem>
+              <SelectItem value="cashless">Cashless</SelectItem>
+              <SelectItem value="reimbursement">Reimbursement</SelectItem>
+            </SelectContent>
+          </Select>
+        </FormField>
+        <FormField label="Surveyor"
           hint="IRDAI: appoint within 72 hours on a material loss.">
-          <input className="input" value={f.surveyor_name}
+          <Input value={f.surveyor_name}
             onChange={(e) => set("surveyor_name", e.target.value)} />
-        </Field>
-        <Field label="Surveyor contact">
-          <input className="input" value={f.surveyor_contact}
+        </FormField>
+        <FormField label="Surveyor contact">
+          <Input value={f.surveyor_contact}
             onChange={(e) => set("surveyor_contact", e.target.value)} />
-        </Field>
-        <Field label="Surveyor appointed">
+        </FormField>
+        <FormField label="Surveyor appointed">
           <DateInput value={f.surveyor_appointed_at}
             onChange={(v) => set("surveyor_appointed_at", v)} />
-        </Field>
-        <Field label="Approved amount (₹)">
-          <input type="number" step="0.01" min="0" className="input"
+        </FormField>
+        <FormField label="Approved amount (₹)">
+          <Input type="number" step="0.01" min="0"
             value={f.approved_amount}
             onChange={(e) => set("approved_amount", e.target.value)} />
-        </Field>
-        <Field label="Settled amount (₹)"
+        </FormField>
+        <FormField label="Settled amount (₹)"
           hint="Recorded for the record only — it does not touch the ledger.">
-          <input type="number" step="0.01" min="0" className="input"
+          <Input type="number" step="0.01" min="0"
             value={f.settled_amount}
             onChange={(e) => set("settled_amount", e.target.value)} />
-        </Field>
-        <Field label="Rejection reason">
-          <input className="input" value={f.rejection_reason}
+        </FormField>
+        <FormField label="Rejection reason">
+          <Input value={f.rejection_reason}
             onChange={(e) => set("rejection_reason", e.target.value)} />
-        </Field>
+        </FormField>
       </div>
-      <Field label="Internal notes"
-        hint="Staff only — the partner's claim schema has no field for this.">
-        <textarea className="input" rows={2} value={f.internal_notes}
-          onChange={(e) => set("internal_notes", e.target.value)} />
-      </Field>
-      <button className="btn-primary mt-3" disabled={save.isPending}
-        onClick={() => save.mutate()}>Save</button>
+      <div className="mt-3">
+        <FormField label="Internal notes"
+          hint="Staff only — the partner's claim schema has no field for this.">
+          <Textarea rows={2} value={f.internal_notes}
+            onChange={(e) => set("internal_notes", e.target.value)} />
+        </FormField>
+      </div>
+      <Button className="mt-3" size="sm" disabled={save.isPending}
+        onClick={() => save.mutate()}>Save</Button>
     </SectionCard>
   );
 }

@@ -5,8 +5,6 @@ import type { ClaimStage, PortalEvent, QuoteStage } from "../../lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
-export { StatCard as StatTile, StatRow } from "../../components/ui";
-
 export function NetPosition({
   net,
   className = "",
@@ -159,8 +157,6 @@ export function Timeline({ events }: { events: PortalEvent[] }) {
     </ol>
   );
 }
-
-export { ListShell, MobileCard } from "../../components/ui";
 
 export function CardMoney({
   label,

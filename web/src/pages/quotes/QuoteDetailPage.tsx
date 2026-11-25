@@ -1,12 +1,17 @@
 import { useState } from "react";
+import { Check, Download, FileText } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { FormField } from "../../components/shared/FormSection";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
 import { insurersApi, quotesApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { RecordPage } from "../../components/RecordPage";
-import { Icon } from "../../components/Icon";
-import { Field, Spinner } from "../../components/ui";
 import { DateInput } from "../../components/DateInput";
 import { SearchSelect } from "../../components/SearchSelect";
 import { toast } from "../../components/Toast";
@@ -78,12 +83,12 @@ export default function QuoteDetailPage() {
       {q && (
         <div className="space-y-4">
           {canManage && !closed && (
-            <div className="card flex flex-wrap items-center gap-2 px-4 py-3">
+            <Card className="flex flex-wrap items-center gap-2 px-4 py-3">
               {q.assigned_to_id !== user?.id && (
-                <button className="btn-secondary btn-sm"
+                <Button variant="outline" size="sm"
                   onClick={act(() => quotesApi.pickUp(id), "Picked up.")}>
-                  <Icon.Check size={14} /> I'm on it
-                </button>
+                  <Check className="mr-1.5 h-3.5 w-3.5" /> I&apos;m on it
+                </Button>
               )}
               <span className="text-sm text-slate-600">
                 {q.assigned_to_name
@@ -96,7 +101,7 @@ export default function QuoteDetailPage() {
                   : q.answered ? "Answered" : "Not answered yet"}
                 {" · "}{q.age_hours}h old
               </span>
-            </div>
+            </Card>
           )}
 
           <SectionCard title="What they asked for">
@@ -118,7 +123,7 @@ export default function QuoteDetailPage() {
             <DetailRow label="Type">
               {q.category_label}
               {q.subcategory_label ? ` · ${q.subcategory_label}` : ""}
-              {q.is_renewal && <span className="ml-2 chip">renewal</span>}
+              {q.is_renewal && <Badge variant="secondary" className="ml-2">renewal</Badge>}
             </DetailRow>
             {details.map(([key, value]) => (
               <DetailRow key={key} label={q.field_labels[key] ?? key}>
@@ -151,8 +156,7 @@ export default function QuoteDetailPage() {
                         <span className="block truncate text-xs text-slate-500">
                           {d.filename}</span>
                       </span>
-                      <Icon.Download size={16} className="shrink-0
-                        text-slate-500" />
+                      <Download className="h-4 w-4 shrink-0 text-slate-500" />
                     </button>
                   </li>
                 ))}
@@ -200,36 +204,36 @@ export default function QuoteDetailPage() {
           ))}
 
           {q.expired && (
-            <div className="card border-l-4 border-l-due px-4 py-3">
-              <p className="text-sm font-medium text-slate-800">
+            <Card className="border-l-4 border-l-amber-500 px-4 py-3">
+              <p className="text-sm font-medium text-slate-900">
                 The quotation you sent has expired.</p>
               <p className="mt-0.5 text-xs text-slate-500">
                 The partner can no longer accept it — their screen offers them
                 an "ask for a fresh quotation" button. Send a new price below
                 and it replaces this one.
               </p>
-            </div>
+            </Card>
           )}
 
           {q.stage === "accepted" && canManage && (
-            <div className="card border-l-4 border-l-money-in px-4 py-4">
-              <p className="text-sm font-medium text-slate-800">
+            <Card className="border-l-4 border-l-emerald-500 px-4 py-4">
+              <p className="text-sm font-medium text-slate-900">
                 The customer accepted. Book the policy.</p>
               <p className="mt-0.5 text-xs text-slate-500">
                 The form opens pre-filled. Choose the broker there — that is
                 what prices the reward — and the two records link on save.
               </p>
-              <button className="btn-primary mt-3"
+              <Button className="mt-3" size="sm"
                 onClick={() => navigate(`/policies/new?quote=${q.id}`)}>
-                <Icon.Policy size={16} /> Book this policy
-              </button>
-            </div>
+                <FileText className="mr-1.5 h-3.5 w-3.5" /> Book this policy
+              </Button>
+            </Card>
           )}
           {q.policy_id && (
-            <button className="btn-secondary"
+            <Button variant="outline" size="sm"
               onClick={() => navigate(`/policies/${q.policy_id}`)}>
-              <Icon.Policy size={16} /> Open the policy
-            </button>
+              <FileText className="mr-1.5 h-3.5 w-3.5" /> Open the policy
+            </Button>
           )}
 
           {canManage && !closed && <QuoteActions quote={q} onDone={refresh} />}
@@ -291,64 +295,63 @@ function QuoteActions({ quote, onDone }: {
       <div className="mb-4 flex flex-wrap gap-2">
         {([["quote", "Send a quotation"], ["ask", "Ask for something"],
           ["close", "Close it"]] as const).map(([key, label]) => (
-          <button key={key}
-            className={tab === key ? "btn-primary btn-sm" : "btn-secondary btn-sm"}
-            onClick={() => setTab(key)}>{label}</button>
+          <Button key={key}
+            variant={tab === key ? "default" : "outline"}
+            size="sm"
+            onClick={() => setTab(key)}>{label}</Button>
         ))}
       </div>
 
       {tab === "quote" && (
         <div className="space-y-3">
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Field label="Insurer">
+            <FormField label="Insurer">
               <SearchSelect
                 options={(insurers.data?.items ?? []).map((i) => ({
                   value: i.id, label: i.name, sub: i.code }))}
                 value={f.insurer_id} placeholder="Select insurer…"
                 onChange={(v) => set("insurer_id", v)} />
-            </Field>
-            <Field label="Premium — gross (₹)" required>
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Premium — gross (₹)" required>
+              <Input type="number" step="0.01" min="0"
                 value={f.premium}
                 onChange={(e) => set("premium", e.target.value)} />
-            </Field>
-            <Field label="Sum insured (₹)">
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Sum insured (₹)">
+              <Input type="number" step="0.01" min="0"
                 value={f.sum_insured}
                 onChange={(e) => set("sum_insured", e.target.value)} />
-            </Field>
-            <Field label="Partner earns (₹)" required
-              hint="What the partner is told they earn. Quote it off the same
-                rate card the policy will be booked on.">
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Partner earns (₹)" required
+              hint="What the partner is told they earn. Quote it off the same rate card the policy will be booked on.">
+              <Input type="number" step="0.01" min="0"
                 value={f.partner_earning}
                 onChange={(e) => set("partner_earning", e.target.value)} />
-            </Field>
-            <Field label="Cover from">
+            </FormField>
+            <FormField label="Cover from">
               <DateInput value={f.cover_from}
                 onChange={(v) => set("cover_from", v)} />
-            </Field>
-            <Field label="Cover to">
+            </FormField>
+            <FormField label="Cover to">
               <DateInput value={f.cover_to}
                 onChange={(v) => set("cover_to", v)} />
-            </Field>
-            <Field label="Valid until"
+            </FormField>
+            <FormField label="Valid until"
               hint="Blank uses the agency default from Portal settings.">
               <DateInput value={f.valid_until}
                 onChange={(v) => set("valid_until", v)} />
-            </Field>
+            </FormField>
           </div>
-          <Field label="What's included"
+          <FormField label="What's included"
             hint="Add-ons, deductibles, what is and is not covered.">
-            <textarea className="input" rows={3} value={f.inclusions}
+            <Textarea rows={3} value={f.inclusions}
               onChange={(e) => set("inclusions", e.target.value)} />
-          </Field>
-          <button className="btn-primary"
+          </FormField>
+          <Button size="sm"
             disabled={!f.premium || send.isPending}
             onClick={() => send.mutate()}>
-            {send.isPending ? <Spinner className="h-4 w-4" />
-              : <><Icon.Mail size={16} /> Send to the partner</>}
-          </button>
+            {send.isPending ? "Sending…" : "Send to the partner"}
+          </Button>
           <p className="text-xs text-slate-500">
             The partner sees the premium and their own earning in rupees —
             never a rate, never the agency's side.
@@ -358,37 +361,38 @@ function QuoteActions({ quote, onDone }: {
 
       {tab === "ask" && (
         <div className="space-y-3">
-          <Field label="Message to the partner" required>
-            <textarea className="input" rows={3} value={message}
+          <FormField label="Message to the partner" required>
+            <Textarea rows={3} value={message}
               placeholder="e.g. Please send a clearer photo of the RC book."
               onChange={(e) => setMessage(e.target.value)} />
-          </Field>
+          </FormField>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-primary" disabled={!message.trim()}
+            <Button size="sm" disabled={!message.trim()}
               onClick={run(
                 () => quotesApi.note(quote.id, message.trim(), true),
                 "Asked. The request is now waiting on them.")}>
               Ask for this
-            </button>
-            <button className="btn-secondary" disabled={!message.trim()}
+            </Button>
+            <Button variant="outline" size="sm" disabled={!message.trim()}
               onClick={run(
                 () => quotesApi.note(quote.id, message.trim(), false),
                 "Sent.")}>
               Just send an update
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {tab === "close" && (
         <div className="space-y-3">
-          <Field label="Reason" hint="The partner sees this.">
-            <input className="input" value={reason}
+          <FormField label="Reason" hint="The partner sees this.">
+            <Input value={reason}
               placeholder="e.g. No appetite for this vehicle age."
               onChange={(e) => setReason(e.target.value)} />
-          </Field>
+          </FormField>
           <div className="flex flex-wrap gap-2">
-            <button className="btn-danger-soft"
+            <Button variant="outline" size="sm"
+              className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
               onClick={async () => {
                 if (await confirmDialog({
                   title: "Decline this request?",
@@ -398,12 +402,12 @@ function QuoteActions({ quote, onDone }: {
                   "Declined.")();
               }}>
               We cannot quote this
-            </button>
-            <button className="btn-secondary"
+            </Button>
+            <Button variant="outline" size="sm"
               onClick={run(() => quotesApi.close(quote.id, "lost", reason),
                 "Marked as lost.")}>
               Quoted but lost
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -427,11 +431,11 @@ function InternalNotes({ quote, onDone }: {
         Staff only. The partner never sees this — their schema has no field
         for it.
       </p>
-      <textarea className="input" rows={3} value={notes}
+      <Textarea rows={3} value={notes}
         onChange={(e) => setNotes(e.target.value)} />
-      <button className="btn-secondary mt-2"
+      <Button variant="outline" size="sm" className="mt-2"
         disabled={save.isPending || notes === (quote.internal_notes ?? "")}
-        onClick={() => save.mutate()}>Save notes</button>
+        onClick={() => save.mutate()}>Save notes</Button>
     </SectionCard>
   );
 }
