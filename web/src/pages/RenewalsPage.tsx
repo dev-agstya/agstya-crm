@@ -6,12 +6,12 @@ import { policiesApi, reportsApi } from "../api/endpoints";
 import { PageHeader } from "../components/PageHeader";
 import { StatCard } from "../components/shared/StatCard";
 import { DataTable, Column } from "../components/shared/DataTable";
+import { FilterToolbar } from "../components/shared/FilterToolbar";
 import { formatDate, formatINR } from "../lib/format";
 import { useAuth } from "../store/auth";
 import type { Policy } from "../lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -50,7 +50,7 @@ export default function RenewalsPage() {
       header: "Policy & Customer",
       cell: (p) => (
         <div>
-          <p className="font-mono text-sm font-semibold text-foreground">
+          <p className="font-mono font-semibold text-foreground">
             {p.policy_number || p.code}
           </p>
           <p className="text-xs text-muted-foreground">
@@ -66,13 +66,16 @@ export default function RenewalsPage() {
         const dl = daysLeft(p.expiry_date);
         const urgent = dl !== null && dl <= 7;
         return (
-          <div className="flex items-center gap-2 whitespace-nowrap">
+          <div className="flex items-center gap-1.5 whitespace-nowrap">
             <span className="tabular-nums text-foreground">
               {p.expiry_date ? formatDate(p.expiry_date) : "—"}
             </span>
             {dl !== null && (
-              <Badge variant={urgent ? "destructive" : "secondary"}>
-                {dl <= 0 ? "Due now" : `${dl}d left`}
+              <Badge
+                variant={urgent ? "destructive" : "secondary"}
+                className="h-4 px-1.5 text-[10px]"
+              >
+                {dl <= 0 ? "Due now" : `${dl}d`}
               </Badge>
             )}
           </div>
@@ -96,23 +99,25 @@ export default function RenewalsPage() {
       mobileLabel: false,
       cell: (p) => (
         <div
-          className="flex items-center justify-end gap-2"
+          className="flex items-center justify-end gap-1.5"
           onClick={(e) => e.stopPropagation()}
         >
           <Button
             variant="ghost"
             size="sm"
+            className="h-7 px-2 text-xs"
             onClick={() => navigate(`/renewals/${p.id}/history`)}
           >
-            <History className="mr-1 h-3.5 w-3.5" />
+            <History className="mr-1 h-3 w-3" />
             History
           </Button>
           {canManage && (
             <Button
               size="sm"
+              className="h-7 px-2.5 text-xs"
               onClick={() => navigate(`/renewals/${p.id}`)}
             >
-              <RefreshCw className="mr-1 h-3.5 w-3.5" />
+              <RefreshCw className="mr-1 h-3 w-3" />
               Renew
             </Button>
           )}
@@ -122,14 +127,14 @@ export default function RenewalsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="Renewals"
-        subtitle="Policies expiring soon — renew in one click and update broker or insurer if needed."
+        subtitle="Policies expiring soon"
         figure={
           canReports && summary.data
             ? {
-                label: "Due premium (30d)",
+                label: "Due (30d)",
                 value: formatINR(summary.data.due_30d_premium),
                 tone: "due",
               }
@@ -138,7 +143,7 @@ export default function RenewalsPage() {
       />
 
       {canReports && summary.data && (
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           <StatCard
             label="Due in 30 days"
             value={String(summary.data.due_30d)}
@@ -162,33 +167,32 @@ export default function RenewalsPage() {
         </div>
       )}
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <div className="flex items-center gap-3">
-            <span className="text-sm font-medium text-muted-foreground">
-              Expiring within
+      <FilterToolbar
+        right={
+          due.data && (
+            <span className="text-xs font-medium text-muted-foreground tabular-nums">
+              {due.data.items.length} due
             </span>
-            <Select
-              value={String(windowDays)}
-              onValueChange={(v) => setWindowDays(Number(v))}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="30">Next 30 days</SelectItem>
-                <SelectItem value="60">Next 60 days</SelectItem>
-                <SelectItem value="90">Next 90 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          {due.data && (
-            <span className="text-sm font-medium text-muted-foreground tabular-nums">
-              {due.data.items.length} policies due
-            </span>
-          )}
-        </CardContent>
-      </Card>
+          )
+        }
+      >
+        <span className="text-xs font-medium text-muted-foreground">
+          Expiring within
+        </span>
+        <Select
+          value={String(windowDays)}
+          onValueChange={(v) => setWindowDays(Number(v))}
+        >
+          <SelectTrigger className="h-9 w-[150px] bg-card text-xs sm:h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="30">Next 30 days</SelectItem>
+            <SelectItem value="60">Next 60 days</SelectItem>
+            <SelectItem value="90">Next 90 days</SelectItem>
+          </SelectContent>
+        </Select>
+      </FilterToolbar>
 
       <DataTable
         data={due.data?.items ?? []}

@@ -37,46 +37,46 @@ export function PageHeader({
           : "text-foreground";
 
   return (
-    <div className="mb-6 border-b border-border/60 pb-5">
+    <div className="mb-3">
       {backTo && (
         <Link
           to={backTo}
-          className="mb-2.5 inline-flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+          className="mb-1 inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-3.5 w-3.5" />
           {backLabel ?? "Back"}
         </Link>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex min-w-0 flex-wrap items-baseline gap-x-2.5 gap-y-0.5">
           {eyebrow && (
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {eyebrow}
-            </p>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+              {eyebrow} ·
+            </span>
           )}
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
             {title}
           </h1>
           {subtitle && (
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            <span className="truncate text-xs text-muted-foreground">
               {subtitle}
-            </p>
+            </span>
           )}
         </div>
         {(actions || figure) && (
-          <div className="flex shrink-0 flex-wrap items-center gap-4">
+          <div className="flex shrink-0 flex-wrap items-center gap-2">
             {figure && (
-              <div className="rounded-lg border border-border bg-card px-4 py-2 text-left sm:text-right">
-                <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
+              <div className="flex items-baseline gap-2 rounded-md border border-border bg-card px-3 py-1">
+                <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
                   {figure.label}
-                </p>
-                <p className={`text-xl font-bold tracking-tight tabular-nums ${figureTone}`}>
+                </span>
+                <span className={`text-sm font-bold tabular-nums ${figureTone}`}>
                   {figure.value}
-                </p>
+                </span>
               </div>
             )}
             {actions && (
-              <div className="flex flex-wrap items-center gap-2">{actions}</div>
+              <div className="flex flex-wrap items-center gap-1.5">{actions}</div>
             )}
           </div>
         )}

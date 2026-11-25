@@ -1,20 +1,19 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Upload, X } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 import { leadsApi } from "../../api/endpoints";
 import { PageHeader } from "../../components/PageHeader";
 import { ExportButton } from "../../components/ExportButton";
 import { DataTable, Column } from "../../components/shared/DataTable";
+import { FilterToolbar, FilterChip } from "../../components/shared/FilterToolbar";
 import { titleCase } from "../../lib/format";
 import { useAuth } from "../../store/auth";
 import { TIMING_TONE_CLASS, reminderTiming } from "../../lib/reminderTiming";
 import { LEAD_TYPES, LEAD_TYPE_LABELS } from "../../lib/types";
 import type { Lead, LeadStage } from "../../lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -72,9 +71,25 @@ export default function LeadsListPage() {
   const filtered = !!(q || stage !== "all" || type !== "all");
   const canManage = has("manage_leads");
 
+  const chips: FilterChip[] = [];
+  if (type !== "all") {
+    chips.push({
+      key: "type",
+      label: `Type: ${LEAD_TYPE_LABELS[type] ?? titleCase(type)}`,
+      onRemove: () => { setPage(1); setType("all"); },
+    });
+  }
+  if (stage !== "all") {
+    chips.push({
+      key: "stage",
+      label: `Stage: ${titleCase(stage)}`,
+      onRemove: () => { setPage(1); setStage("all"); },
+    });
+  }
+
   const addButton = canManage ? (
-    <Button onClick={() => navigate("/leads/new")}>
-      <Plus className="mr-1.5 h-4 w-4" />
+    <Button size="sm" className="h-8" onClick={() => navigate("/leads/new")}>
+      <Plus className="mr-1 h-3.5 w-3.5" />
       Add lead
     </Button>
   ) : undefined;
@@ -108,11 +123,11 @@ export default function LeadsListPage() {
       cell: (l) => (
         <Badge
           variant={STAGE_VARIANT[l.stage]}
-          className={
+          className={`h-5 px-1.5 text-[10px] ${
             l.stage === "converted"
               ? "bg-emerald-600 text-white hover:bg-emerald-600"
               : ""
-          }
+          }`}
         >
           {titleCase(l.stage)}
         </Badge>
@@ -123,7 +138,7 @@ export default function LeadsListPage() {
       header: "Last note",
       cell: (l) => (
         <span
-          className="block max-w-[220px] truncate text-muted-foreground"
+          className="block max-w-[200px] truncate text-muted-foreground"
           title={l.last_comment || ""}
         >
           {l.last_comment || "—"}
@@ -146,8 +161,8 @@ export default function LeadsListPage() {
               {timing.label}
             </span>
             {extra > 0 && (
-              <span className="ml-1.5 text-xs text-muted-foreground">
-                +{extra} more
+              <span className="ml-1 text-xs text-muted-foreground">
+                +{extra}
               </span>
             )}
           </div>
@@ -157,10 +172,10 @@ export default function LeadsListPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Leads"
-        subtitle="Track prospective customers and follow-up reminders."
+        subtitle="Prospective customers & follow-ups"
         actions={
           <>
             <ExportButton
@@ -178,9 +193,11 @@ export default function LeadsListPage() {
               <>
                 <Button
                   variant="outline"
+                  size="sm"
+                  className="h-8"
                   onClick={() => navigate("/leads/import")}
                 >
-                  <Upload className="mr-1.5 h-4 w-4" />
+                  <Upload className="mr-1 h-3.5 w-3.5" />
                   Import
                 </Button>
                 {addButton}
@@ -190,87 +207,76 @@ export default function LeadsListPage() {
         }
       />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => {
-                setPage(1);
-                setQ(e.target.value);
-              }}
-              placeholder="Search by name, mobile, or email..."
-              className="pl-9"
-            />
-          </div>
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: (v) => {
+            setPage(1);
+            setQ(v);
+          },
+          placeholder: "Search name, mobile, email...",
+        }}
+        chips={chips}
+        onClearAll={reset}
+      >
+        <Select
+          value={type}
+          onValueChange={(v) => {
+            setPage(1);
+            setType(v);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[140px] bg-card text-xs sm:h-8">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {LEAD_TYPES.map((t) => (
+              <SelectItem key={t.value} value={t.value}>
+                {t.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Select
-            value={type}
-            onValueChange={(v) => {
-              setPage(1);
-              setType(v);
-            }}
-          >
-            <SelectTrigger className="w-[170px]">
-              <SelectValue placeholder="Lead type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {LEAD_TYPES.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <Select
+          value={stage}
+          onValueChange={(v) => {
+            setPage(1);
+            setStage(v);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[135px] bg-card text-xs sm:h-8">
+            <SelectValue placeholder="Stage" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All stages</SelectItem>
+            {STAGES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {titleCase(s)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-          <Select
-            value={stage}
-            onValueChange={(v) => {
-              setPage(1);
-              setStage(v);
-            }}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Stage" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All stages</SelectItem>
-              {STAGES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {titleCase(s)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={sort}
-            onValueChange={(v) => {
-              setPage(1);
-              setSort(v);
-            }}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Sort" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Newest first</SelectItem>
-              <SelectItem value="oldest">Oldest first</SelectItem>
-              <SelectItem value="name_asc">Name A–Z</SelectItem>
-              <SelectItem value="name_desc">Name Z–A</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {filtered && (
-            <Button variant="ghost" size="sm" onClick={reset}>
-              <X className="mr-1 h-4 w-4" />
-              Clear
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        <Select
+          value={sort}
+          onValueChange={(v) => {
+            setPage(1);
+            setSort(v);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[135px] bg-card text-xs sm:h-8">
+            <SelectValue placeholder="Sort" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="recent">Newest first</SelectItem>
+            <SelectItem value="oldest">Oldest first</SelectItem>
+            <SelectItem value="name_asc">Name A–Z</SelectItem>
+            <SelectItem value="name_desc">Name Z–A</SelectItem>
+          </SelectContent>
+        </Select>
+      </FilterToolbar>
 
       <DataTable
         data={list.data?.items ?? []}
@@ -290,7 +296,7 @@ export default function LeadsListPage() {
         }
         emptyAction={
           filtered ? (
-            <Button variant="outline" onClick={reset}>
+            <Button variant="outline" size="sm" onClick={reset}>
               Clear filters
             </Button>
           ) : (

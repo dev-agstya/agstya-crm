@@ -33,16 +33,16 @@ export function FormSection({
 
   return (
     <Card className={className}>
-      <CardHeader className="flex flex-row items-start justify-between gap-4 pb-4">
+      <CardHeader className="flex flex-row items-center justify-between gap-3 px-4 py-3 pb-2">
         <div>
-          <CardTitle className="text-base font-semibold">{title}</CardTitle>
+          <CardTitle className="text-sm font-semibold">{title}</CardTitle>
           {description && (
-            <CardDescription className="mt-1 text-sm">{description}</CardDescription>
+            <CardDescription className="mt-0.5 text-xs">{description}</CardDescription>
           )}
         </div>
         {actions && <div className="shrink-0">{actions}</div>}
       </CardHeader>
-      <CardContent className={`grid gap-x-6 gap-y-5 ${gridClass}`}>
+      <CardContent className={`grid gap-x-4 gap-y-3 px-4 pb-4 pt-1 ${gridClass}`}>
         {children}
       </CardContent>
     </Card>
@@ -69,9 +69,9 @@ export function FormField({
   className?: string;
 }) {
   return (
-    <div className={`space-y-1.5 ${className}`}>
-      <div className="flex items-center gap-1.5">
-        <Label htmlFor={htmlFor} className="text-sm font-medium text-foreground">
+    <div className={`space-y-1 ${className}`}>
+      <div className="flex items-center gap-1">
+        <Label htmlFor={htmlFor} className="text-xs font-medium text-foreground">
           {label}
           {required && <span className="ml-0.5 text-destructive">*</span>}
         </Label>
@@ -79,10 +79,10 @@ export function FormField({
       </div>
       {children}
       {hint && !error && (
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <p className="text-[11px] text-muted-foreground">{hint}</p>
       )}
       {error && (
-        <p role="alert" className="text-xs font-medium text-destructive">
+        <p role="alert" className="text-[11px] font-medium text-destructive">
           {error}
         </p>
       )}

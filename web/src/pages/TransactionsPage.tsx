@@ -7,10 +7,8 @@ import {
   Paperclip,
   Plus,
   RotateCcw,
-  Search,
   Trash2,
   Upload,
-  X,
 } from "lucide-react";
 import {
   banksApi,
@@ -21,6 +19,7 @@ import {
 import { PageHeader } from "../components/PageHeader";
 import { DateInput } from "../components/DateInput";
 import { DataTable, Column } from "../components/shared/DataTable";
+import { FilterToolbar, FilterChip } from "../components/shared/FilterToolbar";
 import { ExportButton } from "../components/ExportButton";
 import { toast } from "../components/Toast";
 import { confirmDialog } from "../components/Confirm";
@@ -42,9 +41,8 @@ import {
 } from "./finance/txnDisplay";
 import type { DisplayRow } from "./finance/txnDisplay";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -190,6 +188,43 @@ export default function TransactionsPage() {
     account !== "all"
   );
 
+  const chips: FilterChip[] = [];
+  if (type !== "all") {
+    const label = FILTERABLE_TYPES.find(([v]) => v === type)?.[1] ?? type;
+    chips.push({
+      key: "type",
+      label: `Type: ${label}`,
+      onRemove: () => { setPage(1); setType("all"); },
+    });
+  }
+  if (account !== "all") {
+    const label =
+      account === "none"
+        ? "No account"
+        : (accounts.data ?? []).find((a) => a.id === account)?.name ?? "Account";
+    chips.push({
+      key: "account",
+      label: `Account: ${label}`,
+      onRemove: () => { setPage(1); setAccount("all"); },
+    });
+  }
+  if (dateFrom) {
+    chips.push({
+      key: "from",
+      label: `From: ${dateFrom}`,
+      onRemove: () => { setPage(1); setDateFrom(""); },
+    });
+  }
+  if (dateTo) {
+    chips.push({
+      key: "to",
+      label: `To: ${dateTo}`,
+      onRemove: () => { setPage(1); setDateTo(""); },
+    });
+  }
+
+  const moreCount = (dateFrom ? 1 : 0) + (dateTo ? 1 : 0);
+
   const rows: DisplayRow[] = ledger.data?.items
     ? mergeRows(ledger.data.items)
     : [];
@@ -237,7 +272,7 @@ export default function TransactionsPage() {
       key: "note",
       header: "Reference / Note",
       cell: (t) => (
-        <span className="block max-w-[240px] truncate text-sm text-muted-foreground">
+        <span className="block max-w-[240px] truncate text-muted-foreground">
           {t.reference || t.note || "—"}
         </span>
       ),
@@ -272,17 +307,18 @@ export default function TransactionsPage() {
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-7 w-7"
                 title="View attachment"
                 onClick={() => openAttachment(t.attachment_doc_id!)}
               >
-                <Paperclip className="h-4 w-4" />
+                <Paperclip className="h-3.5 w-3.5" />
               </Button>
             )}
             {canManage && !locked && (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon">
-                    <MoreHorizontal className="h-4 w-4" />
+                  <Button variant="ghost" size="icon" className="h-7 w-7">
+                    <MoreHorizontal className="h-3.5 w-3.5" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -312,10 +348,10 @@ export default function TransactionsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Transactions"
-        subtitle="Every payment received, paid out, or expense recorded."
+        subtitle="Money received, paid out & expenses"
         actions={
           <>
             <ExportButton
@@ -335,11 +371,13 @@ export default function TransactionsPage() {
             {(pendingCount.data?.open_count ?? 0) > 0 && (
               <Button
                 variant="outline"
+                size="sm"
+                className="h-8"
                 onClick={() => nav("/finance/transactions/pending")}
               >
-                <Clock className="mr-1.5 h-4 w-4 text-amber-600" />
+                <Clock className="mr-1 h-3.5 w-3.5 text-amber-600" />
                 Pending
-                <Badge variant="secondary" className="ml-1.5">
+                <Badge variant="secondary" className="ml-1.5 h-4 px-1 text-[10px]">
                   {pendingCount.data!.open_count}
                 </Badge>
               </Button>
@@ -348,13 +386,19 @@ export default function TransactionsPage() {
               <>
                 <Button
                   variant="outline"
+                  size="sm"
+                  className="h-8"
                   onClick={() => nav("/finance/transactions/import")}
                 >
-                  <Upload className="mr-1.5 h-4 w-4" />
-                  Import statement
+                  <Upload className="mr-1 h-3.5 w-3.5" />
+                  Import
                 </Button>
-                <Button onClick={() => nav("/finance/transactions/new")}>
-                  <Plus className="mr-1.5 h-4 w-4" />
+                <Button
+                  size="sm"
+                  className="h-8"
+                  onClick={() => nav("/finance/transactions/new")}
+                >
+                  <Plus className="mr-1 h-3.5 w-3.5" />
                   Record payment
                 </Button>
               </>
@@ -363,93 +407,88 @@ export default function TransactionsPage() {
         }
       />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <div className="relative min-w-[200px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => {
-                setPage(1);
-                setQ(e.target.value);
-              }}
-              placeholder="Search reference or note..."
-              className="pl-9"
-            />
-          </div>
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: (v) => {
+            setPage(1);
+            setQ(v);
+          },
+          placeholder: "Search reference or note...",
+        }}
+        moreCount={moreCount}
+        chips={chips}
+        onClearAll={reset}
+        moreFilters={
+          <>
+            <div className="space-y-1">
+              <Label className="text-xs">From date</Label>
+              <DateInput
+                value={dateFrom}
+                placeholder="From"
+                onChange={(v) => {
+                  setPage(1);
+                  setDateFrom(v);
+                }}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">To date</Label>
+              <DateInput
+                value={dateTo}
+                placeholder="To"
+                onChange={(v) => {
+                  setPage(1);
+                  setDateTo(v);
+                }}
+              />
+            </div>
+          </>
+        }
+      >
+        <Select
+          value={type}
+          onValueChange={(v) => {
+            setPage(1);
+            setType(v);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[155px] bg-card text-xs sm:h-8">
+            <SelectValue placeholder="Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {FILTERABLE_TYPES.map(([v, l]) => (
+              <SelectItem key={v} value={v}>
+                {l}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
+        {(accounts.data ?? []).length > 0 && (
           <Select
-            value={type}
+            value={account}
             onValueChange={(v) => {
               setPage(1);
-              setType(v);
+              setAccount(v);
             }}
           >
-            <SelectTrigger className="w-[170px]">
-              <SelectValue placeholder="Type" />
+            <SelectTrigger className="h-9 w-[160px] bg-card text-xs sm:h-8">
+              <SelectValue placeholder="Account" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {FILTERABLE_TYPES.map(([v, l]) => (
-                <SelectItem key={v} value={v}>
-                  {l}
+              <SelectItem value="all">All accounts</SelectItem>
+              {(accounts.data ?? []).map((a) => (
+                <SelectItem key={a.id} value={a.id}>
+                  {a.name}
                 </SelectItem>
               ))}
+              <SelectItem value="none">No account recorded</SelectItem>
             </SelectContent>
           </Select>
-
-          {(accounts.data ?? []).length > 0 && (
-            <Select
-              value={account}
-              onValueChange={(v) => {
-                setPage(1);
-                setAccount(v);
-              }}
-            >
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Account" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All accounts</SelectItem>
-                {(accounts.data ?? []).map((a) => (
-                  <SelectItem key={a.id} value={a.id}>
-                    {a.name}
-                  </SelectItem>
-                ))}
-                <SelectItem value="none">No account recorded</SelectItem>
-              </SelectContent>
-            </Select>
-          )}
-
-          <div className="w-36">
-            <DateInput
-              value={dateFrom}
-              placeholder="From"
-              onChange={(v) => {
-                setPage(1);
-                setDateFrom(v);
-              }}
-            />
-          </div>
-          <div className="w-36">
-            <DateInput
-              value={dateTo}
-              placeholder="To"
-              onChange={(v) => {
-                setPage(1);
-                setDateTo(v);
-              }}
-            />
-          </div>
-
-          {hasFilters && (
-            <Button variant="ghost" size="sm" onClick={reset}>
-              <X className="mr-1 h-4 w-4" />
-              Clear
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        )}
+      </FilterToolbar>
 
       <DataTable
         data={rows}
@@ -467,12 +506,12 @@ export default function TransactionsPage() {
         }
         emptyAction={
           hasFilters ? (
-            <Button variant="outline" onClick={reset}>
+            <Button variant="outline" size="sm" onClick={reset}>
               Clear filters
             </Button>
           ) : canManage ? (
-            <Button onClick={() => nav("/finance/transactions/new")}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button size="sm" onClick={() => nav("/finance/transactions/new")}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
               Record payment
             </Button>
           ) : undefined

@@ -41,7 +41,7 @@ export function TopBar({ onOpenNav }: { onOpenNav: () => void }) {
   };
 
   return (
-    <header className="sticky top-0 z-nav flex h-14 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:px-6">
+    <header className="sticky top-0 z-nav flex h-12 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80 lg:px-5">
       {/* Mobile drawer toggle */}
       <Button
         type="button"

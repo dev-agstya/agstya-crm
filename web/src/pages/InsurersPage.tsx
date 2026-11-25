@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Edit, Plus, Search } from "lucide-react";
+import { Edit, Plus } from "lucide-react";
 import { insurersApi } from "../api/endpoints";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, Column } from "../components/shared/DataTable";
+import { FilterToolbar } from "../components/shared/FilterToolbar";
 import { useAuth } from "../store/auth";
 import type { Insurer } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -54,7 +53,7 @@ export default function InsurersPage() {
       key: "contact",
       header: "Contact",
       cell: (i) => (
-        <span className="text-sm text-muted-foreground">
+        <span className="text-muted-foreground">
           {i.phone || i.email || "—"}
         </span>
       ),
@@ -65,9 +64,9 @@ export default function InsurersPage() {
       cell: (i) => (
         <Badge
           variant={i.active ? "default" : "secondary"}
-          className={
+          className={`h-5 px-1.5 text-[10px] ${
             i.active ? "bg-emerald-600 text-white hover:bg-emerald-600" : ""
-          }
+          }`}
         >
           {i.active ? "Active" : "Inactive"}
         </Badge>
@@ -84,12 +83,13 @@ export default function InsurersPage() {
               <Button
                 variant="ghost"
                 size="sm"
+                className="h-7 px-2 text-xs"
                 onClick={(e) => {
                   e.stopPropagation();
                   navigate(`/insurers/${i.id}/edit`);
                 }}
               >
-                <Edit className="mr-1.5 h-3.5 w-3.5" />
+                <Edit className="mr-1 h-3 w-3" />
                 Edit
               </Button>
             ),
@@ -99,46 +99,49 @@ export default function InsurersPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         eyebrow="Catalog"
         title="Insurers"
-        subtitle="Insurance companies whose policies you sell."
+        subtitle="Insurance companies"
         actions={
           canManage && (
-            <Button onClick={() => navigate("/insurers/new")}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button
+              size="sm"
+              className="h-8"
+              onClick={() => navigate("/insurers/new")}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
               Add insurer
             </Button>
           )
         }
       />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <div className="relative min-w-[200px] flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search insurer name..."
-              className="pl-9"
-            />
-          </div>
-          <Select
-            value={activeOnly ? "active" : "all"}
-            onValueChange={(v) => setActiveOnly(v === "active")}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active only</SelectItem>
-              <SelectItem value="all">All insurers</SelectItem>
-            </SelectContent>
-          </Select>
-        </CardContent>
-      </Card>
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: setQ,
+          placeholder: "Search insurer name...",
+        }}
+        onClearAll={() => {
+          setQ("");
+          setActiveOnly(true);
+        }}
+      >
+        <Select
+          value={activeOnly ? "active" : "all"}
+          onValueChange={(v) => setActiveOnly(v === "active")}
+        >
+          <SelectTrigger className="h-9 w-[145px] bg-card text-xs sm:h-8">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="active">Active only</SelectItem>
+            <SelectItem value="all">All insurers</SelectItem>
+          </SelectContent>
+        </Select>
+      </FilterToolbar>
 
       <DataTable
         data={list.data?.items ?? []}
@@ -154,8 +157,8 @@ export default function InsurersPage() {
         emptyDescription="Add insurance companies so you can attach policies to them."
         emptyAction={
           canManage ? (
-            <Button onClick={() => navigate("/insurers/new")}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button size="sm" onClick={() => navigate("/insurers/new")}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
               Add insurer
             </Button>
           ) : undefined

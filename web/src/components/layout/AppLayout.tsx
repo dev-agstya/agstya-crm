@@ -66,7 +66,7 @@ export function AppLayout() {
     <div className="flex h-full flex-col bg-card">
       {/* Brand header */}
       <div
-        className={`flex h-14 shrink-0 items-center border-b border-border px-4 ${
+        className={`flex h-12 shrink-0 items-center border-b border-border px-4 ${
           isRail ? "justify-center px-2" : "justify-between"
         }`}
       >
@@ -271,7 +271,7 @@ export function AppLayout() {
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <TopBar onOpenNav={() => setMobileOpen(true)} />
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-6 sm:px-6 lg:px-8">
+        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-3 sm:px-5 lg:px-6">
           <Outlet />
         </main>
       </div>

@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Edit, IndianRupee, Plus, Search } from "lucide-react";
+import { Edit, IndianRupee, Plus } from "lucide-react";
 import { brokersApi } from "../api/endpoints";
 import { PageHeader } from "../components/PageHeader";
 import { DataTable, Column } from "../components/shared/DataTable";
+import { FilterToolbar } from "../components/shared/FilterToolbar";
 import { RateRulesPanel } from "../components/RateRulesPanel";
 import { useAuth } from "../store/auth";
 import type { Broker } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function BrokersPage() {
   const navigate = useNavigate();
@@ -40,7 +39,7 @@ export default function BrokersPage() {
       key: "code",
       header: "Short code",
       cell: (b) => (
-        <Badge variant="outline" className="font-mono tracking-wider">
+        <Badge variant="outline" className="font-mono text-xs tracking-wider">
           {b.short_code}
         </Badge>
       ),
@@ -61,9 +60,9 @@ export default function BrokersPage() {
       cell: (b) => (
         <Badge
           variant={b.active ? "default" : "secondary"}
-          className={
+          className={`h-5 px-1.5 text-[10px] ${
             b.active ? "bg-emerald-600 text-white hover:bg-emerald-600" : ""
-          }
+          }`}
         >
           {b.active ? "Active" : "Inactive"}
         </Badge>
@@ -78,25 +77,27 @@ export default function BrokersPage() {
             mobileLabel: false as const,
             cell: (b: Broker) => (
               <div
-                className="flex justify-end gap-2"
+                className="flex justify-end gap-1.5"
                 onClick={(e) => e.stopPropagation()}
               >
                 <Button
                   variant="outline"
                   size="sm"
+                  className="h-7 px-2 text-xs"
                   onClick={() =>
                     setRatesFor(ratesFor?.id === b.id ? null : b)
                   }
                 >
-                  <IndianRupee className="mr-1 h-3.5 w-3.5" />
+                  <IndianRupee className="mr-1 h-3 w-3" />
                   Rate card
                 </Button>
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="h-7 px-2 text-xs"
                   onClick={() => navigate(`/brokers/${b.id}/edit`)}
                 >
-                  <Edit className="mr-1 h-3.5 w-3.5" />
+                  <Edit className="mr-1 h-3 w-3" />
                   Edit
                 </Button>
               </div>
@@ -107,34 +108,33 @@ export default function BrokersPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader
         eyebrow="Catalog"
         title="Brokers"
-        subtitle="Brokerage codes and commission rate cards."
+        subtitle="Brokerages & commission rate cards"
         actions={
           canManage && (
-            <Button onClick={() => navigate("/brokers/new")}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button
+              size="sm"
+              className="h-8"
+              onClick={() => navigate("/brokers/new")}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
               Add broker
             </Button>
           )
         }
       />
 
-      <Card>
-        <CardContent className="p-4">
-          <div className="relative max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search broker..."
-              className="pl-9"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: setQ,
+          placeholder: "Search broker...",
+        }}
+        onClearAll={() => setQ("")}
+      />
 
       <DataTable
         data={list.data ?? []}
@@ -150,8 +150,8 @@ export default function BrokersPage() {
         emptyDescription="Add the brokerages you place policies through."
         emptyAction={
           canManage ? (
-            <Button onClick={() => navigate("/brokers/new")}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button size="sm" onClick={() => navigate("/brokers/new")}>
+              <Plus className="mr-1 h-3.5 w-3.5" />
               Add broker
             </Button>
           ) : undefined

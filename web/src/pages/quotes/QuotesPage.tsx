@@ -1,17 +1,16 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { AlertCircle, Clock, Search } from "lucide-react";
+import { AlertCircle, Clock } from "lucide-react";
 import { quotesApi } from "../../api/endpoints";
 import { ExportButton } from "../../components/ExportButton";
 import { PageHeader } from "../../components/PageHeader";
 import { DataTable, Column } from "../../components/shared/DataTable";
+import { FilterToolbar } from "../../components/shared/FilterToolbar";
 import { formatDate } from "../../lib/format";
 import { QuoteStageBadge } from "../portal/shared";
 import type { StaffQuote } from "../../lib/types";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const AMBER_HOURS = 24;
@@ -67,18 +66,18 @@ export default function QuotesPage() {
 
   const ageBadge =
     late > 0 ? (
-      <Badge variant="destructive" className="gap-1.5">
-        <AlertCircle className="h-3.5 w-3.5" />
-        {late} over {RED_HOURS}h with no reply
+      <Badge variant="destructive" className="h-6 gap-1 text-xs">
+        <AlertCircle className="h-3 w-3" />
+        {late} over {RED_HOURS}h
       </Badge>
     ) : waiting > 0 ? (
-      <Badge variant="secondary" className="gap-1.5 bg-amber-100 text-amber-800">
-        <Clock className="h-3.5 w-3.5" />
-        {waiting} waiting for quote
+      <Badge variant="secondary" className="h-6 gap-1 bg-amber-100 text-xs text-amber-800">
+        <Clock className="h-3 w-3" />
+        {waiting} waiting
       </Badge>
     ) : expired > 0 ? (
-      <Badge variant="secondary" className="gap-1.5 bg-amber-100 text-amber-800">
-        <Clock className="h-3.5 w-3.5" />
+      <Badge variant="secondary" className="h-6 gap-1 bg-amber-100 text-xs text-amber-800">
+        <Clock className="h-3 w-3" />
         {expired} expired
       </Badge>
     ) : null;
@@ -100,9 +99,7 @@ export default function QuotesPage() {
       key: "partner",
       header: "Requested by",
       cell: (r) => (
-        <span className="text-sm text-foreground">
-          {r.partner_name || "—"}
-        </span>
+        <span className="text-foreground">{r.partner_name || "—"}</span>
       ),
     },
     {
@@ -120,6 +117,7 @@ export default function QuotesPage() {
             variant={
               u === "late" ? "destructive" : u === "warn" ? "secondary" : "outline"
             }
+            className="h-5 px-1.5 text-[10px]"
           >
             {ageLabel(r.age_hours)}
           </Badge>
@@ -139,10 +137,10 @@ export default function QuotesPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Quote Requests"
-        subtitle="Partner requests for insurance quotes — answer quickly so partners can close deals."
+        subtitle="Partner requests for insurance quotes"
         actions={
           <>
             {ageBadge}
@@ -161,36 +159,40 @@ export default function QuotesPage() {
         }
       />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
-          <Tabs
-            value={scope}
-            onValueChange={(v) => {
-              setPage(1);
-              setScope(v as Scope);
-            }}
-          >
-            <TabsList>
-              <TabsTrigger value="open">Open requests</TabsTrigger>
-              <TabsTrigger value="mine">Assigned to me</TabsTrigger>
-              <TabsTrigger value="all">All</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <div className="relative min-w-[220px] flex-1 sm:max-w-xs">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => {
-                setPage(1);
-                setQ(e.target.value);
-              }}
-              placeholder="Search customer or partner..."
-              className="pl-9"
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: (v) => {
+            setPage(1);
+            setQ(v);
+          },
+          placeholder: "Search customer or partner...",
+        }}
+        onClearAll={() => {
+          setPage(1);
+          setQ("");
+        }}
+      >
+        <Tabs
+          value={scope}
+          onValueChange={(v) => {
+            setPage(1);
+            setScope(v as Scope);
+          }}
+        >
+          <TabsList className="h-8">
+            <TabsTrigger value="open" className="h-6 px-2.5 text-xs">
+              Open
+            </TabsTrigger>
+            <TabsTrigger value="mine" className="h-6 px-2.5 text-xs">
+              Mine
+            </TabsTrigger>
+            <TabsTrigger value="all" className="h-6 px-2.5 text-xs">
+              All
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </FilterToolbar>
 
       <DataTable
         data={rows}

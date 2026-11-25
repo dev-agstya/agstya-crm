@@ -19,9 +19,7 @@ export interface Column<T> {
   header: string;
   align?: "left" | "right" | "center";
   className?: string;
-  /** Render cell content for desktop table */
   cell: (row: T) => ReactNode;
-  /** Optional label for mobile card layout (defaults to header; set false to hide on mobile card) */
   mobileLabel?: string | false;
 }
 
@@ -30,7 +28,6 @@ interface DataTableProps<T> {
   columns: Column<T>[];
   keyField: (row: T) => string;
   onRowClick?: (row: T) => void;
-  /** Optional custom mobile card renderer; if omitted, auto-renders a clean stacked card from columns */
   renderMobileCard?: (row: T) => ReactNode;
   loading?: boolean;
   error?: string | null;
@@ -64,7 +61,7 @@ export function DataTable<T>({
   className = "",
 }: DataTableProps<T>) {
   if (loading) {
-    return <TableSkeleton rows={6} cols={Math.min(columns.length, 6)} />;
+    return <TableSkeleton rows={8} cols={Math.min(columns.length, 6)} />;
   }
 
   if (error) {
@@ -82,20 +79,22 @@ export function DataTable<T>({
   }
 
   const totalPages =
-    total !== undefined && pageSize > 0 ? Math.max(1, Math.ceil(total / pageSize)) : undefined;
+    total !== undefined && pageSize > 0
+      ? Math.max(1, Math.ceil(total / pageSize))
+      : undefined;
 
   return (
-    <div className={`space-y-4 ${className}`}>
+    <div className={`space-y-2.5 ${className}`}>
       {/* Desktop Table */}
       <Card className="hidden overflow-hidden md:block">
-        <div className="overflow-x-auto">
+        <div className="max-h-[calc(100vh-195px)] overflow-auto">
           <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
+            <TableHeader className="sticky top-0 z-raised bg-muted/80 backdrop-blur-sm">
+              <TableRow className="border-b border-border hover:bg-transparent">
                 {columns.map((col) => (
                   <TableHead
                     key={col.key}
-                    className={`whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-muted-foreground ${
+                    className={`h-9 whitespace-nowrap px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground ${
                       col.align === "right"
                         ? "text-right"
                         : col.align === "center"
@@ -122,7 +121,7 @@ export function DataTable<T>({
                   {columns.map((col) => (
                     <TableCell
                       key={col.key}
-                      className={`py-3.5 text-sm ${
+                      className={`px-3 py-2 text-[13px] leading-snug ${
                         col.align === "right"
                           ? "text-right tabular-nums"
                           : col.align === "center"
@@ -141,23 +140,23 @@ export function DataTable<T>({
       </Card>
 
       {/* Mobile Stacked Cards */}
-      <div className="space-y-3 md:hidden">
+      <div className="space-y-2 md:hidden">
         {data.map((row) => (
           <Card
             key={keyField(row)}
             onClick={onRowClick ? () => onRowClick(row) : undefined}
-            className={`p-4 ${onRowClick ? "cursor-pointer active:bg-muted/50" : ""}`}
+            className={`p-3 ${onRowClick ? "cursor-pointer active:bg-muted/50" : ""}`}
           >
             {renderMobileCard ? (
               renderMobileCard(row)
             ) : (
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {columns.map((col, idx) => {
                   if (col.mobileLabel === false) return null;
                   const label = col.mobileLabel ?? col.header;
                   if (idx === 0) {
                     return (
-                      <div key={col.key} className="font-semibold text-foreground">
+                      <div key={col.key} className="text-sm font-semibold text-foreground">
                         {col.cell(row)}
                       </div>
                     );
@@ -165,9 +164,9 @@ export function DataTable<T>({
                   return (
                     <div
                       key={col.key}
-                      className="flex items-center justify-between gap-3 border-t border-border/50 pt-2 text-sm"
+                      className="flex items-center justify-between gap-2 border-t border-border/50 pt-1.5 text-xs"
                     >
-                      <span className="text-xs font-medium text-muted-foreground">
+                      <span className="font-medium text-muted-foreground">
                         {label}
                       </span>
                       <span className="text-right font-medium text-foreground">
@@ -182,34 +181,38 @@ export function DataTable<T>({
         ))}
       </div>
 
-      {/* Pagination */}
-      {page !== undefined && totalPages !== undefined && totalPages > 1 && onPageChange && (
-        <div className="flex flex-col items-center justify-between gap-3 pt-1 sm:flex-row">
-          <p className="text-xs text-muted-foreground tabular-nums">
-            Page {page} of {totalPages} ({total} total)
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => onPageChange(page - 1)}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => onPageChange(page + 1)}
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
+      {/* Pagination Footer */}
+      {page !== undefined && totalPages !== undefined && total !== undefined && onPageChange && (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs text-muted-foreground">
+          <span className="tabular-nums">
+            Showing page {page} of {totalPages} ({total} total)
+          </span>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 px-2.5 text-xs"
+                disabled={page <= 1}
+                onClick={() => onPageChange(page - 1)}
+              >
+                <ChevronLeft className="mr-1 h-3.5 w-3.5" />
+                Prev
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 px-2.5 text-xs"
+                disabled={page >= totalPages}
+                onClick={() => onPageChange(page + 1)}
+              >
+                Next
+                <ChevronRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

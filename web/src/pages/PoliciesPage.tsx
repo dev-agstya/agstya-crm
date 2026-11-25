@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Shield, X } from "lucide-react";
+import { Plus, Shield } from "lucide-react";
 import {
   brokersApi,
   categoriesApi,
@@ -12,9 +12,11 @@ import {
 import { PageHeader } from "../components/PageHeader";
 import { ExportButton } from "../components/ExportButton";
 import { DataTable, Column } from "../components/shared/DataTable";
+import { FilterToolbar, FilterChip } from "../components/shared/FilterToolbar";
 import { ExpiryChip } from "../components/PolicyDetailBody";
 import {
   DateFilter,
+  periodLabel,
   periodParams,
   type PeriodValue,
 } from "../components/finance/DateFilter";
@@ -32,9 +34,8 @@ import {
   type PolicyStatus,
 } from "../lib/types";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -184,13 +185,13 @@ export default function PoliciesPage() {
 
   if (accessView) {
     return (
-      <div className="space-y-6">
+      <div>
         <PageHeader
           title="Policy access requests"
           eyebrow="Policies"
-          subtitle="Time-limited read access for policies outside an employee's desk."
+          subtitle="Time-limited access to policies outside your desk."
           actions={
-            <Button variant="outline" onClick={() => setAccessView(false)}>
+            <Button variant="outline" size="sm" onClick={() => setAccessView(false)}>
               Back to policies
             </Button>
           }
@@ -200,14 +201,67 @@ export default function PoliciesPage() {
     );
   }
 
+  const chips: FilterChip[] = [];
+  if (status !== "all") {
+    chips.push({
+      key: "status",
+      label: `Status: ${titleCase(status.replace(/_/g, " "))}`,
+      onRemove: () => { setPage(1); setStatus("all"); },
+    });
+  }
+  if (categoryF !== "all") {
+    chips.push({
+      key: "cat",
+      label: `Type: ${catByKey.get(categoryF)?.label ?? categoryF}`,
+      onRemove: () => { setPage(1); setCategoryF("all"); },
+    });
+  }
+  if (insurerF !== "all") {
+    const name = insurers.data?.items.find((i) => i.id === insurerF)?.name ?? "Insurer";
+    chips.push({
+      key: "insurer",
+      label: `Insurer: ${name}`,
+      onRemove: () => { setPage(1); setInsurerF("all"); },
+    });
+  }
+  if (brokerF !== "all") {
+    const name = (brokersFilter.data ?? []).find((b) => b.id === brokerF)?.name ?? "Broker";
+    chips.push({
+      key: "broker",
+      label: `Broker: ${name}`,
+      onRemove: () => { setPage(1); setBrokerF("all"); },
+    });
+  }
+  if (partnerF !== "all") {
+    const name = (partnersFilter.data ?? []).find((p) => p.id === partnerF)?.full_name ?? "Partner";
+    chips.push({
+      key: "partner",
+      label: `Partner: ${name}`,
+      onRemove: () => { setPage(1); setPartnerF("all"); },
+    });
+  }
+  if (period.period !== "till_date") {
+    chips.push({
+      key: "period",
+      label: `Period: ${periodLabel(period)}`,
+      onRemove: () => { setPage(1); setPeriod({ period: "till_date" }); },
+    });
+  }
+
+  const moreCount =
+    (insurerF !== "all" ? 1 : 0) +
+    (brokerF !== "all" ? 1 : 0) +
+    (partnerF !== "all" ? 1 : 0) +
+    (period.period !== "till_date" ? 1 : 0);
+
   const columns: Column<Policy>[] = [
     {
       key: "policy",
       header: "Policy & Customer",
       cell: (p) => (
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-semibold text-foreground">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <span className="font-mono font-semibold text-foreground">
               {p.policy_number || p.code}
             </span>
             <Badge
@@ -218,12 +272,12 @@ export default function PoliciesPage() {
                     ? "destructive"
                     : "secondary"
               }
-              className="text-[11px]"
+              className="h-4 px-1.5 text-[10px]"
             >
               {titleCase(p.status.replace(/_/g, " "))}
             </Badge>
           </div>
-          <p className="mt-0.5 text-xs text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
             {p.customer_name || "—"}
           </p>
         </div>
@@ -233,11 +287,11 @@ export default function PoliciesPage() {
       key: "type",
       header: "Type & Insurer",
       cell: (p) => (
-        <div>
-          <p className="text-sm font-medium text-foreground">
+        <div className="min-w-0">
+          <p className="truncate font-medium text-foreground">
             {categoryTitle(p)}
           </p>
-          <p className="text-xs text-muted-foreground">
+          <p className="truncate text-xs text-muted-foreground">
             {p.insurer_name || "—"}
             {p.broker_name ? ` · ${p.broker_name}` : ""}
           </p>
@@ -248,8 +302,8 @@ export default function PoliciesPage() {
       key: "dates",
       header: "Expiry",
       cell: (p) => (
-        <div className="flex items-center gap-2 whitespace-nowrap">
-          <span className="text-sm tabular-nums text-foreground">
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <span className="tabular-nums text-foreground">
             {p.expiry_date ? formatDate(p.expiry_date) : "—"}
           </span>
           {p.expiry_date && <ExpiryChip expiry={p.expiry_date} status={p.status} />}
@@ -284,23 +338,28 @@ export default function PoliciesPage() {
   ];
 
   const bookBtn = canBook ? (
-    <Button onClick={() => navigate("/policies/new")}>
-      <Plus className="mr-1.5 h-4 w-4" />
+    <Button size="sm" className="h-8" onClick={() => navigate("/policies/new")}>
+      <Plus className="mr-1 h-3.5 w-3.5" />
       Book policy
     </Button>
   ) : undefined;
 
   return (
-    <div className="space-y-6">
+    <div>
       <PageHeader
         title="Policies"
-        subtitle="View booked insurance policies, premiums, and renewal dates."
+        subtitle="Booked insurance policies & renewals"
         actions={
           <>
             {has("manage_policy_access") && (
-              <Button variant="outline" onClick={() => setAccessView(true)}>
-                <Shield className="mr-1.5 h-4 w-4" />
-                Access requests
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => setAccessView(true)}
+              >
+                <Shield className="mr-1 h-3.5 w-3.5" />
+                Access
               </Button>
             )}
             <ExportButton
@@ -324,138 +383,142 @@ export default function PoliciesPage() {
 
       <PolicyScopeNote />
 
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-3 p-4">
-          <div className="relative min-w-[220px] flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search policy #, customer, vehicle..."
-              className="pl-9"
-            />
-          </div>
-
-          <Select
-            value={status}
-            onValueChange={(v) => {
-              setPage(1);
-              setStatus(v);
-            }}
-          >
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
-              {STATUSES.map((s) => (
-                <SelectItem key={s} value={s}>
-                  {titleCase(s.replace(/_/g, " "))}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={categoryF}
-            onValueChange={(v) => {
-              setPage(1);
-              setCategoryF(v);
-            }}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Policy type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              {(cats.data ?? []).map((c) => (
-                <SelectItem key={c.key} value={c.key}>
-                  {c.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={insurerF}
-            onValueChange={(v) => {
-              setPage(1);
-              setInsurerF(v);
-            }}
-          >
-            <SelectTrigger className="w-[160px]">
-              <SelectValue placeholder="Insurer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All insurers</SelectItem>
-              {(insurers.data?.items ?? []).map((i) => (
-                <SelectItem key={i.id} value={i.id}>
-                  {i.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {!isPartner && (
-            <>
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: setQ,
+          placeholder: "Search policy #, customer, vehicle...",
+        }}
+        moreCount={moreCount}
+        chips={chips}
+        onClearAll={clearFilters}
+        moreFilters={
+          <>
+            <div className="space-y-1">
+              <Label className="text-xs">Insurer</Label>
               <Select
-                value={brokerF}
+                value={insurerF}
                 onValueChange={(v) => {
                   setPage(1);
-                  setBrokerF(v);
+                  setInsurerF(v);
                 }}
               >
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Broker" />
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue placeholder="All insurers" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All brokers</SelectItem>
-                  {(brokersFilter.data ?? []).map((b) => (
-                    <SelectItem key={b.id} value={b.id}>
-                      {b.name}
+                  <SelectItem value="all">All insurers</SelectItem>
+                  {(insurers.data?.items ?? []).map((i) => (
+                    <SelectItem key={i.id} value={i.id}>
+                      {i.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            {!isPartner && (
+              <>
+                <div className="space-y-1">
+                  <Label className="text-xs">Broker</Label>
+                  <Select
+                    value={brokerF}
+                    onValueChange={(v) => {
+                      setPage(1);
+                      setBrokerF(v);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="All brokers" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All brokers</SelectItem>
+                      {(brokersFilter.data ?? []).map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Channel Partner</Label>
+                  <Select
+                    value={partnerF}
+                    onValueChange={(v) => {
+                      setPage(1);
+                      setPartnerF(v);
+                    }}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="All partners" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All partners</SelectItem>
+                      {(partnersFilter.data ?? []).map((pt) => (
+                        <SelectItem key={pt.id} value={pt.id}>
+                          {pt.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
+            )}
+            <div className="space-y-1">
+              <Label className="text-xs">Date Period</Label>
+              <div>
+                <DateFilter
+                  value={period}
+                  onChange={(p) => {
+                    setPage(1);
+                    setPeriod(p);
+                  }}
+                />
+              </div>
+            </div>
+          </>
+        }
+      >
+        <Select
+          value={status}
+          onValueChange={(v) => {
+            setPage(1);
+            setStatus(v);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[135px] bg-card text-xs sm:h-8">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All statuses</SelectItem>
+            {STATUSES.map((s) => (
+              <SelectItem key={s} value={s}>
+                {titleCase(s.replace(/_/g, " "))}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
-              <Select
-                value={partnerF}
-                onValueChange={(v) => {
-                  setPage(1);
-                  setPartnerF(v);
-                }}
-              >
-                <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Partner" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All partners</SelectItem>
-                  {(partnersFilter.data ?? []).map((pt) => (
-                    <SelectItem key={pt.id} value={pt.id}>
-                      {pt.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </>
-          )}
-
-          <DateFilter
-            value={period}
-            onChange={(p) => {
-              setPage(1);
-              setPeriod(p);
-            }}
-          />
-
-          {filtered && (
-            <Button variant="ghost" size="sm" onClick={clearFilters}>
-              <X className="mr-1 h-4 w-4" />
-              Clear
-            </Button>
-          )}
-        </CardContent>
-      </Card>
+        <Select
+          value={categoryF}
+          onValueChange={(v) => {
+            setPage(1);
+            setCategoryF(v);
+          }}
+        >
+          <SelectTrigger className="h-9 w-[140px] bg-card text-xs sm:h-8">
+            <SelectValue placeholder="Policy type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All types</SelectItem>
+            {(cats.data ?? []).map((c) => (
+              <SelectItem key={c.key} value={c.key}>
+                {c.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </FilterToolbar>
 
       {qDebounced && <RestrictedMatches q={qDebounced} />}
 
@@ -477,7 +540,7 @@ export default function PoliciesPage() {
         }
         emptyAction={
           filtered ? (
-            <Button variant="outline" onClick={clearFilters}>
+            <Button variant="outline" size="sm" onClick={clearFilters}>
               Clear filters
             </Button>
           ) : (
