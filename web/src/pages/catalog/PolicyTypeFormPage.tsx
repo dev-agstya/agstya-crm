@@ -4,8 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { categoriesApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { FormPage, RecordPage } from "../../components/RecordPage";
-import { Field } from "../../components/ui";
-import { Icon } from "../../components/Icon";
+import { FormField } from "../../components/shared/FormSection";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Check, ChevronDown, Plus, Trash2 } from "lucide-react";
 import { toast } from "../../components/Toast";
 import { SearchSelect } from "../../components/SearchSelect";
 import { COMMISSIONABLE_BASE } from "../../lib/types";
@@ -131,26 +133,26 @@ function FieldsEditor({ fields, onChange }: {
               Required
             </label>
             <div className="ml-auto flex items-center gap-0.5">
-              <button type="button" className="icon-btn text-slate-500 hover:text-slate-800" aria-label="Move up"
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-800" aria-label="Move up"
                 title="Move up" onClick={() => move(i, -1)}>
-                <Icon.ChevronDown size={15} className="rotate-180" /></button>
-              <button type="button" className="icon-btn text-slate-500 hover:text-slate-800" aria-label="Move down"
+                <ChevronDown className="h-3.5 w-3.5 rotate-180" /></Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-800" aria-label="Move down"
                 title="Move down" onClick={() => move(i, 1)}>
-                <Icon.ChevronDown size={15} /></button>
-              <button type="button" className="icon-btn text-money-out hover:bg-money-out/10" title="Remove"
-                onClick={() => remove(i)}><Icon.Trash size={15} /></button>
+                <ChevronDown className="h-3.5 w-3.5" /></Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Remove"
+                onClick={() => remove(i)}><Trash2 className="h-3.5 w-3.5" /></Button>
             </div>
           </div>
 
           {CHOICE_TYPES.includes(f.type) && (
-            <input className="input mt-2" placeholder="Options, comma separated (e.g. Petrol, Diesel, CNG, Electric)"
+            <Input className="mt-2" placeholder="Options, comma separated (e.g. Petrol, Diesel, CNG, Electric)"
               value={f.options.join(", ")}
               onChange={(e) => update(i, {
                 options: e.target.value.split(",").map((s) => s.trimStart()) })} />
           )}
 
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <input className="input min-w-[140px] flex-1 text-xs"
+            <Input className="h-8 min-w-[140px] flex-1 text-xs"
               placeholder="Helper text / hint for agents"
               value={f.hint ?? ""}
               onChange={(e) => update(i, { hint: e.target.value })} />
@@ -267,14 +269,14 @@ function FormFlowOrderBoard({
                         <span className="text-[10px] text-money-in font-semibold bg-money-in/10 px-1.5 py-0.2 rounded border border-money-in/20">Amount (₹)</span>
                       </span>
                       <div className="flex items-center gap-0.5">
-                        <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-800"
                           onClick={() => onMoveField(idx, -1)} title="Move earlier in order">
-                          <Icon.ChevronDown size={13} className="rotate-180" />
-                        </button>
-                        <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                          <ChevronDown className="h-3.5 w-3.5 rotate-180" />
+                        </Button>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-800"
                           onClick={() => onMoveField(idx, 1)} title="Move later in order">
-                          <Icon.ChevronDown size={13} />
-                        </button>
+                          <ChevronDown className="h-3.5 w-3.5" />
+                        </Button>
                       </div>
                     </div>
                   );
@@ -301,14 +303,14 @@ function FormFlowOrderBoard({
                       <span className="text-[10px] text-slate-600 font-semibold bg-slate-100 px-1.5 py-0.2 rounded border border-line">{FIELD_TYPE_LABELS[f.type] || f.type}</span>
                     </span>
                     <div className="flex items-center gap-0.5">
-                      <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-800"
                         onClick={() => onMoveField(idx, -1)} title="Move earlier in order">
-                        <Icon.ChevronDown size={13} className="rotate-180" />
-                      </button>
-                      <button type="button" className="icon-btn text-slate-500 hover:text-slate-800"
+                        <ChevronDown className="h-3.5 w-3.5 rotate-180" />
+                      </Button>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500 hover:text-slate-800"
                         onClick={() => onMoveField(idx, 1)} title="Move later in order">
-                        <Icon.ChevronDown size={13} />
-                      </button>
+                        <ChevronDown className="h-3.5 w-3.5" />
+                      </Button>
                     </div>
                   </div>
                 );
@@ -371,16 +373,16 @@ function DocsEditor({ docs, onChange }: {
             Required
           </label>
           <div className="flex items-center gap-0.5">
-            <button type="button" className="icon-btn text-slate-500"
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500"
               aria-label="Move up" title="Move up"
               onClick={() => move(i, -1)}>
-              <Icon.ChevronDown size={15} className="rotate-180" /></button>
-            <button type="button" className="icon-btn text-slate-500"
+              <ChevronDown className="h-3.5 w-3.5 rotate-180" /></Button>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-slate-500"
               aria-label="Move down" title="Move down"
               onClick={() => move(i, 1)}>
-              <Icon.ChevronDown size={15} /></button>
-            <button type="button" className="icon-btn text-money-out" title="Remove"
-              onClick={() => remove(i)}><Icon.Trash size={15} /></button>
+              <ChevronDown className="h-3.5 w-3.5" /></Button>
+            <Button type="button" variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50" title="Remove"
+              onClick={() => remove(i)}><Trash2 className="h-3.5 w-3.5" /></Button>
           </div>
         </div>
       ))}
@@ -412,8 +414,8 @@ function TreeEditor({ nodes, depth, onChange }: {
             <span className="shrink-0 px-2 py-0.5 text-[10px] font-semibold tracking-wide uppercase bg-slate-100 text-slate-600 rounded">
               Level {depth}
             </span>
-            <input
-              className="input flex-1 min-w-[130px] text-sm font-medium"
+            <Input
+              className="h-8 min-w-[130px] flex-1 text-sm font-medium"
               placeholder={`Sub-type name (Level ${depth})`}
               value={n.label}
               onChange={(e) => update(i, { label: e.target.value })}
@@ -424,33 +426,37 @@ function TreeEditor({ nodes, depth, onChange }: {
                 onClick={() => update(i, { active: !n.active })}
                 className={`shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium border transition-colors ${
                   n.active
-                    ? "bg-money-in/10 text-money-in border-money-in/20 hover:bg-money-in/15"
-                    : "bg-slate-50 text-slate-500 border-line hover:bg-slate-100"
+                    ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100"
+                    : "bg-slate-50 text-slate-500 border-slate-200 hover:bg-slate-100"
                 }`}
                 title="Toggle active status"
               >
-                <Icon.Check size={12} className={n.active ? "text-money-in" : "opacity-0"} />
+                <Check className={`h-3 w-3 ${n.active ? "text-emerald-700" : "opacity-0"}`} />
                 {n.active ? "Active" : "Inactive"}
               </button>
               {depth < MAX_SUBCATEGORY_DEPTH && (
-                <button
+                <Button
                   type="button"
-                  className="btn-secondary btn-sm px-2.5 text-xs inline-flex items-center gap-1 text-slate-700"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 px-2.5 text-xs"
                   onClick={() => addChild(i)}
                   title="Add a sub-branch under this category"
                 >
-                  <Icon.Plus size={12} />
+                  <Plus className="mr-1 h-3 w-3" />
                   Add child
-                </button>
+                </Button>
               )}
-              <button
+              <Button
                 type="button"
-                className="icon-btn text-money-out hover:bg-money-out/10"
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-red-600 hover:bg-red-50"
                 title="Remove sub-type"
                 onClick={() => remove(i)}
               >
-                <Icon.Trash size={15} />
-              </button>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </div>
 
@@ -578,14 +584,14 @@ function EditTypeForm({ category, qc, navigate }: {
             1. Category Information
           </h3>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Policy type name" required>
-              <input className="input" value={label} autoFocus
+            <FormField label="Policy type name" required>
+              <Input value={label} autoFocus
                 onChange={(e) => setLabel(e.target.value)} />
-            </Field>
-            <Field label="Description" hint="Optional summary of this category">
-              <input className="input" value={description}
+            </FormField>
+            <FormField label="Description" hint="Optional summary of this category">
+              <Input value={description}
                 onChange={(e) => setDescription(e.target.value)} />
-            </Field>
+            </FormField>
           </div>
         </div>
 
@@ -604,13 +610,14 @@ function EditTypeForm({ category, qc, navigate }: {
                     Define the branches for this policy type (up to {MAX_SUBCATEGORY_DEPTH} levels). Rate cards price policies per sub-type.
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setTree([...tree, newNode()])}
                 >
-                  <Icon.Plus size={14} /> Add sub-type
-                </button>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add sub-type
+                </Button>
               </div>
               {tree.length === 0 ? (
                 <div className="rounded-control border border-dashed border-line p-6 text-center text-sm text-slate-500">
@@ -632,13 +639,14 @@ function EditTypeForm({ category, qc, navigate }: {
                     Supporting files uploaded on the policy form (e.g. RC book, previous policy).
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setDocs([...docs, newDoc()])}
                 >
-                  <Icon.Plus size={14} /> Add document
-                </button>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add document
+                </Button>
               </div>
               <DocsEditor docs={docs} onChange={setDocs} />
             </div>
@@ -654,13 +662,14 @@ function EditTypeForm({ category, qc, navigate }: {
                     Checklist presented to clients and partners when filing a claim for this type.
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setClaimDocs([...claimDocs, newDoc()])}
                 >
-                  <Icon.Plus size={14} /> Add claim document
-                </button>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add claim document
+                </Button>
               </div>
               <DocsEditor docs={claimDocs} onChange={setClaimDocs} />
             </div>
@@ -679,13 +688,14 @@ function EditTypeForm({ category, qc, navigate }: {
                     Add custom fields prompted when booking this policy type.
                   </p>
                 </div>
-                <button
+                <Button
                   type="button"
-                  className="btn-secondary btn-sm inline-flex items-center gap-1.5"
+                  variant="outline"
+                  size="sm"
                   onClick={() => setFields([...fields, newField()])}
                 >
-                  <Icon.Plus size={14} /> Add field
-                </button>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Add field
+                </Button>
               </div>
 
               {fields.length === 0 ? (
@@ -714,7 +724,7 @@ function EditTypeForm({ category, qc, navigate }: {
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
                 4. Default Commission Reward Base
               </h3>
-              <Field
+              <FormField
                 label="Reward calculated on"
                 tooltip="Which amount the reward % applies to by default. Staff can still override per policy."
               >
@@ -726,7 +736,7 @@ function EditTypeForm({ category, qc, navigate }: {
                   value={effectiveBase}
                   onChange={(v) => setRewardBase(v || COMMISSIONABLE_BASE)}
                 />
-              </Field>
+              </FormField>
             </div>
           </div>
         </div>
@@ -773,15 +783,15 @@ export function AddPolicyTypePage() {
       submitting={save.isPending}
       disabled={!label.trim()}
     >
-      <div className="space-y-5">
-        <Field label="Name" required hint="e.g. Life, Motor, Health, Marine…">
-          <input className="input" value={label} required autoFocus
+      <div className="space-y-4">
+        <FormField label="Name" required hint="e.g. Life, Motor, Health, Marine…">
+          <Input value={label} required autoFocus
             onChange={(e) => setLabel(e.target.value)} />
-        </Field>
-        <Field label="Description">
-          <input className="input" value={description}
+        </FormField>
+        <FormField label="Description">
+          <Input value={description}
             onChange={(e) => setDescription(e.target.value)} />
-        </Field>
+        </FormField>
         {label.trim() && (
           <p className="text-xs text-slate-500">Key: <code>{slugify(label)}</code></p>
         )}

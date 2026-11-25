@@ -1,13 +1,24 @@
 import { FormEvent, useMemo, useState } from "react";
+import { Check, Download, Edit, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormField } from "./shared/FormSection";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   brokersApi, categoriesApi, documentsApi, policiesApi, usersApi,
 } from "../api/endpoints";
 import { apiError } from "../api/client";
-import { Icon } from "./Icon";
 import { DateInput } from "./DateInput";
 import { SearchSelect } from "./SearchSelect";
-import { Field, StatusBadge } from "./ui";
+import { StatusBadge } from "./ui";
 import { toast } from "./Toast";
 import { PolicyDocuments } from "./PolicyDocuments";
 import {
@@ -199,21 +210,23 @@ function RewardPanel({
 
       {/* Reward eligibility — the only per-policy reward control. */}
       {canReward && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-line
-          bg-slate-50/70 px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50/70 px-4 py-2.5">
           <label className="text-xs font-medium text-slate-600"
             htmlFor="reward-eligibility">Eligibility</label>
-          <select id="reward-eligibility" className="select h-9 w-auto text-sm"
-            value={rewardStatus}
-            onChange={(e) => onRewardStatus(e.target.value)}>
-            {REWARD_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-          <button type="button" className="btn-secondary btn-sm"
+          <Select value={rewardStatus} onValueChange={onRewardStatus}>
+            <SelectTrigger id="reward-eligibility" className="h-8 w-auto min-w-[140px] text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {REWARD_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button type="button" variant="outline" size="sm"
             disabled={saving || !dirty} onClick={onSave}>
             {saving ? "Saving…" : "Update"}
-          </button>
+          </Button>
           <span className="text-xs text-slate-500">
             {notEligible
               ? "Set back to Eligible to put it into pending-to-collect again."
@@ -552,25 +565,24 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
         {!editing && (
           <div className="ml-auto flex items-center gap-2">
             {pdf && (
-              <button className="btn-secondary btn-sm"
+              <Button variant="outline" size="sm"
                 title="Download the policy PDF"
                 onClick={() => openPdf(pdf.id)}>
-                <Icon.Download size={14} /> Download
-              </button>
+                <Download className="mr-1.5 h-3.5 w-3.5" /> Download
+              </Button>
             )}
             {canEdit && (
-              <button className="btn-secondary btn-sm"
+              <Button variant="outline" size="sm"
                 onClick={() => setEditing(true)}>
-                <Icon.Edit size={14} /> Edit
-              </button>
+                <Edit className="mr-1.5 h-3.5 w-3.5" /> Edit
+              </Button>
             )}
             {onDelete && (
-              <button className="inline-flex items-center gap-1 rounded-md border
-                border-money-out/25 px-3 py-1.5 text-xs font-medium text-money-out
-                hover:bg-money-out/10 disabled:opacity-50"
+              <Button variant="outline" size="sm"
+                className="border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
                 disabled={deleting} onClick={onDelete}>
-                <Icon.Trash size={14} /> {deleting ? "Deleting…" : "Delete"}
-              </button>
+                <Trash2 className="mr-1.5 h-3.5 w-3.5" /> {deleting ? "Deleting…" : "Delete"}
+              </Button>
             )}
           </div>
         )}
@@ -713,7 +725,7 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
               the % fields below still win if you set them. */}
           {!isPartner && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <Field label="Broker"
+              <FormField label="Broker"
                 hint="Drives the rate card. Changing it re-prices the reward.">
                 <SearchSelect
                   options={(brokers.data ?? []).map((b) => ({
@@ -721,9 +733,9 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
                   value={f.broker_id}
                   placeholder="Select broker…"
                   onChange={(v) => set("broker_id", v)} />
-              </Field>
+              </FormField>
               {has("manage_policies") && (
-                <Field label="Channel Partner"
+                <FormField label="Channel Partner"
                   hint="Attributes the reward to this partner's wallet.">
                   <SearchSelect
                     options={(partners.data ?? []).map((p) => ({
@@ -732,9 +744,8 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
                     placeholder="— None (in-house sale) —"
                     allowClear clearLabel="— None (in-house sale) —"
                     onChange={(v) => setF((s) => ({ ...s, partner_id: v,
-                      // No discount on partner-attributed policies (owner Q5).
                       ...(v ? { discount_value: "" } : {}) }))} />
-                </Field>
+                </FormField>
               )}
             </div>
           )}
@@ -742,48 +753,53 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
           {levels.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               {levels.map((lvl, i) => (
-                <Field key={i} label={i === 0 ? "Sub-type" : `Sub-type ${i + 1}`}>
-                  <select className="select" value={lvl.value}
-                    onChange={(e) => setLevel(i, e.target.value)}>
-                    <option value="">— Select —</option>
-                    {lvl.options.map((n) => (
-                      <option key={n.key} value={n.key}>{n.label}</option>
-                    ))}
-                  </select>
-                </Field>
+                <FormField key={i} label={i === 0 ? "Sub-type" : `Sub-type ${i + 1}`}>
+                  <Select value={lvl.value || "__none__"}
+                    onValueChange={(v) => setLevel(i, v === "__none__" ? "" : v)}>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="— Select —" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">— Select —</SelectItem>
+                      {lvl.options.map((n) => (
+                        <SelectItem key={n.key} value={n.key}>{n.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </FormField>
               ))}
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Policy number">
-              <input className="input" value={f.policy_number}
+            <FormField label="Policy number">
+              <Input value={f.policy_number}
                 onChange={(e) => set("policy_number", e.target.value)} />
-            </Field>
-            <Field label="Premium — gross incl. GST (₹)" required>
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Premium — gross incl. GST (₹)" required>
+              <Input type="number" step="0.01" min="0"
                 value={f.premium} required
                 onChange={(e) => set("premium", e.target.value)} />
-            </Field>
-            <Field label="Premium before tax (₹)"
+            </FormField>
+            <FormField label="Premium before tax (₹)"
               hint="Leave blank to auto-derive net of GST.">
-              <input type="number" step="0.01" min="0" className="input"
+              <Input type="number" step="0.01" min="0"
                 value={f.commissionable}
                 onChange={(e) => set("commissionable", e.target.value)} />
-            </Field>
-            <Field label="Sum insured (₹)">
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Sum insured (₹)">
+              <Input type="number" step="0.01" min="0"
                 value={f.sum_insured}
                 onChange={(e) => set("sum_insured", e.target.value)} />
-            </Field>
-            <Field label="Start date" required>
+            </FormField>
+            <FormField label="Start date" required>
               <DateInput value={f.start_date} required
                 onChange={(v) => set("start_date", v)} />
-            </Field>
-            <Field label="Expiry date" required>
+            </FormField>
+            <FormField label="Expiry date" required>
               <DateInput value={f.expiry_date} required
                 onChange={(v) => set("expiry_date", v)} />
-            </Field>
+            </FormField>
           </div>
 
           {/* The type's OWN fields — collected on the Add form, editable here
@@ -799,67 +815,63 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
           {!isPartner && (seesAgency || !!f.partner_id) && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               {seesAgency && (
-                <Field label={policy.reward.agency_basis === "percent"
+                <FormField label={policy.reward.agency_basis === "percent"
                   ? "Agency % (received from broker)" : "Agency flat (₹)"}>
-                  <input type="number" step="0.01" min="0" className="input"
+                  <Input type="number" step="0.01" min="0"
                     value={f.agency_value}
                     onChange={(e) => set("agency_value", e.target.value)} />
-                </Field>
+                </FormField>
               )}
               {!!f.partner_id && (
-                <Field label={policy.reward.partner_basis === "percent"
+                <FormField label={policy.reward.partner_basis === "percent"
                   ? "Channel Partner % (paid to partner)"
                   : "Channel Partner flat (₹)"}>
-                  <input type="number" step="0.01" min="0" className="input"
+                  <Input type="number" step="0.01" min="0"
                     value={f.partner_value}
                     onChange={(e) => set("partner_value", e.target.value)} />
-                </Field>
+                </FormField>
               )}
             </div>
           )}
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <Field label="Premium Paid By">
-              <select className="select" value={f.payer}
-                onChange={(e) => set("payer", e.target.value)}>
-                {PAID_BY_OPTIONS.map((o) => (
-                  <option key={o.value} value={o.value}>{o.label}</option>
-                ))}
-              </select>
-            </Field>
-            {/* No discount on partner-attributed policies (owner Q5).
-                Flat ₹ only — same as the add form (owner 1.9). Follows the
-                partner picker above, not the saved value, so clearing the
-                partner opens the field in the same edit. */}
+            <FormField label="Premium Paid By">
+              <Select value={f.payer} onValueChange={(v) => set("payer", v)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAID_BY_OPTIONS.map((o) => (
+                    <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
             {!f.partner_id && (
-              <Field label="Discount (₹)"
+              <FormField label="Discount (₹)"
                 hint="Flat amount, borne by the house. Cannot exceed the premium.">
-                <input type="number" step="0.01" min="0" className="input"
+                <Input type="number" step="0.01" min="0"
                   value={f.discount_value}
                   onChange={(e) => set("discount_value", e.target.value)} />
-              </Field>
+              </FormField>
             )}
           </div>
-          <Field label="Replace policy PDF"
+          <FormField label="Replace policy PDF"
             hint={pdf
               ? `Current: ${pdf.filename}. Choose a file to replace it.`
               : "Upload the policy PDF (max 20 MB)."}>
-            <input type="file" accept="application/pdf,.pdf"
-              className="input py-1.5"
+            <Input type="file" accept="application/pdf,.pdf"
+              className="h-9 py-1.5"
               onChange={(e) => setPdfFile(e.target.files?.[0] ?? null)} />
             {pdfFile && (
-              <p className="mt-1 inline-flex items-center gap-1 text-xs
-                text-money-in"><Icon.Check size={13} /> {pdfFile.name}</p>
+              <p className="mt-1 inline-flex items-center gap-1 text-xs text-emerald-700">
+                <Check className="h-3.5 w-3.5" /> {pdfFile.name}</p>
             )}
-          </Field>
-          {/* Supporting documents are NOT re-collected here: the Documents list
-              on the record itself uploads, replaces and deletes them, so a file
-              picker in this form would be a second way to do the same thing
-              that only works while you happen to be editing. */}
-          <Field label="Notes">
-            <textarea className="input" rows={2} value={f.notes}
+          </FormField>
+          <FormField label="Notes">
+            <Textarea rows={2} value={f.notes}
               onChange={(e) => set("notes", e.target.value)} />
-          </Field>
+          </FormField>
 
           <p className="text-xs text-slate-500">
             Saving recomputes the reward and finance snapshot from the new
@@ -867,12 +879,12 @@ export function PolicyDetailBody({ policy, onDelete, deleting }: {
             the record.
           </p>
           <div className="flex justify-end gap-2">
-            <button type="button" className="btn-secondary" onClick={cancelEdit}>
-              Cancel</button>
-            <button type="submit" className="btn-primary"
+            <Button type="button" variant="outline" size="sm" onClick={cancelEdit}>
+              Cancel</Button>
+            <Button type="submit" size="sm"
               disabled={save.isPending}>
               {save.isPending ? "Saving…" : "Save changes"}
-            </button>
+            </Button>
           </div>
         </form>
       )}

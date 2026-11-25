@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { Download, FileText, Loader2, Trash2, Upload, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
 import { documentsApi, policiesApi } from "../api/endpoints";
 import { apiError } from "../api/client";
-import { Icon } from "./Icon";
-import { Spinner } from "./ui";
 import { toast } from "./Toast";
 import { confirmDialog } from "./Confirm";
 import { formatDate } from "../lib/format";
@@ -116,10 +118,10 @@ export function PolicyDocuments({
         border-b border-line/70 px-4 py-2.5">
         <p className="text-sm font-medium text-slate-600">Documents</p>
         {canManage && !adding && (
-          <button type="button" className="btn-secondary btn-sm"
+          <Button type="button" variant="outline" size="sm"
             onClick={() => setAdding(true)}>
-            <Icon.Upload size={14} /> Add document
-          </button>
+            <Upload className="mr-1.5 h-3.5 w-3.5" /> Add document
+          </Button>
         )}
       </div>
 
@@ -179,15 +181,14 @@ function DocumentRow({ row, busy, canManage, onOpen, onUpload, onDelete }: {
     <li className="flex items-center justify-between gap-3 px-4 py-2.5">
       <div className="flex min-w-0 items-center gap-3">
         <span className={row.doc ? "text-slate-500" : "text-slate-300"}>
-          <Icon.Policy size={18} />
+          <FileText className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="flex items-center gap-2 truncate text-sm font-medium
-            text-slate-800">
+          <p className="flex items-center gap-2 truncate text-sm font-medium text-slate-800">
             {row.label}
-            {isPdf && <span className="chip">Policy</span>}
+            {isPdf && <Badge variant="secondary" className="text-[11px]">Policy</Badge>}
             {!row.doc && row.required && (
-              <span className="badge bg-due/15 text-due">required</span>
+              <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 text-[11px]">required</Badge>
             )}
           </p>
           {row.doc ? (
@@ -206,39 +207,38 @@ function DocumentRow({ row, busy, canManage, onOpen, onUpload, onDelete }: {
 
       <div className="flex shrink-0 items-center gap-2">
         {row.doc && (
-          <button type="button" className="btn-ghost btn-sm" onClick={onOpen}>
-            <Icon.Download size={14} /> Download
-          </button>
+          <Button type="button" variant="ghost" size="sm" onClick={onOpen}>
+            <Download className="mr-1.5 h-3.5 w-3.5" /> Download
+          </Button>
         )}
         {canManage && (
-          <label className="btn-secondary btn-sm shrink-0 cursor-pointer">
-            {busy ? <Spinner className="h-4 w-4" />
-              : row.doc ? "Replace" : "Upload"}
-            <input type="file" className="hidden" disabled={busy}
-              accept={isPdf ? PDF_ACCEPT : DOC_ACCEPT}
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                e.currentTarget.value = "";
-                if (f) onUpload(f);
-              }} />
-          </label>
+          <Button type="button" variant="outline" size="sm" asChild className="shrink-0 cursor-pointer">
+            <label>
+              {busy ? <Loader2 className="h-4 w-4 animate-spin" />
+                : row.doc ? "Replace" : "Upload"}
+              <input type="file" className="hidden" disabled={busy}
+                accept={isPdf ? PDF_ACCEPT : DOC_ACCEPT}
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  e.currentTarget.value = "";
+                  if (f) onUpload(f);
+                }} />
+            </label>
+          </Button>
         )}
-        {/* The policy PDF is replaced, never deleted — see the note at the top.
-            An empty slot has nothing to remove. */}
         {canManage && row.doc && !isPdf && (
-          <button type="button" className="icon-btn icon-btn-danger"
+          <Button type="button" variant="ghost" size="icon"
+            className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
             aria-label={`Delete ${row.label}`} title={`Delete ${row.label}`}
             onClick={onDelete}>
-            <Icon.Trash size={15} />
-          </button>
+            <Trash2 className="h-4 w-4" />
+          </Button>
         )}
       </div>
     </li>
   );
 }
 
-/** Name-then-file, so a one-off document arrives with a label rather than as a
- *  filename nobody recognises six months later. */
 function AddDocumentRow({ onCancel, onPick }: {
   onCancel: () => void;
   onPick: (label: string, file: File) => Promise<void>;
@@ -248,32 +248,33 @@ function AddDocumentRow({ onCancel, onPick }: {
   const label = name.trim();
 
   return (
-    <div className="flex flex-wrap items-center gap-2 border-t border-line/70
-      bg-slate-50 px-4 py-2.5">
-      <input className="input max-w-[220px] text-sm" value={name}
+    <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 bg-slate-50 px-4 py-2.5">
+      <Input className="h-8 max-w-[220px] text-sm" value={name}
         autoFocus disabled={busy} placeholder="Document name — e.g. RC book"
         onChange={(e) => setName(e.target.value)} />
-      <label className={`btn-primary btn-sm cursor-pointer${
+      <Button size="sm" asChild className={`cursor-pointer${
         label && !busy ? "" : " pointer-events-none opacity-50"}`}>
-        {busy ? <Spinner className="h-4 w-4" /> : "Choose file"}
-        <input type="file" className="hidden"
-          accept={DOC_ACCEPT} disabled={busy || !label}
-          onChange={async (e) => {
-            const f = e.target.files?.[0];
-            e.currentTarget.value = "";
-            if (!f) return;
-            setBusy(true);
-            try { await onPick(label, f); } finally { setBusy(false); }
-          }} />
-      </label>
+        <label>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Choose file"}
+          <input type="file" className="hidden"
+            accept={DOC_ACCEPT} disabled={busy || !label}
+            onChange={async (e) => {
+              const f = e.target.files?.[0];
+              e.currentTarget.value = "";
+              if (!f) return;
+              setBusy(true);
+              try { await onPick(label, f); } finally { setBusy(false); }
+            }} />
+        </label>
+      </Button>
       <span className="text-xs text-slate-500">
         PDF or image, up to {MAX_MB} MB.
       </span>
-      <button type="button" className="icon-btn ml-auto h-8 w-8
-        border-transparent" aria-label="Cancel" title="Cancel" onClick={onCancel}
+      <Button type="button" variant="ghost" size="icon" className="ml-auto h-8 w-8"
+        aria-label="Cancel" title="Cancel" onClick={onCancel}
         disabled={busy}>
-        <Icon.X size={15} />
-      </button>
+        <X className="h-4 w-4" />
+      </Button>
     </div>
   );
 }

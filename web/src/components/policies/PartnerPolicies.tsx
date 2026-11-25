@@ -1,10 +1,10 @@
 import { useState } from "react";
+import { DataTable, type Column } from "../shared/DataTable";
 import { useQuery } from "@tanstack/react-query";
 import { policiesApi } from "../../api/endpoints";
 import { Icon } from "../Icon";
 import {
-  EmptyState, ErrorState, Ledger, LedgerCell, LedgerFigure, LedgerRow,
-  ListShell, LTh, MobileCard, Pagination, SearchInput, StatCard, StatRow,
+  EmptyState, ErrorState, SearchInput, StatCard, StatRow,
   TableSkeleton,
 } from "../ui";
 import { ExpiryChip } from "../PolicyDetailBody";
@@ -74,7 +74,7 @@ export function PartnerPolicies({ partnerId, partnerName }: {
             ? `${rows.length} of ${total} policies` : undefined} />
       </StatRow>
 
-      <div className="ledger-bar">
+      <div className="flex flex-wrap items-center gap-2">
         <SearchInput value={q}
           onChange={(v) => { setPage(1); setQ(v); }}
           placeholder="Search policy number or customer…"
@@ -106,72 +106,87 @@ export function PartnerPolicies({ partnerId, partnerName }: {
               + "policies booked before they were assigned to their current "
               + "relationship manager."} />
       ) : (
-        <>
-          <ListShell
-            bare
-            cards={rows.map((p) => (
-              <MobileCard key={p.id} to={`/policies/${p.id}`}
-                title={p.policy_number || p.code}
-                meta={
-                  <>
+        <DataTable
+          data={rows}
+          columns={[
+            {
+              key: "policy",
+              header: "Policy",
+              cell: (p) => (
+                <div>
+                  <p className="font-medium text-slate-900">
+                    {p.policy_number || p.code}
+                  </p>
+                  <p className="text-xs text-slate-500">
                     {p.customer_name || "No customer"}
-                    <span className="block">
-                      {p.insurer_name || p.category_key}
-                    </span>
-                  </>
-                }
-                right={
-                  <span className="block whitespace-nowrap text-metric-sm
-                    tabular-nums text-slate-900">
-                    {formatINRShort(p.premium_amount)}
+                  </p>
+                </div>
+              ),
+            },
+            {
+              key: "cover",
+              header: "Cover",
+              cell: (p) => (
+                <div className="text-sm text-slate-600">
+                  {titleCase(p.category_key)}
+                  <span className="block text-xs text-slate-500">
+                    {p.insurer_name || "—"}
                   </span>
-                }
-                footer={
-                  <span className="flex items-center gap-1.5">
-                    {formatDate(p.start_date)} → {formatDate(p.expiry_date)}
-                    <ExpiryChip expiry={p.expiry_date} status={p.status} />
+                </div>
+              ),
+            },
+            {
+              key: "term",
+              header: "Term",
+              cell: (p) => (
+                <div className="text-sm text-slate-600">
+                  {formatDate(p.start_date)}
+                  <span className="block text-xs text-slate-500">
+                    to {formatDate(p.expiry_date)}
                   </span>
-                } />
-            ))}
-            table={
-              <Ledger minWidth={640} head={
-                <>
-                  <LTh>Policy</LTh>
-                  <LTh>Cover</LTh>
-                  <LTh>Term</LTh>
-                  <LTh align="right">Premium</LTh>
-                </>
-              }>
-                {rows.map((p) => (
-                  <LedgerRow key={p.id}>
-                    {/* A real <Link>, so the row is focusable, opens on Enter
-                        and middle-clicks into a new tab. */}
-                    <LedgerCell to={`/policies/${p.id}`}
-                      title={p.policy_number || p.code}
-                      sub={p.customer_name || "No customer"} />
-                    <td className="text-sm text-slate-600">
-                      {titleCase(p.category_key)}
-                      <span className="block text-xs text-slate-500">
-                        {p.insurer_name || "—"}
-                      </span>
-                    </td>
-                    <td className="text-sm text-slate-600">
-                      {formatDate(p.start_date)}
-                      <span className="block text-xs text-slate-500">
-                        to {formatDate(p.expiry_date)}
-                      </span>
-                    </td>
-                    <LedgerFigure value={formatINR(p.premium_amount)}
-                      sub={titleCase(p.status)} />
-                  </LedgerRow>
-                ))}
-              </Ledger>
-            } />
-          {total > PAGE_SIZE && (
-            <Pagination page={page} pageSize={PAGE_SIZE} total={total}
-              onChange={setPage} />
+                </div>
+              ),
+            },
+            {
+              key: "premium",
+              header: "Premium",
+              align: "right",
+              cell: (p) => (
+                <div className="text-right">
+                  <p className="font-medium tabular-nums text-slate-900">
+                    {formatINR(p.premium_amount)}
+                  </p>
+                  <p className="text-xs text-slate-500">{titleCase(p.status)}</p>
+                </div>
+              ),
+            },
+          ] as Column<(typeof rows)[number]>[]}
+          keyField={(p) => p.id}
+          onRowClick={(p) => window.location.assign(`/policies/${p.id}`)}
+          page={page}
+          pageSize={PAGE_SIZE}
+          total={total}
+          onPageChange={setPage}
+          renderMobileCard={(p) => (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <p className="truncate font-medium text-slate-900">
+                  {p.policy_number || p.code}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {p.customer_name || "No customer"} · {p.insurer_name || p.category_key}
+                </p>
+                <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                  {formatDate(p.start_date)} → {formatDate(p.expiry_date)}
+                  <ExpiryChip expiry={p.expiry_date} status={p.status} />
+                </div>
+              </div>
+              <span className="whitespace-nowrap font-semibold tabular-nums text-slate-900">
+                {formatINRShort(p.premium_amount)}
+              </span>
+            </div>
           )}
-        </>
+        />
       )}
     </div>
   );

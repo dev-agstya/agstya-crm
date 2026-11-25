@@ -9,7 +9,8 @@
 // preserved — admins reorder fields with the ▲▼ controls on the Policy Types
 // page, and both forms follow that order.
 
-import { Field } from "./ui";
+import { Input } from "@/components/ui/input";
+import { FormField } from "./shared/FormSection";
 import { DateInput } from "./DateInput";
 import { SearchSelect } from "./SearchSelect";
 import { FileUpload } from "./FileUpload";
@@ -129,19 +130,19 @@ export function CustomFieldInput({ spec, value, onChange }: {
     }
     case "phone":
       return (
-        <input inputMode="numeric" maxLength={10} className="input"
+        <Input inputMode="numeric" maxLength={10}
           placeholder="10-digit number" value={(value as string) ?? ""}
           onChange={(e) =>
             onChange(e.target.value.replace(/\D/g, "") || undefined)} />
       );
     case "email":
       return (
-        <input type="email" className="input" value={(value as string) ?? ""}
+        <Input type="email" value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || undefined)} />
       );
     default: // text, url
       return (
-        <input className="input" value={(value as string) ?? ""}
+        <Input value={(value as string) ?? ""}
           onChange={(e) => onChange(e.target.value || undefined)} />
       );
   }
@@ -154,11 +155,11 @@ function FieldsGrid({ fields, details, setDetail }: {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
       {fields.map((spec) => (
-        <Field key={spec.key} label={spec.label} required={spec.required}
+        <FormField key={spec.key} label={spec.label} required={spec.required}
           hint={spec.hint || undefined}>
           <CustomFieldInput spec={spec} value={details[spec.key]}
             onChange={(v) => setDetail(spec.key, v)} />
-        </Field>
+        </FormField>
       ))}
     </div>
   );
@@ -187,20 +188,20 @@ export function AmountCustomFields({ title, fields, details, setDetail,
     ? fields.filter((f) => f.is_reward_base) : [];
   if (fields.length === 0) return null;
   return (
-    <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+    <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
         {title} Amounts & Specifics
       </h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {fields.map((spec) => (
-          <Field key={spec.key} label={spec.label} required={spec.required}
+          <FormField key={spec.key} label={spec.label} required={spec.required}
             hint={spec.hint || undefined}>
             <CustomFieldInput spec={spec} value={details[spec.key]}
               onChange={(v) => setDetail(spec.key, v)} />
-          </Field>
+          </FormField>
         ))}
         {baseFieldOptions.length > 0 && (
-          <Field label="Reward calculated on"
+          <FormField label="Reward calculated on"
             hint="Which amount the reward % applies to for this policy.">
             <SearchSelect
               options={[
@@ -212,11 +213,11 @@ export function AmountCustomFields({ title, fields, details, setDetail,
             />
             {rewardBaseField && rewardBaseField !== COMMISSIONABLE_BASE
               && !(Number(details[rewardBaseField]) > 0) && (
-              <p className="mt-1 text-xs text-due">
+              <p className="mt-1 text-xs text-amber-700">
                 No amount entered — reward falls back to commissionable premium.
               </p>
             )}
-          </Field>
+          </FormField>
         )}
       </div>
     </div>
@@ -232,7 +233,7 @@ export function OtherCustomFields({ title, fields, details, setDetail }: {
 }) {
   if (fields.length === 0) return null;
   return (
-    <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+    <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
         {title} Details & Specifics
       </h3>
@@ -241,8 +242,6 @@ export function OtherCustomFields({ title, fields, details, setDetail }: {
   );
 }
 
-// Document-collection slots for a policy type, rendered right after the policy
-// PDF field. Required slots block saving until attached (validated by callers).
 export function RequiredDocuments({ docs, docFiles, setDocFiles }: {
   docs: RequiredDocSpec[];
   docFiles: Record<string, File | null>;
@@ -251,19 +250,19 @@ export function RequiredDocuments({ docs, docFiles, setDocFiles }: {
 }) {
   if (docs.length === 0) return null;
   return (
-    <div className="rounded-control border border-line/60 bg-slate-50/40 p-4">
+    <div className="rounded-lg border border-slate-200 bg-slate-50/40 p-4">
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
         Supporting Documents Required for {docs.length === 1 ? "this Type" : "these Types"}
       </h3>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {docs.map((doc) => (
-          <Field key={doc.key} label={doc.label} required={doc.required}>
+          <FormField key={doc.key} label={doc.label} required={doc.required}>
             <FileUpload
               file={docFiles[doc.key] ?? null}
               onChange={(f) => setDocFiles((m) => ({ ...m, [doc.key]: f }))}
               hint="PDF or image up to 20 MB"
             />
-          </Field>
+          </FormField>
         ))}
       </div>
     </div>

@@ -1,12 +1,31 @@
 import { useState } from "react";
+import { Check, ChevronRight, Clock, Key, Loader2, Lock } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormField } from "../shared/FormSection";
+import { EmptyState } from "../shared/EmptyState";
+import { ErrorState } from "../shared/ErrorState";
 import { Link } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { policiesApi, policyAccessApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
+import { Pagination } from "../ui";
 import { Icon } from "../Icon";
-import {
-  EmptyState, ErrorState, Field, Modal, Pagination, Spinner,
-} from "../ui";
 import { toast } from "../Toast";
 import { confirmDialog } from "../Confirm";
 import { formatDateTime } from "../../lib/format";
@@ -124,20 +143,18 @@ export function RestrictedMatches({ q, focusPolicyId }: {
 
   return (
     <>
-      <div className="mt-4 rounded-card border border-dashed border-line
-        bg-slate-50/60 px-4 py-3">
-        <p className="flex items-center gap-2 text-sm font-medium
-          text-slate-700">
-          <Icon.Lock size={14} className="text-slate-400" />
+      <div className="mt-4 rounded-lg border border-dashed border-slate-300 bg-slate-50/60 px-4 py-3">
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-700">
+          <Lock className="h-3.5 w-3.5 text-slate-400" />
           {items.length} more {items.length === 1 ? "policy matches"
-            : "policies match"} “{term}”, on somebody else's desk
+            : "policies match"} “{term}”, on somebody else&apos;s desk
         </p>
         <p className="mt-0.5 text-xs text-slate-500">
           You can see that {items.length === 1 ? "it exists" : "they exist"} and
           who handles {items.length === 1 ? "it" : "them"} — nothing else. Ask
           for access if you need to open {items.length === 1 ? "it" : "one"}.
         </p>
-        <ul className="mt-2.5 divide-y divide-line-soft">
+        <ul className="mt-2.5 divide-y divide-slate-200">
           {items.map((p) => (
             <li key={p.id}
               className="flex flex-wrap items-center gap-x-3 gap-y-1 py-2">
@@ -145,7 +162,7 @@ export function RestrictedMatches({ q, focusPolicyId }: {
                 {p.policy_number || p.code}
               </span>
               {p.policy_number && (
-                <span className="chip">{p.code}</span>
+                <Badge variant="secondary" className="text-[11px]">{p.code}</Badge>
               )}
               <span className="text-xs text-slate-500">
                 {p.held_by ? `Handled by ${p.held_by}` : "Not on your desk"}
@@ -181,26 +198,25 @@ function RequestButton({ policy, onAsk }: {
   switch (policy.request_status) {
     case "pending":
       return (
-        <span className="badge-due">
-          <Icon.Clock size={11} /> Waiting for approval
-        </span>
+        <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-800">
+          <Clock className="h-3 w-3" /> Waiting for approval
+        </Badge>
       );
     case "rejected":
-      return <span className="badge-neutral">Not approved</span>;
+      return <Badge variant="secondary">Not approved</Badge>;
     case "approved":
-      // The grant may have lapsed since — the server decides, and the row will
-      // simply stop appearing here once it is live. Linking straight in is the
-      // right move for the window where it IS live.
       return (
-        <Link to={`/policies/${policy.id}`} className="btn-secondary btn-sm">
-          Open it <Icon.ChevronRight size={13} />
-        </Link>
+        <Button variant="outline" size="sm" asChild>
+          <Link to={`/policies/${policy.id}`}>
+            Open it <ChevronRight className="ml-1 h-3.5 w-3.5" />
+          </Link>
+        </Button>
       );
     default:
       return (
-        <button className="btn-secondary btn-sm" onClick={onAsk}>
-          <Icon.Key size={13} /> Request access
-        </button>
+        <Button variant="outline" size="sm" onClick={onAsk}>
+          <Key className="mr-1.5 h-3.5 w-3.5" /> Request access
+        </Button>
       );
   }
 }
@@ -222,45 +238,44 @@ function RequestAccessDialog({ policy, onClose }: {
   });
 
   return (
-    <Modal open onClose={onClose}
-      title={`Ask to see ${policy.policy_number || policy.code}`}
-      size="sm">
-      <form className="space-y-4"
-        onSubmit={(e) => { e.preventDefault(); ask.mutate(); }}>
-        {policy.held_by && (
-          // Offered BEFORE the form, because it is usually the better answer.
-          // A feature that quietly discourages people from talking to each
-          // other is not an improvement on people talking to each other.
-          <p className="note-in">
-            {policy.held_by} handles this policy. A quick word with them is
-            often faster than waiting for an approval.
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            Ask to see {policy.policy_number || policy.code}
+          </DialogTitle>
+        </DialogHeader>
+        <form className="space-y-4"
+          onSubmit={(e) => { e.preventDefault(); ask.mutate(); }}>
+          {policy.held_by && (
+            <p className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs text-blue-800">
+              {policy.held_by} handles this policy. A quick word with them is
+              often faster than waiting for an approval.
+            </p>
+          )}
+          <FormField label="Why do you need it?" required
+            hint="One line. Whoever approves this sees it and nothing else.">
+            <Input value={reason} required minLength={3}
+              autoFocus
+              placeholder="Customer rang about a claim on it"
+              onChange={(e) => setReason(e.target.value)} />
+          </FormField>
+          <p className="text-xs text-slate-500">
+            If it is approved you can open this one policy for 12 hours. It does
+            not let you edit it, and it does not show you anything else.
           </p>
-        )}
-        {/* MANDATORY. An approver deciding a queue of five needs one line each;
-            a request with no reason is one they have to chase before they can
-            decide, which makes the whole flow slower than walking over. */}
-        <Field label="Why do you need it?" required
-          hint="One line. Whoever approves this sees it and nothing else.">
-          <input className="input" value={reason} required minLength={3}
-            autoFocus
-            placeholder="Customer rang about a claim on it"
-            onChange={(e) => setReason(e.target.value)} />
-        </Field>
-        <p className="text-xs text-slate-500">
-          If it is approved you can open this one policy for 12 hours. It does
-          not let you edit it, and it does not show you anything else.
-        </p>
-        <div className="flex justify-end gap-2">
-          <button type="button" className="btn-secondary" onClick={onClose}>
-            Cancel
-          </button>
-          <button type="submit" className="btn-primary"
-            disabled={ask.isPending || reason.trim().length < 3}>
-            {ask.isPending ? "Asking…" : "Ask for access"}
-          </button>
-        </div>
-      </form>
-    </Modal>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm"
+              disabled={ask.isPending || reason.trim().length < 3}>
+              {ask.isPending ? "Asking…" : "Ask for access"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -345,36 +360,39 @@ export function PolicyAccessQueue() {
     <div className="space-y-4">
       {canApprove && (
         <div className="flex flex-wrap gap-2">
-          <button className={`chip ${tab === "queue"
-            ? "ring-1 ring-ink text-slate-900" : ""}`}
+          <Button
+            variant={tab === "queue" ? "default" : "outline"}
+            size="sm"
+            className="h-7 rounded-full text-xs"
             onClick={() => changeTab("queue")}>
             To decide
             {(pendingTotal.data ?? 0) > 0 && (
-              <span className="ml-1.5 text-slate-500">{pendingTotal.data}</span>
+              <span className="ml-1.5 opacity-70">{pendingTotal.data}</span>
             )}
-          </button>
-          <button className={`chip ${tab === "mine"
-            ? "ring-1 ring-ink text-slate-900" : ""}`}
+          </Button>
+          <Button
+            variant={tab === "mine" ? "default" : "outline"}
+            size="sm"
+            className="h-7 rounded-full text-xs"
             onClick={() => changeTab("mine")}>
             My requests
-          </button>
+          </Button>
         </div>
       )}
 
       {rows.isError ? (
         <ErrorState onRetry={() => rows.refetch()} />
       ) : rows.isLoading ? (
-        <div className="card card-body"><Spinner className="h-5 w-5" /></div>
+        <Card className="flex items-center justify-center p-8">
+          <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+        </Card>
       ) : items.length === 0 ? (
         <EmptyState
-          icon={<Icon.Key size={20} />}
           title={tab === "queue" ? "Nothing to decide"
             : "You have not asked for anything"}
-          hint={tab === "queue"
-            ? "When somebody asks to see a policy that is not theirs, it lands "
-              + "here."
-            : "Search a policy number that is not on your list and you will be "
-              + "offered the chance to ask for it."} />
+          description={tab === "queue"
+            ? "When somebody asks to see a policy that is not theirs, it lands here."
+            : "Search a policy number that is not on your list and you will be offered the chance to ask for it."} />
       ) : (
         <div className="space-y-2">
           {items.map((r) => (
@@ -408,16 +426,16 @@ function RequestCard({ request: r, canApprove, onDecide, onRevoke, onCancel }: {
   const [hours, setHours] = useState(12);
 
   return (
-    <div className={`card px-4 py-3 ${r.is_live
-      ? "border-l-4 border-l-money-in"
-      : r.status === "pending" ? "border-l-4 border-l-due" : ""}`}>
+    <Card className={`px-4 py-3 ${r.is_live
+      ? "border-l-4 border-l-emerald-500"
+      : r.status === "pending" ? "border-l-4 border-l-amber-500" : ""}`}>
       <div className="flex flex-wrap items-start gap-x-4 gap-y-1">
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-2 text-sm">
             <span className="font-medium text-slate-900">
               {r.policy_number || r.policy_code}
             </span>
-            <span className="chip">{r.code}</span>
+            <Badge variant="secondary" className="text-[11px]">{r.code}</Badge>
             <StatusChip request={r} />
           </p>
           <p className="mt-0.5 text-sm text-slate-600">
@@ -434,80 +452,78 @@ function RequestCard({ request: r, canApprove, onDecide, onRevoke, onCancel }: {
         <div className="flex flex-wrap items-center gap-2">
           {canApprove && r.status === "pending" && (
             <>
-              <select className="select w-28" value={hours}
-                onChange={(e) => setHours(Number(e.target.value))}>
-                <option value={4}>4 hours</option>
-                <option value={12}>12 hours</option>
-                <option value={24}>24 hours</option>
-                <option value={72}>3 days</option>
-              </select>
-              <button className="btn-secondary btn-sm"
+              <Select value={String(hours)} onValueChange={(v) => setHours(Number(v))}>
+                <SelectTrigger className="h-8 w-28 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="4">4 hours</SelectItem>
+                  <SelectItem value="12">12 hours</SelectItem>
+                  <SelectItem value="24">24 hours</SelectItem>
+                  <SelectItem value="72">3 days</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button variant="outline" size="sm"
                 onClick={async () => {
                   if (await confirmDialog({
                     title: "Refuse this request?",
-                    message: `${r.requester_name} will be told, and will not `
-                      + "be able to open the policy.",
+                    message: `${r.requester_name} will be told, and will not be able to open the policy.`,
                     confirmLabel: "Refuse",
                   })) onDecide(false, hours);
                 }}>
                 Refuse
-              </button>
-              <button className="btn-primary btn-sm"
-                onClick={() => onDecide(true, hours)}>
-                <Icon.Check size={13} /> Approve for {hours}h
-              </button>
+              </Button>
+              <Button size="sm" onClick={() => onDecide(true, hours)}>
+                <Check className="mr-1 h-3.5 w-3.5" /> Approve for {hours}h
+              </Button>
             </>
           )}
           {canApprove && r.is_live && (
-            <button className="btn-secondary btn-sm" onClick={onRevoke}>
+            <Button variant="outline" size="sm" onClick={onRevoke}>
               Close it now
-            </button>
+            </Button>
           )}
           {!canApprove && r.status === "pending" && (
-            <button className="btn-ghost btn-sm" onClick={onCancel}>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
               Withdraw
-            </button>
+            </Button>
           )}
           {r.is_live && (
-            <Link to={`/policies/${r.policy_id}`} className="btn-secondary btn-sm">
-              Open <Icon.ChevronRight size={13} />
-            </Link>
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/policies/${r.policy_id}`}>
+                Open <ChevronRight className="ml-1 h-3.5 w-3.5" />
+              </Link>
+            </Button>
           )}
         </div>
       </div>
-    </div>
+    </Card>
   );
 }
 
-/**
- * The state, in one chip.
- *
- * `is_live` is COMPUTED SERVER-SIDE against the clock, never read off `status` —
- * an approved grant whose window closed a minute ago has to read as closed
- * without waiting for a sweep, and the client must not do that arithmetic
- * itself (a laptop eleven minutes fast would claim access it does not have).
- */
 function StatusChip({ request: r }: { request: PolicyAccessRequest }) {
   if (r.is_live) {
     return (
-      <span className="badge-in">
-        <Icon.Check size={11} /> Open for {r.hours}h
-      </span>
+      <Badge variant="secondary" className="gap-1 bg-emerald-50 text-emerald-700">
+        <Check className="h-3 w-3" /> Open for {r.hours}h
+      </Badge>
     );
   }
   switch (r.status) {
     case "pending":
-      return <span className="badge-due">
-        <Icon.Clock size={11} /> Waiting
-      </span>;
+      return (
+        <Badge variant="outline" className="gap-1 border-amber-300 bg-amber-50 text-amber-800">
+          <Clock className="h-3 w-3" /> Waiting
+        </Badge>
+      );
     case "approved":
     case "expired":
-      return <span className="badge-neutral">Window closed</span>;
+      return <Badge variant="secondary">Window closed</Badge>;
     case "rejected":
-      return <span className="badge-neutral">Refused</span>;
+      return <Badge variant="secondary">Refused</Badge>;
     case "revoked":
-      return <span className="badge-neutral">Closed early</span>;
+      return <Badge variant="secondary">Closed early</Badge>;
     default:
-      return <span className="badge-neutral">Withdrawn</span>;
+      return <Badge variant="secondary">Withdrawn</Badge>;
   }
 }

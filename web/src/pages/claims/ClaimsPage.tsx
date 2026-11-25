@@ -99,7 +99,7 @@ export function ClaimsPage() {
         ) : undefined} />
 
       <div>
-        <div className="ledger-bar">
+        <div className="flex flex-wrap items-center gap-2">
           <Segmented<ClaimScope>
             value={scope}
             onChange={(v) => { setScope(v); setPage(1); }}

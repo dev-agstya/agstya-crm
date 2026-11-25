@@ -12,8 +12,6 @@ import {
 import axios from "axios";
 import { documentsApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
-import { Icon } from "../../components/Icon";
-import { Spinner } from "../../components/ui";
 import { toast } from "../../components/Toast";
 import { confirmDialog } from "../../components/Confirm";
 import type { CustomerDocument } from "../../lib/types";
@@ -255,34 +253,39 @@ function DocumentUploader({ entityId, onUploaded }: {
 
   if (!open) {
     return (
-      <button className="btn-secondary btn-sm" onClick={() => setOpen(true)}>
-        <Icon.Upload size={15} /> Add document
-      </button>
+      <Button variant="outline" size="sm" onClick={() => setOpen(true)}>
+        <Upload className="mr-1.5 h-3.5 w-3.5" /> Add document
+      </Button>
     );
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-control
-      bg-slate-50 p-2">
-      <select className="select h-9 max-w-[150px] text-sm" value={docType}
-        onChange={(e) => setDocType(e.target.value)} disabled={busy}>
-        {DOC_TYPES.map((d) => <option key={d.key} value={d.key}>{d.label}</option>)}
-      </select>
+    <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-2">
+      <Select value={docType} onValueChange={setDocType} disabled={busy}>
+        <SelectTrigger className="h-9 w-[150px] text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {DOC_TYPES.map((d) => <SelectItem key={d.key} value={d.key}>{d.label}</SelectItem>)}
+        </SelectContent>
+      </Select>
       {docType === "custom" && (
-        <input className="input max-w-[150px] text-sm"
+        <Input className="h-9 max-w-[150px] text-sm"
           placeholder="Document name" value={customName}
           onChange={(e) => setCustomName(e.target.value)} disabled={busy} />
       )}
-      <label className="btn-primary btn-sm cursor-pointer">
-        {busy ? <Spinner className="h-4 w-4" /> : "Choose file"}
-        <input ref={fileRef} type="file" className="hidden"
-          accept=".pdf,.jpg,.jpeg,.png" disabled={busy}
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) handle(f); }} />
-      </label>
-      <button className="icon-btn border-transparent"
+      <Button size="sm" asChild className="cursor-pointer">
+        <label>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : "Choose file"}
+          <input ref={fileRef} type="file" className="hidden"
+            accept=".pdf,.jpg,.jpeg,.png" disabled={busy}
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) handle(f); }} />
+        </label>
+      </Button>
+      <Button variant="ghost" size="icon" className="h-8 w-8"
         aria-label="Cancel" title="Cancel" onClick={() => setOpen(false)}>
-        <Icon.X size={15} />
-      </button>
+        <X className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
