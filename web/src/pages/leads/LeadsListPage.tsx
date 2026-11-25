@@ -1,89 +1,188 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { Plus, Search, Upload, X } from "lucide-react";
 import { leadsApi } from "../../api/endpoints";
 import { PageHeader } from "../../components/PageHeader";
-import { Icon } from "../../components/Icon";
 import { ExportButton } from "../../components/ExportButton";
-import {
-  EmptyState,
-  ErrorState,
-  Ledger,
-  LedgerCell,
-  LedgerRow,
-  ListShell,
-  LTh,
-  MobileCard,
-  Pagination,
-  SearchInput,
-  StatusBadge,
-  TableSkeleton,
-} from "../../components/ui";
+import { DataTable, Column } from "../../components/shared/DataTable";
 import { titleCase } from "../../lib/format";
 import { useAuth } from "../../store/auth";
 import { TIMING_TONE_CLASS, reminderTiming } from "../../lib/reminderTiming";
 import { LEAD_TYPES, LEAD_TYPE_LABELS } from "../../lib/types";
 import type { Lead, LeadStage } from "../../lib/types";
-import { FilterPill } from "../../components/FilterPill";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 const STAGES: LeadStage[] = ["new", "contacted", "quoted", "converted", "lost"];
-
 const PAGE_SIZE = 15;
 
-/**
- * The lead pipeline.
- *
- * Type is a THIRD DROPDOWN beside Stage and Sort (owner Q2.1), not the tab
- * strip it briefly was: the tabs floated above the card looking detached from
- * the table they filtered, and three controls doing the same job belong in the
- * same row.
- *
- * Clicking a row opens /leads/:id — a real page, not a dialog (owner 2026-08-03).
- */
+const STAGE_VARIANT: Record<
+  LeadStage,
+  "default" | "secondary" | "destructive" | "outline"
+> = {
+  new: "default",
+  contacted: "secondary",
+  quoted: "outline",
+  converted: "default",
+  lost: "destructive",
+};
+
 export default function LeadsListPage() {
   const navigate = useNavigate();
   const { has } = useAuth();
 
   const [page, setPage] = useState(1);
-  const [stage, setStage] = useState("");
-  const [type, setType] = useState("");
+  const [stage, setStage] = useState("all");
+  const [type, setType] = useState("all");
   const [sort, setSort] = useState("recent");
   const [q, setQ] = useState("");
 
   const list = useQuery({
     queryKey: ["leads", page, stage, type, sort, q],
     queryFn: async () =>
-      (await leadsApi.list({
-        page, page_size: PAGE_SIZE, stage: stage || undefined,
-        type: type || undefined, sort, q,
-      })).data,
+      (
+        await leadsApi.list({
+          page,
+          page_size: PAGE_SIZE,
+          stage: stage === "all" ? undefined : stage,
+          type: type === "all" ? undefined : type,
+          sort,
+          q,
+        })
+      ).data,
   });
 
-  const reset = () => { setPage(1); setQ(""); setStage(""); setType(""); };
-  const filtered = !!(q || stage || type);
+  const reset = () => {
+    setPage(1);
+    setQ("");
+    setStage("all");
+    setType("all");
+  };
 
-  const addButton = has("manage_leads") ? (
-    <button className="btn-primary" onClick={() => navigate("/leads/new")}>
-      <Icon.Plus size={16} /> Add lead
-    </button>
+  const filtered = !!(q || stage !== "all" || type !== "all");
+  const canManage = has("manage_leads");
+
+  const addButton = canManage ? (
+    <Button onClick={() => navigate("/leads/new")}>
+      <Plus className="mr-1.5 h-4 w-4" />
+      Add lead
+    </Button>
   ) : undefined;
 
+  const columns: Column<Lead>[] = [
+    {
+      key: "name",
+      header: "Lead",
+      cell: (l) => (
+        <div>
+          <p className="font-medium text-foreground">{l.name}</p>
+          <p className="text-xs text-muted-foreground">
+            {l.mobile ? `${l.mobile_country_code} ${l.mobile}` : "No mobile"} ·{" "}
+            {LEAD_TYPE_LABELS[l.type] ?? titleCase(l.type)}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "interest",
+      header: "Interested in",
+      cell: (l) => (
+        <span className="text-foreground">
+          {l.interested_in || l.category_key || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "stage",
+      header: "Stage",
+      cell: (l) => (
+        <Badge
+          variant={STAGE_VARIANT[l.stage]}
+          className={
+            l.stage === "converted"
+              ? "bg-emerald-600 text-white hover:bg-emerald-600"
+              : ""
+          }
+        >
+          {titleCase(l.stage)}
+        </Badge>
+      ),
+    },
+    {
+      key: "comment",
+      header: "Last note",
+      cell: (l) => (
+        <span
+          className="block max-w-[220px] truncate text-muted-foreground"
+          title={l.last_comment || ""}
+        >
+          {l.last_comment || "—"}
+        </span>
+      ),
+    },
+    {
+      key: "reminder",
+      header: "Next follow-up",
+      cell: (l) => {
+        const next = l.next_reminder;
+        const timing = reminderTiming(next?.due_at, {
+          isOverdue: next?.is_overdue,
+          isDueToday: next?.is_due_today,
+        });
+        const extra = (next?.open_count ?? 0) - 1;
+        return (
+          <div className="whitespace-nowrap">
+            <span className={TIMING_TONE_CLASS[timing.tone]}>
+              {timing.label}
+            </span>
+            {extra > 0 && (
+              <span className="ml-1.5 text-xs text-muted-foreground">
+                +{extra} more
+              </span>
+            )}
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
         title="Leads"
+        subtitle="Track prospective customers and follow-up reminders."
         actions={
           <>
-            <ExportButton filename="leads"
-              onExport={(fmt) => leadsApi.export({
-                stage: stage || undefined, type: type || undefined,
-                q: q || undefined, fmt })} />
-            {has("manage_leads") && (
+            <ExportButton
+              filename="leads"
+              onExport={(fmt) =>
+                leadsApi.export({
+                  stage: stage === "all" ? undefined : stage,
+                  type: type === "all" ? undefined : type,
+                  q: q || undefined,
+                  fmt,
+                })
+              }
+            />
+            {canManage && (
               <>
-                <button className="btn-secondary"
-                  onClick={() => navigate("/leads/import")}>
-                  <Icon.Upload size={16} /> Import
-                </button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate("/leads/import")}
+                >
+                  <Upload className="mr-1.5 h-4 w-4" />
+                  Import
+                </Button>
                 {addButton}
               </>
             )}
@@ -91,170 +190,118 @@ export default function LeadsListPage() {
         }
       />
 
-      <div>
-        <div className="ledger-bar">
-          <SearchInput placeholder="Search name, mobile, email…"
-            value={q} onChange={(v) => { setPage(1); setQ(v); }}
-            className="min-w-[220px] max-w-sm flex-1" />
-          {/* Pills, not selects: each states its own value when set and clears
-              in a click, so the bar says what is being looked at instead of
-              being three dropdowns all reading "All …". */}
-          <FilterPill label="Type" value={type}
-            onChange={(v) => { setPage(1); setType(v); }}
-            options={LEAD_TYPES.map((t) => ({
-              value: t.value, label: t.label }))} />
-          <FilterPill label="Stage" value={stage}
-            onChange={(v) => { setPage(1); setStage(v); }}
-            options={STAGES.map((s) => ({ value: s, label: titleCase(s) }))} />
-          {/* Sort has no empty state — "Newest first" IS its resting position,
-              so `defaultValue` keeps it quiet until it is actually changed. */}
-          <FilterPill label="Sort" value={sort} defaultValue="recent"
-            onChange={(v) => { setPage(1); setSort(v); }}
-            options={[
-              { value: "recent", label: "Newest first" },
-              { value: "oldest", label: "Oldest first" },
-              { value: "name_asc", label: "Name A–Z" },
-              { value: "name_desc", label: "Name Z–A" },
-            ]} />
+      <Card>
+        <CardContent className="flex flex-wrap items-center gap-3 p-4">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={q}
+              onChange={(e) => {
+                setPage(1);
+                setQ(e.target.value);
+              }}
+              placeholder="Search by name, mobile, or email..."
+              className="pl-9"
+            />
+          </div>
+
+          <Select
+            value={type}
+            onValueChange={(v) => {
+              setPage(1);
+              setType(v);
+            }}
+          >
+            <SelectTrigger className="w-[170px]">
+              <SelectValue placeholder="Lead type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All types</SelectItem>
+              {LEAD_TYPES.map((t) => (
+                <SelectItem key={t.value} value={t.value}>
+                  {t.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={stage}
+            onValueChange={(v) => {
+              setPage(1);
+              setStage(v);
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Stage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All stages</SelectItem>
+              {STAGES.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {titleCase(s)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={sort}
+            onValueChange={(v) => {
+              setPage(1);
+              setSort(v);
+            }}
+          >
+            <SelectTrigger className="w-[160px]">
+              <SelectValue placeholder="Sort" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Newest first</SelectItem>
+              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="name_asc">Name A–Z</SelectItem>
+              <SelectItem value="name_desc">Name Z–A</SelectItem>
+            </SelectContent>
+          </Select>
+
           {filtered && (
-            <button className="btn-ghost btn-sm" onClick={reset}>
-              Clear filters
-            </button>
+            <Button variant="ghost" size="sm" onClick={reset}>
+              <X className="mr-1 h-4 w-4" />
+              Clear
+            </Button>
           )}
-        </div>
+        </CardContent>
+      </Card>
 
-        {list.isError ? (
-          <ErrorState onRetry={() => list.refetch()} />
-        ) : list.isLoading ? (
-          <TableSkeleton cols={6} />
-        ) : (list.data?.items.length ?? 0) === 0 ? (
-          <EmptyState
-            title={filtered ? "No leads match these filters" : "No leads yet"}
-            icon={<Icon.Lead size={24} />}
-            hint={filtered
-              ? "Try a different search, or clear the filters."
-              : "Add your first lead, or import a list from a spreadsheet."}
-            action={filtered
-              ? <button className="btn-secondary" onClick={reset}>
-                Clear filters</button>
-              : addButton}
-          />
-        ) : (
-          <ListShell
-            bare
-            cards={list.data!.items.map((l) => (
-              <LeadCard key={l.id} lead={l} />
-            ))}
-            table={
-              <Ledger
-                head={
-                  <>
-                    <LTh>Lead</LTh>
-                    <LTh>Interested in</LTh>
-                    <LTh>Stage</LTh>
-                    <LTh>Last comment</LTh>
-                    <LTh>Next reminder</LTh>
-                  </>
-                }
-              >
-                {list.data!.items.map((l) => (
-                  <LeadRow key={l.id} lead={l}
-                    onOpen={() => navigate(`/leads/${l.id}`)} />
-                ))}
-              </Ledger>
-            }
-          />
-        )}
-        {list.data && (
-          <Pagination page={page} pageSize={PAGE_SIZE}
-            total={list.data.total} onChange={setPage} />
-        )}
-      </div>
-    </div>
-  );
-}
-
-/** The reminder clock, shared by both renderings. */
-function useLeadTiming(lead: Lead) {
-  const next = lead.next_reminder;
-  return {
-    timing: reminderTiming(next?.due_at, {
-      isOverdue: next?.is_overdue,
-      isDueToday: next?.is_due_today,
-    }),
-    extra: (next?.open_count ?? 0) - 1,
-    // A lead with an overdue reminder is the one to ring. That is the queue's
-    // whole purpose, so it gets the rail rather than a colour buried in the
-    // seventh column where nobody was looking.
-    rail: next?.is_overdue ? ("out" as const)
-      : next?.is_due_today ? ("due" as const) : undefined,
-  };
-}
-
-function LeadRow({ lead, onOpen }: { lead: Lead; onOpen: () => void }) {
-  const { timing, extra, rail } = useLeadTiming(lead);
-
-  return (
-    <LedgerRow onClick={onOpen}>
-      {/*
-        Name over contact. Type, mobile and email were three columns; they are
-        all "who this is", and the phone number is what you came for.
-        Type stays plain text, not a pill (owner) — a pill made a category look
-        like a status, which is what Stage actually is.
-      */}
-      <LedgerCell
-        rail={rail}
-        to={`/leads/${lead.id}`}
-        title={lead.name}
-        sub={
-          <>
-            {lead.mobile
-              ? `${lead.mobile_country_code} ${lead.mobile}`
-              : "No mobile"}
-            {" · "}{LEAD_TYPE_LABELS[lead.type] ?? titleCase(lead.type)}
-          </>
+      <DataTable
+        data={list.data?.items ?? []}
+        columns={columns}
+        keyField={(l) => l.id}
+        onRowClick={(l) => navigate(`/leads/${l.id}`)}
+        loading={list.isLoading}
+        error={list.isError ? "Could not load leads." : null}
+        onRetry={() => list.refetch()}
+        emptyTitle={
+          filtered ? "No leads match your filters" : "No leads yet"
         }
+        emptyDescription={
+          filtered
+            ? "Try a different search or clear your filters."
+            : "Add your first lead or import a list from a spreadsheet."
+        }
+        emptyAction={
+          filtered ? (
+            <Button variant="outline" onClick={reset}>
+              Clear filters
+            </Button>
+          ) : (
+            addButton
+          )
+        }
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={list.data?.total}
+        onPageChange={setPage}
       />
-      <td className="text-[13px] text-slate-700">
-        {lead.interested_in || lead.category_key || "—"}
-      </td>
-      <td><StatusBadge value={lead.stage} /></td>
-      <td className="max-w-[220px] truncate text-[13px] text-slate-500">
-        <span title={lead.last_comment || ""}>{lead.last_comment || "—"}</span>
-      </td>
-      <td>
-        <span className={`whitespace-nowrap text-secondary ${
-          TIMING_TONE_CLASS[timing.tone]}`}>
-          {timing.label}
-        </span>
-        {extra > 0 && (
-          <span className="ml-1.5 text-xs text-slate-500">+{extra} more</span>
-        )}
-      </td>
-    </LedgerRow>
-  );
-}
-
-/** The phone rendering. Same facts, stacked. */
-function LeadCard({ lead }: { lead: Lead }) {
-  const { timing, rail } = useLeadTiming(lead);
-  return (
-    <MobileCard
-      to={`/leads/${lead.id}`}
-      rail={rail}
-      title={lead.name}
-      meta={
-        <>
-          {lead.mobile
-            ? `${lead.mobile_country_code} ${lead.mobile}`
-            : "No mobile"}
-          {" · "}{LEAD_TYPE_LABELS[lead.type] ?? titleCase(lead.type)}
-        </>
-      }
-      right={<StatusBadge value={lead.stage} />}
-      footer={
-        <span className={TIMING_TONE_CLASS[timing.tone]}>{timing.label}</span>
-      }
-    />
+    </div>
   );
 }

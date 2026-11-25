@@ -1,13 +1,19 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { Loader2 } from "lucide-react";
 import { customersApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
-import { FormPage } from "../../components/RecordPage";
-import { Field } from "../../components/ui";
+import { PageHeader } from "../../components/PageHeader";
+import { FormField, FormSection } from "../../components/shared/FormSection";
+import { FormSkeleton } from "../../components/shared/LoadingSkeleton";
+import { ErrorState } from "../../components/shared/ErrorState";
 import { toast } from "../../components/Toast";
 import { refreshFinance } from "../../lib/live";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 interface CustForm {
   name: string;
@@ -18,12 +24,6 @@ interface CustForm {
 
 const EMPTY: CustForm = { name: "", mobile: "", email: "", notes: "" };
 
-/**
- * Add (/customers/new) and edit (/customers/:id/edit).
- *
- * Documents are added from the customer's own page, not here (owner
- * 2026-07-24) — this stays a quick contact capture.
- */
 export default function CustomerFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -74,106 +74,141 @@ export default function CustomerFormPage() {
     onError: (e) => toast.error(apiError(e)),
   });
 
-  const missing = isAxiosError(customer.error)
-    && customer.error.response?.status === 404;
-  const valid = form.name.trim().length >= 2 && (form.mobile.length === 0 || form.mobile.length === 10);
+  const missing =
+    isAxiosError(customer.error) && customer.error.response?.status === 404;
+
+  const mobileError =
+    form.mobile.length > 0 && form.mobile.length !== 10
+      ? "Enter a full 10-digit mobile number, or leave it blank."
+      : undefined;
+
+  const valid =
+    form.name.trim().length >= 2 &&
+    (form.mobile.length === 0 || form.mobile.length === 10);
+
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!valid || save.isPending) return;
+    save.mutate();
+  };
 
   return (
-    <FormPage
-      backTo={editing ? `/customers/${id}` : "/customers"}
-      backLabel={editing ? "Back to customer" : "Back to customers"}
-      title={editing ? "Edit customer" : "Add customer"}
-      subtitle={editing ? undefined
-        : "Basic details. Policies and KYC documents can be attached anytime."}
-      wide={true}
-      maxWidth="max-w-6xl"
-      onSubmit={() => save.mutate()}
-      submitLabel={editing ? "Save changes" : "Add customer"}
-      submitting={save.isPending}
-      disabled={!valid}
-      loading={editing && customer.isLoading}
-      error={missing ? undefined : customer.error}
-      onRetry={() => customer.refetch()}
-      notFound={missing}
-    >
-      <div className="grid gap-6 lg:grid-cols-12">
-        {/* Main Form Fields */}
-        <div className="space-y-6 lg:col-span-8">
-          <div className="rounded-control border border-line bg-white p-5 shadow-xs space-y-5">
-            <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-              Primary Contact Details
-            </h3>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        backTo={editing ? `/customers/${id}` : "/customers"}
+        backLabel={editing ? "Back to customer" : "Back to customers"}
+        title={editing ? "Edit customer" : "Add customer"}
+        subtitle={
+          editing
+            ? "Update contact details for this customer."
+            : "Enter basic contact details. You can add policies and documents afterwards."
+        }
+      />
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Customer full name" required>
-                <input className="input" value={form.name} autoFocus required
-                  placeholder="e.g. Rajesh Kumar"
-                  onChange={(e) => setForm({ ...form, name: e.target.value })} />
-              </Field>
-              <Field
-                label="Mobile number (optional)"
-                tooltip="Customers with a phone number are checked to prevent duplicate accounts."
-                hint="Optional. 10 digits without +91"
-              >
-                <div className="flex">
-                  <span className="inline-flex h-10 items-center rounded-l-control
-                    border border-r-0 border-line bg-slate-50 px-3 text-sm
-                    text-slate-500 font-medium">+91</span>
-                  <input className="input rounded-l-none" value={form.mobile}
-                    inputMode="numeric" maxLength={10}
-                    placeholder="10-digit number"
-                    onChange={(e) => setForm({
-                      ...form, mobile: e.target.value.replace(/\D/g, "") })} />
-                </div>
-              </Field>
-            </div>
+      {editing && customer.isLoading ? (
+        <FormSkeleton sections={1} />
+      ) : missing ? (
+        <ErrorState
+          title="Customer not found"
+          message="This customer record may have been removed."
+        />
+      ) : customer.isError ? (
+        <ErrorState onRetry={() => customer.refetch()} />
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-6">
+          <FormSection
+            title="Contact Details"
+            description="Only the customer's full name is required."
+            columns={2}
+          >
+            <FormField label="Full name" htmlFor="cust-name" required>
+              <Input
+                id="cust-name"
+                value={form.name}
+                autoFocus
+                required
+                placeholder="e.g. Rajesh Kumar"
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </FormField>
 
-            <div className="grid gap-5 sm:grid-cols-2">
-              <Field label="Email address" hint="Optional. Used for policy notices.">
-                <input type="email" className="input" value={form.email}
-                  placeholder="customer@example.com"
-                  onChange={(e) => setForm({ ...form, email: e.target.value })} />
-              </Field>
-              <Field label="Notes or remarks" hint="Any specific client requirements or tags.">
-                <input className="input" value={form.notes}
-                  placeholder="e.g. VIP client, preferred insurer"
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-              </Field>
-            </div>
+            <FormField
+              label="Mobile number (optional)"
+              htmlFor="cust-mobile"
+              hint="10 digits without +91"
+              tooltip="When a 10-digit number is entered, we check for existing customers to prevent duplicates."
+              error={mobileError}
+            >
+              <div className="flex">
+                <span className="inline-flex h-9 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm font-medium text-muted-foreground">
+                  +91
+                </span>
+                <Input
+                  id="cust-mobile"
+                  className="rounded-l-none"
+                  value={form.mobile}
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="10-digit number"
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      mobile: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                />
+              </div>
+            </FormField>
+
+            <FormField
+              label="Email address"
+              htmlFor="cust-email"
+              hint="Optional — used for sending policy notices."
+            >
+              <Input
+                id="cust-email"
+                type="email"
+                value={form.email}
+                placeholder="customer@example.com"
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </FormField>
+
+            <FormField
+              label="Notes"
+              htmlFor="cust-notes"
+              hint="Optional remarks or preferences."
+              className="md:col-span-2"
+            >
+              <Textarea
+                id="cust-notes"
+                rows={3}
+                value={form.notes}
+                placeholder="e.g. Preferred insurer, family details, or reminder notes"
+                onChange={(e) => setForm({ ...form, notes: e.target.value })}
+              />
+            </FormField>
+          </FormSection>
+
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                navigate(editing ? `/customers/${id}` : "/customers")
+              }
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!valid || save.isPending}>
+              {save.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {editing ? "Save changes" : "Add customer"}
+            </Button>
           </div>
-        </div>
-
-        {/* Informational Guidance Sidebar */}
-        <div className="space-y-4 lg:col-span-4">
-          <div className="rounded-control border border-line-soft bg-white p-4 shadow-xs text-xs space-y-3">
-            <h4 className="font-semibold text-slate-800 text-sm">
-              Quick Customer Guide
-            </h4>
-            <div className="space-y-2 text-slate-600">
-              <div className="p-2.5 rounded bg-slate-50 border border-line-soft">
-                <p className="font-medium text-slate-800">Phone Number is Optional</p>
-                <p className="text-slate-500 mt-0.5">
-                  You only need the customer's full name to create their profile and book insurance policies.
-                </p>
-              </div>
-
-              <div className="p-2.5 rounded bg-slate-50 border border-line-soft">
-                <p className="font-medium text-slate-800">Duplicate Check</p>
-                <p className="text-slate-500 mt-0.5">
-                  If a 10-digit mobile number is entered, the system ensures no duplicate account exists with the same number.
-                </p>
-              </div>
-
-              <div className="p-2.5 rounded bg-slate-50 border border-line-soft">
-                <p className="font-medium text-slate-800">After Creating Customer</p>
-                <p className="text-slate-500 mt-0.5">
-                  You can immediately book policies, link channel partners, and upload KYC documents (Aadhaar, PAN, RC book) from the customer details page.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </FormPage>
+        </form>
+      )}
+    </div>
   );
 }

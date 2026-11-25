@@ -1,19 +1,28 @@
-import { useEffect, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { Loader2 } from "lucide-react";
 import { leadsApi } from "../../api/endpoints";
 import { api, apiError } from "../../api/client";
-import { FormPage } from "../../components/RecordPage";
-import { Field } from "../../components/ui";
+import { PageHeader } from "../../components/PageHeader";
+import { FormField, FormSection } from "../../components/shared/FormSection";
+import { FormSkeleton } from "../../components/shared/LoadingSkeleton";
+import { ErrorState } from "../../components/shared/ErrorState";
 import { toast } from "../../components/Toast";
 import { LEAD_TYPES } from "../../lib/types";
 import type { Lead, LeadType } from "../../lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Address is deliberately NOT collected on a lead (owner 2026-08-03). It stays
-// on the model as history, but a prospect is chased by phone — the address is
-// asked for when they become a customer, and an empty box on every form is
-// worse than no box.
 interface LeadFormState {
   name: string;
   type: LeadType;
@@ -24,11 +33,14 @@ interface LeadFormState {
 }
 
 const EMPTY: LeadFormState = {
-  name: "", type: "customer", mobile: "", email: "",
-  interested_in: "", note: "",
+  name: "",
+  type: "customer",
+  mobile: "",
+  email: "",
+  interested_in: "",
+  note: "",
 };
 
-/** Add (/leads/new) and edit (/leads/:id/edit) — one form, two routes. */
 export default function LeadFormPage() {
   const { id } = useParams();
   const [params] = useSearchParams();
@@ -38,8 +50,6 @@ export default function LeadFormPage() {
 
   const [form, setForm] = useState<LeadFormState>(() => ({
     ...EMPTY,
-    // Adding from a filtered list carries the type across: on the Channel
-    // partner filter you are almost certainly adding a channel partner.
     type: (params.get("type") as LeadType) || "customer",
   }));
   const [loaded, setLoaded] = useState(!editing);
@@ -83,87 +93,173 @@ export default function LeadFormPage() {
       toast.success(editing ? "Lead updated." : "Lead added.");
       qc.invalidateQueries({ queryKey: ["leads"] });
       if (editing) qc.invalidateQueries({ queryKey: ["lead", id] });
-      // Straight to the lead either way: after adding one you almost always
-      // want to set a follow-up on it.
       navigate(`/leads/${saved.id}`);
     },
     onError: (e) => toast.error(apiError(e)),
   });
 
-  const missing = isAxiosError(lead.error) && lead.error.response?.status === 404;
+  const missing =
+    isAxiosError(lead.error) && lead.error.response?.status === 404;
+  const mobileError =
+    form.mobile.length > 0 && form.mobile.length !== 10
+      ? "Enter a full 10-digit mobile number."
+      : undefined;
   const valid = form.name.trim().length >= 2 && form.mobile.length === 10;
 
+  const onSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (!valid || save.isPending) return;
+    save.mutate();
+  };
+
   return (
-    <FormPage
-      backTo={editing ? `/leads/${id}` : "/leads"}
-      backLabel={editing ? "Back to lead" : "Back to leads"}
-      title={editing ? "Edit lead" : "Add lead"}
-      subtitle={editing ? undefined : "Capture a prospective client to follow up with and convert."}
-      wide={true}
-      maxWidth="max-w-4xl"
-      onSubmit={() => save.mutate()}
-      submitLabel={editing ? "Save changes" : "Add lead"}
-      submitting={save.isPending}
-      disabled={!valid}
-      loading={editing && lead.isLoading}
-      error={missing ? undefined : lead.error}
-      onRetry={() => lead.refetch()}
-      notFound={missing}
-    >
-      <div className="space-y-6">
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Contact full name" required>
-            <input className="input" value={form.name} autoFocus required
-              placeholder="e.g. Amit Sharma"
-              onChange={(e) => setForm({ ...form, name: e.target.value })} />
-          </Field>
-          <Field label="Lead category" required>
-            <select className="select" value={form.type}
-              onChange={(e) =>
-                setForm({ ...form, type: e.target.value as LeadType })}>
-              {LEAD_TYPES.map((t) => (
-                <option key={t.value} value={t.value}>{t.label}</option>
-              ))}
-            </select>
-          </Field>
-        </div>
+    <div className="mx-auto max-w-4xl space-y-6">
+      <PageHeader
+        backTo={editing ? `/leads/${id}` : "/leads"}
+        backLabel={editing ? "Back to lead" : "Back to leads"}
+        title={editing ? "Edit lead" : "Add lead"}
+        subtitle={
+          editing
+            ? "Update prospect contact details."
+            : "Capture a new prospect to follow up with and convert."
+        }
+      />
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Mobile number" required hint="10-digit primary phone number">
-            <div className="flex">
-              <span className="inline-flex h-10 items-center rounded-l-control
-                border border-r-0 border-line bg-slate-50 px-3 text-sm
-                text-slate-500 font-medium">
-                +91
-              </span>
-              <input className="input rounded-l-none" value={form.mobile}
-                inputMode="numeric" maxLength={10} required
-                placeholder="10-digit number"
-                onChange={(e) => setForm({
-                  ...form, mobile: e.target.value.replace(/\D/g, "") })} />
-            </div>
-          </Field>
-          <Field label="Email address" hint="Optional. For sending quotes.">
-            <input type="email" className="input" value={form.email}
-              placeholder="lead@example.com"
-              onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </Field>
-        </div>
+      {editing && lead.isLoading ? (
+        <FormSkeleton sections={1} />
+      ) : missing ? (
+        <ErrorState
+          title="Lead not found"
+          message="This lead record does not exist."
+        />
+      ) : lead.isError ? (
+        <ErrorState onRetry={() => lead.refetch()} />
+      ) : (
+        <form onSubmit={onSubmit} className="space-y-6">
+          <FormSection
+            title="Prospect Information"
+            description="Name, lead type, and 10-digit mobile number are required."
+            columns={2}
+          >
+            <FormField label="Full name" htmlFor="lead-name" required>
+              <Input
+                id="lead-name"
+                value={form.name}
+                autoFocus
+                required
+                placeholder="e.g. Amit Sharma"
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+              />
+            </FormField>
 
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Insurance requirement" hint="Type of policy or cover requested">
-            <input className="input" value={form.interested_in} maxLength={40}
-              placeholder="e.g. Commercial Vehicle, Family Floater"
-              onChange={(e) =>
-                setForm({ ...form, interested_in: e.target.value })} />
-          </Field>
-          <Field label="Lead remarks / notes" hint="Any specific client requirements or tags">
-            <input className="input" value={form.note}
-              placeholder="e.g. Wants comparative quotes from HDFC and ICICI"
-              onChange={(e) => setForm({ ...form, note: e.target.value })} />
-          </Field>
-        </div>
-      </div>
-    </FormPage>
+            <FormField label="Lead category" htmlFor="lead-type" required>
+              <Select
+                value={form.type}
+                onValueChange={(v) => setForm({ ...form, type: v as LeadType })}
+              >
+                <SelectTrigger id="lead-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {LEAD_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+
+            <FormField
+              label="Mobile number"
+              htmlFor="lead-mobile"
+              required
+              hint="10 digits without +91"
+              error={mobileError}
+            >
+              <div className="flex">
+                <span className="inline-flex h-9 items-center rounded-l-md border border-r-0 border-input bg-muted px-3 text-sm font-medium text-muted-foreground">
+                  +91
+                </span>
+                <Input
+                  id="lead-mobile"
+                  className="rounded-l-none"
+                  value={form.mobile}
+                  inputMode="numeric"
+                  maxLength={10}
+                  required
+                  placeholder="10-digit number"
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      mobile: e.target.value.replace(/\D/g, ""),
+                    })
+                  }
+                />
+              </div>
+            </FormField>
+
+            <FormField
+              label="Email address"
+              htmlFor="lead-email"
+              hint="Optional"
+            >
+              <Input
+                id="lead-email"
+                type="email"
+                value={form.email}
+                placeholder="name@example.com"
+                onChange={(e) => setForm({ ...form, email: e.target.value })}
+              />
+            </FormField>
+
+            <FormField
+              label="Interested in"
+              htmlFor="lead-interest"
+              hint="e.g. Motor Insurance, Health, Term Life"
+            >
+              <Input
+                id="lead-interest"
+                value={form.interested_in}
+                placeholder="Policy type or product"
+                onChange={(e) =>
+                  setForm({ ...form, interested_in: e.target.value })
+                }
+              />
+            </FormField>
+
+            <FormField
+              label="Initial note"
+              htmlFor="lead-note"
+              className="md:col-span-2"
+            >
+              <Textarea
+                id="lead-note"
+                rows={3}
+                value={form.note}
+                placeholder="Context from first call or inquiry"
+                onChange={(e) => setForm({ ...form, note: e.target.value })}
+              />
+            </FormField>
+          </FormSection>
+
+          <div className="flex items-center justify-end gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate(editing ? `/leads/${id}` : "/leads")}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={!valid || save.isPending}>
+              {save.isPending && (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              )}
+              {editing ? "Save changes" : "Add lead"}
+            </Button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
