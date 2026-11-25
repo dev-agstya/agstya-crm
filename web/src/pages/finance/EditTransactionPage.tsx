@@ -2,19 +2,27 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isAxiosError } from "axios";
+import { ArrowLeftRight, Check } from "lucide-react";
 import { financeApi, usersApi } from "../../api/endpoints";
 import { FormPage } from "../../components/RecordPage";
 import { DateInput } from "../../components/DateInput";
-import { Field } from "../../components/ui";
-import { Icon } from "../../components/Icon";
+import { FormField } from "../../components/shared/FormSection";
 import { PartyPicker, type Party } from "../../components/pickers";
 import { BankAccountSelect } from "../../components/finance/BankAccountSelect";
 import { toast } from "../../components/Toast";
 import { refreshFinance } from "../../lib/live";
 import { toDateInput } from "../../lib/format";
 import { PARTY_LABEL, TypeTag } from "./txnDisplay";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-// Mirrors server EXPENSE_CATEGORIES, like RecordPaymentForm's copy.
 const EXPENSE_CATEGORIES: { value: string; label: string }[] = [
   { value: "salary", label: "Salary" },
   { value: "rent", label: "Rent" },
@@ -28,25 +36,6 @@ const EXPENSE_CATEGORIES: { value: string; label: string }[] = [
   { value: "other", label: "Other" },
 ];
 
-/**
- * Edit a manual ledger row (/finance/transactions/:id/edit).
- *
- * The SIGN — receivable vs payable — is preserved server-side from the original
- * row, which is why this form never offers a direction. What it does now offer,
- * and did not until 2026-08-19, is the two CORRECTIONS people actually need:
- *
- *   * the BANK ACCOUNT. An expense could always be moved between accounts;
- *     nothing else could. A ₹1,00,000 receipt keyed against ICICI when the
- *     money landed in HDFC left both accounts wrong with no way back short of
- *     deleting the row and re-entering it — which loses the audit trail and the
- *     attachment.
- *   * the PARTY. Same story, worse consequence: two people's balances wrong.
- *
- * Both are deliberately behind an "I need to correct this" disclosure rather
- * than sitting open on the form. Changing an amount is routine; re-filing a
- * transaction against a different customer is not, and a picker that is always
- * on screen is a picker somebody eventually nudges by accident.
- */
 export default function EditTransactionPage() {
   const { id = "" } = useParams();
   const navigate = useNavigate();
@@ -58,8 +47,8 @@ export default function EditTransactionPage() {
     queryFn: async () => (await financeApi.ledgerDetail(id)).data,
   });
   const txn = loaded.data;
-  const missing = isAxiosError(loaded.error)
-    && loaded.error.response?.status === 404;
+  const missing =
+    isAxiosError(loaded.error) && loaded.error.response?.status === 404;
 
   const [amount, setAmount] = useState("");
   const [reference, setReference] = useState("");
@@ -67,7 +56,6 @@ export default function EditTransactionPage() {
   const [occurred, setOccurred] = useState("");
   const [accountId, setAccountId] = useState("");
   const [party, setParty] = useState<Party | null>(null);
-  // Expense-only: the two fields that make an expense an expense.
   const [category, setCategory] = useState("");
   const [employeeId, setEmployeeId] = useState("");
   const [refiling, setRefiling] = useState(false);
@@ -87,25 +75,7 @@ export default function EditTransactionPage() {
     setLoadedOnce(true);
   }, [loadedOnce, txn]);
 
-  // An expense has no counterparty position, so there is nothing to re-file it
-  // against — the server refuses it, and the control must agree with that
-  // rather than offering something that 403s.
   const canRefile = !!txn && txn.party_type !== "expense";
-
-  /*
-    AN EXPENSE IS EDITED BY ITS OWN ENDPOINT.
-
-    Editing anything from the Transactions page came here and called the GENERIC
-    ledger patch — which has no field for the expense CATEGORY or the PAYEE. So
-    a salary keyed under "Rent", or paid to the wrong employee, could be
-    corrected on its amount and its date and on nothing that made it an expense.
-    `PATCH /api/finance/expenses/{id}` has handled both the whole time and
-    nothing in the app routed to it.
-
-    The two endpoints are not interchangeable in the other direction either: the
-    expense one re-derives the bank delta with EXPENSE semantics and keeps the
-    outflow sign, which is why this is a branch rather than an extra field.
-  */
   const isExpense = txn?.txn_type === "expense";
 
   const employees = useQuery({
@@ -125,8 +95,6 @@ export default function EditTransactionPage() {
           reference: reference || undefined,
           note: note || undefined,
           occurred_at: occurred ? `${occurred}T00:00:00Z` : undefined,
-          // "" detaches the payee, which is a real correction — an expense
-          // wrongly linked to a staff member has to be unlinkable.
           paid_to_employee_id: employeeId,
           ...(accountId !== (txn?.bank_account_id ?? "")
             ? { bank_account_id: accountId }
@@ -140,8 +108,6 @@ export default function EditTransactionPage() {
         reference: reference || undefined,
         note: note || undefined,
         occurred_at: occurred ? `${occurred}T00:00:00Z` : undefined,
-        // Sent only when it actually changed. "" is meaningful (detach), so an
-        // unchanged empty value must not be sent as a deliberate clear.
         ...(accountId !== (txn?.bank_account_id ?? "")
           ? { bank_account_id: accountId }
           : {}),
@@ -149,9 +115,6 @@ export default function EditTransactionPage() {
           ? { party_type: party.kind, party_id: party.id }
           : {}),
       });
-      // The attachment is REPLACED, not added: the endpoint overwrites the
-      // row's single doc id. Uploading was previously only possible while
-      // recording, so a receipt photographed badly could never be swapped.
       if (file) await financeApi.uploadTxnAttachment(id, file);
     },
     onSuccess: () => {
@@ -160,8 +123,12 @@ export default function EditTransactionPage() {
       toast.success("Transaction updated.");
       navigate(`/finance/transactions/${id}`);
     },
-    onError: (e: any) =>
-      setErr(e?.response?.data?.detail || "Could not save changes."),
+    onError: (e: unknown) => {
+      const msg =
+        (e as { response?: { data?: { detail?: string } } })?.response?.data
+          ?.detail || "Could not save changes.";
+      setErr(msg);
+    },
   });
 
   const valid = Number(amount) > 0;
@@ -171,7 +138,11 @@ export default function EditTransactionPage() {
       backTo={`/finance/transactions/${id}`}
       backLabel="Back to transaction"
       title="Edit transaction"
-      onSubmit={() => { setErr(""); save.mutate(); }}
+      wide
+      onSubmit={() => {
+        setErr("");
+        save.mutate();
+      }}
       submitLabel="Save changes"
       submitting={save.isPending}
       disabled={!valid}
@@ -180,100 +151,146 @@ export default function EditTransactionPage() {
       onRetry={() => loaded.refetch()}
       notFound={missing}
     >
-      <div className="space-y-5">
+      <div className="space-y-4">
         {txn && (
-          <div className="rounded-control bg-slate-50 px-3 py-2 text-sm">
+          <div className="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-3 py-2 text-xs">
             <TypeTag t={txn.txn_type} party={txn.party_type} />
-            <span className="ml-2 text-slate-500">
-              {txn.party_name || PARTY_LABEL[txn.party_type]}</span>
+            <span className="text-muted-foreground">
+              {txn.party_name || PARTY_LABEL[txn.party_type]}
+            </span>
           </div>
         )}
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Amount (Rs)" required>
-            <input type="number" min="0" step="0.01" className="input"
-              value={amount} onChange={(e) => setAmount(e.target.value)} />
-          </Field>
-          <Field label="Date">
+
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <FormField label="Amount (Rs)" required>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Date">
             <DateInput value={occurred} onChange={setOccurred} />
-          </Field>
+          </FormField>
         </div>
 
-        {/* Which of OUR accounts the money moved through. autoSelect is off:
-            a legacy row genuinely has no account, and silently attaching the
-            default one would move a balance nobody asked to move. */}
-        <BankAccountSelect value={accountId} onChange={setAccountId}
+        <BankAccountSelect
+          value={accountId}
+          onChange={setAccountId}
           autoSelect={false}
           label="Money moved through"
-          hint="Correct this if the payment was recorded against the wrong
-            account — the balances on both accounts are fixed on save." />
+          hint="Correct this if the payment was recorded against the wrong account — the balances on both accounts are fixed on save."
+        />
 
         {isExpense && (
-          <div className="grid gap-5 sm:grid-cols-2">
-            <Field label="Category" required
-              hint="What this spend is, for the per-category totals.">
-              <select className="select" value={category}
-                onChange={(e) => setCategory(e.target.value)}>
-                {EXPENSE_CATEGORIES.map((c) => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Paid to (employee)"
-              hint="Links a salary or incentive to a staff member.">
-              <select className="select" value={employeeId}
-                onChange={(e) => setEmployeeId(e.target.value)}>
-                <option value="">— None —</option>
-                {employees.data?.map((u) => (
-                  <option key={u.id} value={u.id}>{u.full_name}</option>
-                ))}
-              </select>
-            </Field>
+          <div className="grid gap-3.5 sm:grid-cols-2">
+            <FormField
+              label="Category"
+              required
+              hint="What this spend is, for the per-category totals."
+            >
+              <Select value={category} onValueChange={setCategory}>
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField
+              label="Paid to (employee)"
+              hint="Links a salary or incentive to a staff member."
+            >
+              <Select
+                value={employeeId || "__none__"}
+                onValueChange={(v) => setEmployeeId(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger className="h-9">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">— None —</SelectItem>
+                  {employees.data?.map((u) => (
+                    <SelectItem key={u.id} value={u.id}>
+                      {u.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
           </div>
         )}
 
-        <Field label="Reference">
-          <input className="input" value={reference}
-            placeholder="UTR / cheque no."
-            onChange={(e) => setReference(e.target.value)} />
-        </Field>
-        <Field label="Note">
-          <input className="input" value={note}
-            onChange={(e) => setNote(e.target.value)} />
-        </Field>
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <FormField label="Reference">
+            <Input
+              value={reference}
+              placeholder="UTR / cheque no."
+              onChange={(e) => setReference(e.target.value)}
+            />
+          </FormField>
+          <FormField label="Note">
+            <Input value={note} onChange={(e) => setNote(e.target.value)} />
+          </FormField>
+        </div>
 
-        <Field label="Attachment"
-          hint={txn?.attachment_doc_id
-            ? "Uploading REPLACES the file already on this transaction."
-            : "Payment screenshot or receipt (PDF/image, max 20 MB)."}>
-          <input type="file" className="input py-1.5"
+        <FormField
+          label="Attachment"
+          hint={
+            txn?.attachment_doc_id
+              ? "Uploading REPLACES the file already on this transaction."
+              : "Payment screenshot or receipt (PDF/image, max 20 MB)."
+          }
+        >
+          <Input
+            type="file"
+            className="h-9 py-1.5 text-xs"
             accept="application/pdf,image/*"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+          />
           {file && (
-            <span className="inline-flex items-center gap-1 text-xs
-              font-medium text-money-in">
-              <Icon.Check size={13} /> {file.name}</span>
+            <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+              <Check className="h-3.5 w-3.5" /> {file.name}
+            </span>
           )}
-        </Field>
+        </FormField>
 
-        {/* Re-filing against a different party. Behind a disclosure because it
-            is a correction, not an edit — and it moves two balances. */}
         {canRefile && (
-          <div className="rounded-control border border-line px-3 py-3">
+          <div className="rounded-md border border-border p-3">
             {!refiling ? (
-              <button type="button" className="btn-secondary btn-sm"
-                onClick={() => setRefiling(true)}>
-                <Icon.Exchange size={14} /> Recorded against the wrong person?
-              </button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setRefiling(true)}
+              >
+                <ArrowLeftRight className="mr-1.5 h-3.5 w-3.5" /> Recorded
+                against the wrong person?
+              </Button>
             ) : (
               <div className="space-y-2">
-                <Field label="Move this transaction to"
-                  hint="Both balances are recalculated — the one it leaves and
-                    the one it lands on.">
+                <FormField
+                  label="Move this transaction to"
+                  hint="Both balances are recalculated — the one it leaves and the one it lands on."
+                >
                   <PartyPicker value={party} onChange={setParty} />
-                </Field>
-                <button type="button"
-                  className="text-xs text-slate-500 underline"
-                  onClick={() => { setRefiling(false); setParty(null); }}>
+                </FormField>
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground underline"
+                  onClick={() => {
+                    setRefiling(false);
+                    setParty(null);
+                  }}
+                >
                   Leave it where it is
                 </button>
               </div>
@@ -281,7 +298,7 @@ export default function EditTransactionPage() {
           </div>
         )}
 
-        {err && <p className="hint-error">{err}</p>}
+        {err && <p className="text-xs font-medium text-destructive">{err}</p>}
       </div>
     </FormPage>
   );

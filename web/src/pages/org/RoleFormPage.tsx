@@ -4,13 +4,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { rolesApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { FormPage } from "../../components/RecordPage";
-import { Field } from "../../components/ui";
+import { FormField } from "../../components/shared/FormSection";
 import { toast } from "../../components/Toast";
 import { PermissionEditor } from "../../components/PermissionEditor";
 import { expandPermissions } from "../../lib/types";
 import type { RoleTemplate } from "../../lib/types";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
-/** Create (/organization/roles/new) and edit (/organization/roles/:id/edit). */
 export default function RoleFormPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -37,12 +38,6 @@ export default function RoleFormPage() {
     setLoaded(true);
   }, [loaded, role]);
 
-  // Templates come from the backend so this screen can never drift from
-  // permissions.py. The GRID itself is <PermissionEditor>, shared with the
-  // per-person editor on the people pages: this file used to carry its own
-  // copy, which meant two places to get the implication rule and the locked
-  // "included" affordance right, and only one of them got the 2026-08-07
-  // section layout.
   const catalog = useQuery({
     queryKey: ["permission-catalog"],
     queryFn: async () => (await rolesApi.catalog()).data,
@@ -58,8 +53,11 @@ export default function RoleFormPage() {
 
   const save = useMutation({
     mutationFn: () => {
-      const body = { name, description: description || null,
-                     permissions: expandPermissions(perms) };
+      const body = {
+        name,
+        description: description || null,
+        permissions: expandPermissions(perms),
+      };
       return editing ? rolesApi.update(id!, body) : rolesApi.create(body);
     },
     onSuccess: () => {
@@ -75,7 +73,7 @@ export default function RoleFormPage() {
       backTo="/organization?tab=roles"
       backLabel="Back to roles"
       title={editing ? `Edit ${role?.name ?? "role"}` : "New role"}
-      subtitle="A role is a re-usable set of permissions. Assigning one copies its ticks onto a person; it is not stored on them."
+      subtitle="A role is a re-usable set of permissions. Assigning one copies its ticks onto a person."
       onSubmit={() => save.mutate()}
       submitLabel="Save role"
       submitting={save.isPending}
@@ -84,52 +82,57 @@ export default function RoleFormPage() {
       notFound={editing && !roles.isLoading && !role}
       wide
     >
-      <div className="space-y-5">
-        {/* Templates — a starting tick-set, not a saved role. */}
+      <div className="space-y-4">
         {!editing && templates.length > 0 && (
           <div>
-            <p className="mb-1.5 text-xs font-semibold uppercase text-slate-500">
+            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
               Start from
             </p>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {templates.map((t) => (
-                <button key={t.key} type="button" title={t.description}
+                <Button
+                  key={t.key}
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  title={t.description}
                   onClick={() => applyTemplate(t)}
-                  className="rounded-control border border-line px-3 py-1.5
-                    text-sm text-slate-600 transition-colors
-                    hover:border-ink hover:bg-slate-50">
+                >
                   {t.name}
                   {t.permissions.length > 0 && (
-                    <span className="ml-1.5 text-[10px] text-slate-500">
+                    <span className="ml-1.5 text-[10px] text-muted-foreground">
                       {t.permissions.length}
                     </span>
                   )}
-                </button>
+                </Button>
               ))}
             </div>
-            <p className="mt-1.5 text-xs text-slate-500">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Pre-ticks a suggested set you can edit. Nothing is saved until you
               press Save role.
             </p>
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Role name" required>
-            <input className="input" value={name} required
+        <div className="grid gap-3.5 sm:grid-cols-2">
+          <FormField label="Role name" required>
+            <Input
+              value={name}
+              required
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Finance manager" />
-          </Field>
-          <Field label="Description">
-            <input className="input" value={description}
+              placeholder="e.g. Finance manager"
+            />
+          </FormField>
+          <FormField label="Description">
+            <Input
+              value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="What this role is for" />
-          </Field>
+              placeholder="What this role is for"
+            />
+          </FormField>
         </div>
 
-        {/* A role is a template, so there is no actor to limit it: the
-            no-elevation rule is enforced server-side on save (roles.py
-            _check_no_elevation), which is where it can actually be trusted. */}
         <PermissionEditor
           perms={perms}
           onPermsChange={setPerms}
