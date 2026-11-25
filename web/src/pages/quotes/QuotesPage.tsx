@@ -108,13 +108,7 @@ export default function QuotesPage() {
     {
       key: "stage",
       header: "Status",
-      cell: (r) => (
-        <QuoteStageBadge
-          answered={r.answered}
-          expired={r.expired}
-          converted={!!r.policy_id}
-        />
-      ),
+      cell: (r) => <QuoteStageBadge stage={r.stage} />,
     },
     {
       key: "age",

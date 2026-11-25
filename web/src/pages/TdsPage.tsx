@@ -12,7 +12,7 @@ import {
   PeriodValue,
   periodParams,
 } from "../components/finance/DateFilter";
-import { formatDate, formatINR } from "../lib/format";
+import { formatINR } from "../lib/format";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -58,35 +58,6 @@ export default function TdsPage() {
       cell: (b) => (
         <span className="font-semibold tabular-nums text-amber-600">
           {formatINR(b.tds)}
-        </span>
-      ),
-    },
-  ];
-
-  const eventCols: Column<any>[] = [
-    {
-      key: "date",
-      header: "Date",
-      cell: (e) => <span className="tabular-nums text-muted-foreground">{formatDate(e.date)}</span>,
-    },
-    {
-      key: "broker",
-      header: "Broker",
-      cell: (e) => <span className="font-medium">{e.broker_name}</span>,
-    },
-    {
-      key: "gross",
-      header: "Gross",
-      align: "right",
-      cell: (e) => <span className="tabular-nums">{formatINR(e.gross_reward)}</span>,
-    },
-    {
-      key: "tds",
-      header: "TDS",
-      align: "right",
-      cell: (e) => (
-        <span className="font-semibold tabular-nums text-amber-600">
-          {formatINR(e.tds)}
         </span>
       ),
     },
@@ -142,27 +113,12 @@ export default function TdsPage() {
               <DataTable
                 data={d.by_broker}
                 columns={brokerCols}
-                keyField={(b) => b.broker_id || b.broker_name}
+                keyField={(b) => b.broker_id || b.broker_name || "unknown"}
                 emptyTitle="No TDS in this window"
                 emptyDescription="TDS appears here when a broker payout is recorded with a TDS %."
               />
             </CardContent>
           </Card>
-
-          {d.events && d.events.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base font-semibold">TDS Transactions</CardTitle>
-              </CardHeader>
-              <CardContent className="p-0 sm:p-4 sm:pt-0">
-                <DataTable
-                  data={d.events}
-                  columns={eventCols}
-                  keyField={(e) => e.id}
-                />
-              </CardContent>
-            </Card>
-          )}
         </div>
       )}
     </div>

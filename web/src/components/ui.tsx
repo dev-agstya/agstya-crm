@@ -3,6 +3,14 @@ import { createPortal } from "react-dom";
 import { Link } from "react-router-dom";
 import { Icon } from "./Icon";
 import { titleCase } from "../lib/format";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 /*
   The shared UI kit. The design system is `src/index.css` + `tailwind.config.js`
@@ -247,108 +255,41 @@ export function Modal({
   open: boolean;
   onClose: () => void;
   title: string;
-  /** One line under the title explaining what this dialog is for. */
   subtitle?: string;
   children: ReactNode;
-  /** Pinned to the bottom, outside the scroll area — the action buttons. */
   footer?: ReactNode;
-  /** Legacy alias for size="lg". */
   wide?: boolean;
   size?: keyof typeof MODAL_WIDTHS;
-  // Optional slot rendered just left of the close (X) button — e.g. an entity
-  // code chip (CUS-AA00008 / LED-AA00000) or an actions dropdown.
   headerRight?: ReactNode;
 }) {
-  const panel = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", onKey);
-    // Lock the page behind the dialog. Without this the body scrolls under the
-    // overlay whenever the dialog itself has nothing left to scroll, which
-    // reads as the app sliding around while you type in a form.
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [open, onClose]);
-
-  if (!open) return null;
   const width = MODAL_WIDTHS[size ?? (wide ? "lg" : "md")];
 
-  /*
-    PORTALLED TO <body>, and that is load-bearing (2026-08-21).
-
-    A dialog was rendering BEHIND the notification panel that opened it. The
-    reason was not the z-index: the top bar is `sticky z-nav`, and a positioned
-    element with a z-index creates a STACKING CONTEXT — everything rendered
-    inside it is sealed into that one layer of the page. The bell lives in the
-    top bar, so this overlay was sealed in there with it, and no z-index could
-    lift it over anything outside. `position: fixed` covers the viewport
-    GEOMETRICALLY while still painting inside its ancestor's layer.
-
-    Rendering into <body> removes the ancestor instead of fighting it, so the
-    dialog behaves the same wherever it is opened from — top bar, sidebar,
-    inside a sticky table head, or a page. Do not "simplify" this back to an
-    inline <div>: it works everywhere the app opens a dialog TODAY and breaks
-    the first time one is opened from a stacking context.
-
-    React portals keep the React tree intact, so context, events and the parent
-    component's state all still work. Only the DOM position changes — which is
-    why no call site had to move, and why the one behaviour that DOES depend on
-    DOM position (an outside-click handler that used to contain this subtree)
-    is handled explicitly in NotificationBell.
-  */
-  return createPortal(
-    <div
-      className="fixed inset-0 z-dialog flex items-start justify-center
-        overflow-y-auto bg-slate-900/50 p-4 backdrop-blur-[1px]
-        animate-fade-in sm:p-8"
-      // Close on the backdrop, but only when the press STARTED there —
-      // otherwise dragging to select text inside the dialog and releasing
-      // outside it closes the form and loses what was typed.
-      onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
-      role="dialog"
-      aria-modal="true"
-      aria-label={title}
-    >
-      <div
-        ref={panel}
-        className={`card my-4 flex max-h-[calc(100vh-4rem)] w-full flex-col
-          overflow-hidden shadow-pop animate-modal-in ${width}`}
-      >
-        <div className="flex items-start justify-between gap-3 border-b
-          border-line px-6 py-4">
+  return (
+    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+      <DialogContent className={`flex max-h-[90vh] flex-col gap-0 p-0 ${width}`}>
+        <DialogHeader className="flex flex-row items-start justify-between gap-3 border-b border-border px-6 py-4 pr-12 text-left">
           <div className="min-w-0">
-            <h2 className="truncate text-section text-slate-900">
-              {title}</h2>
+            <DialogTitle className="truncate text-base font-semibold text-foreground">
+              {title}
+            </DialogTitle>
             {subtitle && (
-              <p className="mt-0.5 text-secondary text-slate-500">{subtitle}</p>
+              <DialogDescription className="mt-1 text-sm text-muted-foreground">
+                {subtitle}
+              </DialogDescription>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-2">
-            {headerRight}
-            <button onClick={onClose} aria-label="Close" title="Close"
-              className="icon-btn border-transparent">
-              <Icon.X size={16} />
-            </button>
-          </div>
-        </div>
-        <div className="min-h-0 flex-1 overflow-y-auto scrollbar-light px-6 py-5">
+          {headerRight && <div className="shrink-0">{headerRight}</div>}
+        </DialogHeader>
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
           {children}
         </div>
         {footer && (
-          <div className="flex flex-wrap items-center justify-end gap-2
-            border-t border-line bg-slate-50/60 px-6 py-3.5">
+          <DialogFooter className="border-t border-border bg-muted/30 px-6 py-3.5">
             {footer}
-          </div>
+          </DialogFooter>
         )}
-      </div>
-    </div>,
-    document.body,
+      </DialogContent>
+    </Dialog>
   );
 }
 

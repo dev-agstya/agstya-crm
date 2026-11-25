@@ -252,7 +252,7 @@ export default function PoliciesPage() {
           <span className="text-sm tabular-nums text-foreground">
             {p.expiry_date ? formatDate(p.expiry_date) : "—"}
           </span>
-          {p.expiry_date && <ExpiryChip expiry={p.expiry_date} />}
+          {p.expiry_date && <ExpiryChip expiry={p.expiry_date} status={p.status} />}
         </div>
       ),
     },
@@ -308,7 +308,6 @@ export default function PoliciesPage() {
               onExport={(fmt) =>
                 policiesApi.export({
                   status: status === "all" ? undefined : status,
-                  q: qDebounced || undefined,
                   category_key: categoryF === "all" ? undefined : categoryF,
                   insurer_id: insurerF === "all" ? undefined : insurerF,
                   broker_id: brokerF === "all" ? undefined : brokerF,
@@ -411,7 +410,7 @@ export default function PoliciesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All brokers</SelectItem>
-                  {(brokersFilter.data?.items ?? []).map((b) => (
+                  {(brokersFilter.data ?? []).map((b) => (
                     <SelectItem key={b.id} value={b.id}>
                       {b.name}
                     </SelectItem>
@@ -458,12 +457,7 @@ export default function PoliciesPage() {
         </CardContent>
       </Card>
 
-      {qDebounced && (
-        <RestrictedMatches
-          q={qDebounced}
-          onRequested={() => list.refetch()}
-        />
-      )}
+      {qDebounced && <RestrictedMatches q={qDebounced} />}
 
       <DataTable
         data={list.data?.items ?? []}

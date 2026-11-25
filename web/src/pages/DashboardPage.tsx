@@ -14,7 +14,6 @@ import {
   TrendingDown,
   TrendingUp,
   UserPlus,
-  Users,
 } from "lucide-react";
 import {
   managersApi,

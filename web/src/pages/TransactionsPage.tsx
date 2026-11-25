@@ -262,18 +262,18 @@ export default function TransactionsPage() {
       align: "right",
       mobileLabel: false,
       cell: (t) => {
-        const locked = LOCKED_TYPES.has(t.txn_type) || !!t.is_reversed;
+        const locked = LOCKED_TYPES.has(t.txn_type);
         return (
           <div
             className="flex items-center justify-end gap-1"
             onClick={(e) => e.stopPropagation()}
           >
-            {t.attachment_document_id && (
+            {t.attachment_doc_id && (
               <Button
                 variant="ghost"
                 size="icon"
                 title="View attachment"
-                onClick={() => openAttachment(t.attachment_document_id!)}
+                onClick={() => openAttachment(t.attachment_doc_id!)}
               >
                 <Paperclip className="h-4 w-4" />
               </Button>

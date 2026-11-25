@@ -1,14 +1,17 @@
 import { create } from "zustand";
-import { useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { Icon } from "./Icon";
-
-// A single styled confirmation dialog for the whole app — replaces native
-// window.confirm() so destructive actions get an on-brand modal (with a red
-// primary for dangerous actions), keyboard support and a focus trap.
-//
-// Usage (from any handler):
-//   if (await confirmDialog({ message: "Delete this?", danger: true })) { ... }
+import { useEffect, useState } from "react";
+import { AlertTriangle, ShieldCheck } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export interface ConfirmOptions {
   title?: string;
@@ -16,30 +19,13 @@ export interface ConfirmOptions {
   confirmLabel?: string;
   cancelLabel?: string;
   danger?: boolean;
-  /*
-    ASK FOR A REASON, not just for a second click (2026-08-24).
-
-    Some destructive actions are only defensible if somebody wrote down WHY —
-    dismissing a bank-statement line is the one that brought this in ("we don't
-    want to delete any of the transactions actually"), and a bank
-    reconciliation is the same shape. Two clicks stop an accident; a reason is
-    what makes the row explainable three months later.
-
-    A field on the confirmation rather than a separate dialog component,
-    because it IS the confirmation: splitting them would mean two mechanisms
-    for "are you sure", and the one without the reason is the one people would
-    keep reaching for.
-  */
   prompt?: {
     label: string;
     placeholder?: string;
-    /** Below this the confirm button stays disabled. 3 by default, so one
-     *  keystroke does not satisfy a question that wanted a sentence. */
     minLength?: number;
   };
 }
 
-/** What a prompting dialog settles to: the text, or null if cancelled. */
 export interface PromptOptions extends Omit<ConfirmOptions, "prompt"> {
   label: string;
   placeholder?: string;
@@ -53,8 +39,7 @@ interface ConfirmRequest extends ConfirmOptions {
 
 interface ConfirmState {
   current: ConfirmRequest | null;
-  open: (opts: ConfirmOptions,
-         resolve: (v: boolean | string) => void) => void;
+  open: (opts: ConfirmOptions, resolve: (v: boolean | string) => void) => void;
   settle: (value: boolean | string) => void;
 }
 
@@ -73,29 +58,23 @@ const useConfirm = create<ConfirmState>((set, get) => ({
 
 export function confirmDialog(opts: ConfirmOptions): Promise<boolean> {
   return new Promise((resolve) =>
-    useConfirm.getState().open(opts, (v) => resolve(v === true)));
+    useConfirm.getState().open(opts, (v) => resolve(v === true))
+  );
 }
 
-/**
- * Confirm, AND collect the reason. Resolves to the text, or null on cancel.
- *
- * The caller treats a null exactly as a "no" — which is the point of returning
- * one rather than an empty string: `if (reason)` is the same shape as
- * `if (await confirmDialog(...))`, so the two are used the same way and neither
- * can be mistaken for the other.
- */
 export function promptDialog(opts: PromptOptions): Promise<string | null> {
   const { label, placeholder, minLength, ...rest } = opts;
   return new Promise((resolve) =>
-    useConfirm.getState().open(
-      { ...rest, prompt: { label, placeholder, minLength } },
-      (v) => resolve(typeof v === "string" ? v : null)));
+    useConfirm
+      .getState()
+      .open({ ...rest, prompt: { label, placeholder, minLength } }, (v) =>
+        resolve(typeof v === "string" ? v : null)
+      )
+  );
 }
 
 export function ConfirmHost() {
   const { current, settle } = useConfirm();
-  const confirmRef = useRef<HTMLButtonElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
   const [text, setText] = useState("");
 
   const prompt = current?.prompt;
@@ -103,102 +82,77 @@ export function ConfirmHost() {
   const ready = !prompt || text.trim().length >= min;
 
   useEffect(() => {
-    if (!current) return;
-    setText("");
-    // Focus the FIELD when there is one — the person has to type before they
-    // can confirm, so putting the caret on the button would make Enter do
-    // nothing and read as a broken dialog.
-    if (current.prompt) inputRef.current?.focus();
-    else confirmRef.current?.focus();
+    if (current) setText("");
   }, [current]);
 
-  useEffect(() => {
-    if (!current) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") settle(false);
-      // Enter confirms — but never past an unfinished reason, or the guard the
-      // field exists to be would be one keystroke wide.
-      if (e.key === "Enter" && ready) {
-        settle(current.prompt ? text.trim() : true);
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [current, settle, ready, text]);
+  const danger = !!current?.danger;
 
-  if (!current) return null;
-  const danger = !!current.danger;
-
-  /*
-    PORTALLED, for the same reason `Modal` is — see the long note in
-    components/ui.tsx. A confirmation can be raised from ANYWHERE, including
-    from inside a Modal (which is itself portalled) and from handlers that run
-    in the top bar, so it must not inherit a stacking context from whatever
-    happened to call `confirmDialog()`. It sits one rung above `dialog` so
-    "are you sure?" always covers the form that asked the question.
-  */
-  return createPortal(
-    <div
-      className="fixed inset-0 z-confirm flex items-center justify-center
-        bg-slate-900/50 p-4 backdrop-blur-[1px] animate-fade-in"
-      onMouseDown={() => settle(false)}
-      role="alertdialog"
-      aria-modal="true"
+  return (
+    <Dialog
+      open={!!current}
+      onOpenChange={(open) => {
+        if (!open) settle(false);
+      }}
     >
-      <div
-        className="card w-full max-w-md shadow-pop animate-modal-in"
-        onMouseDown={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start gap-3.5 px-6 pt-6">
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="flex flex-row items-start gap-3 text-left">
           <div
-            className={`mt-0.5 shrink-0 rounded-full p-2.5 ${
-              danger ? "bg-money-out/10 text-money-out"
-                : "bg-slate-100 text-slate-900"
+            className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+              danger
+                ? "bg-destructive/10 text-destructive"
+                : "bg-primary/10 text-primary"
             }`}
           >
-            {danger ? <Icon.Alert size={20} /> : <Icon.Shield size={20} />}
-          </div>
-          <div className="min-w-0">
-            <h2 className="text-section text-slate-900">
-              {current.title || (danger ? "Are you sure?" : "Please confirm")}
-            </h2>
-            <p className="mt-1 whitespace-pre-line text-sm leading-relaxed
-              text-slate-500">
-              {current.message}</p>
-            {prompt && (
-              <label className="mt-3 block">
-                <span className="text-caption uppercase text-slate-500">
-                  {prompt.label}
-                </span>
-                <input ref={inputRef} className="input mt-1 w-full"
-                  value={text} placeholder={prompt.placeholder}
-                  maxLength={300}
-                  onChange={(e) => setText(e.target.value)} />
-              </label>
+            {danger ? (
+              <AlertTriangle className="h-5 w-5" />
+            ) : (
+              <ShieldCheck className="h-5 w-5" />
             )}
           </div>
-        </div>
-        <div className="mt-5 flex justify-end gap-2 border-t border-line
-          bg-slate-50/60 px-6 py-3.5">
-          <button
+          <div className="space-y-1">
+            <DialogTitle>
+              {current?.title || (danger ? "Are you sure?" : "Please confirm")}
+            </DialogTitle>
+            <DialogDescription className="whitespace-pre-line">
+              {current?.message}
+            </DialogDescription>
+          </div>
+        </DialogHeader>
+
+        {prompt && (
+          <div className="space-y-1.5 pt-2">
+            <Label htmlFor="confirm-prompt-input">{prompt.label}</Label>
+            <Input
+              id="confirm-prompt-input"
+              autoFocus
+              value={text}
+              placeholder={prompt.placeholder}
+              maxLength={300}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && ready) {
+                  e.preventDefault();
+                  settle(text.trim());
+                }
+              }}
+            />
+          </div>
+        )}
+
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button type="button" variant="outline" onClick={() => settle(false)}>
+            {current?.cancelLabel || "Cancel"}
+          </Button>
+          <Button
             type="button"
-            className="btn-secondary"
-            onClick={() => settle(false)}
-          >
-            {current.cancelLabel || "Cancel"}
-          </button>
-          <button
-            ref={confirmRef}
-            type="button"
+            variant={danger ? "destructive" : "default"}
             disabled={!ready}
             onClick={() => settle(prompt ? text.trim() : true)}
-            className={danger ? "btn-danger" : "btn-primary"}
           >
-            {current.confirmLabel || (danger ? "Delete" : "Confirm")}
-          </button>
-        </div>
-      </div>
-    </div>,
-    document.body,
+            {current?.confirmLabel || (danger ? "Delete" : "Confirm")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

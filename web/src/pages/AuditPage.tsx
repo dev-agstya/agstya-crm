@@ -132,7 +132,7 @@ export default function AuditPage() {
       cell: (a) => (
         <div>
           <p className="font-medium text-foreground">
-            {a.actor_name || a.actor_email || "System"}
+            {a.actor_name || "System"}
           </p>
           <p className="text-xs tabular-nums text-muted-foreground">
             {formatDateTime(a.created_at)}
@@ -217,7 +217,7 @@ export default function AuditPage() {
               setAction(v);
             }}
           >
-            <SelectTrigger className="w-[190px]">
+            <SelectTrigger className="w-full sm:w-[190px]">
               <SelectValue placeholder="Action" />
             </SelectTrigger>
             <SelectContent>
@@ -237,7 +237,7 @@ export default function AuditPage() {
               setEntityType(v);
             }}
           >
-            <SelectTrigger className="w-[160px]">
+            <SelectTrigger className="w-full sm:w-[160px]">
               <SelectValue placeholder="Record type" />
             </SelectTrigger>
             <SelectContent>
