@@ -1,56 +1,64 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  Calendar,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  X,
+} from "lucide-react";
 import { attendanceApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { PageHeader } from "../../components/PageHeader";
-import { Icon } from "../../components/Icon";
-import {
-  EmptyState, ErrorState, Ledger, LedgerCell, LedgerRow, LTh, ListShell,
-  MobileCard, Pagination, PersonCell, Segmented, TableSkeleton,
-} from "../../components/ui";
+import { DataTable, Column } from "../../components/shared/DataTable";
+import { ErrorState } from "../../components/shared/ErrorState";
+import { TableSkeleton } from "../../components/shared/LoadingSkeleton";
 import { PunchPanel } from "../../components/hr/PunchPanel";
 import {
-  AttendanceMonthTable, AttendanceSummaryTiles,
+  AttendanceMonthTable,
+  AttendanceSummaryTiles,
 } from "../../components/hr/AttendanceMonth";
 import {
-  EditDayDialog, RaiseCorrectionDialog,
+  EditDayDialog,
+  RaiseCorrectionDialog,
 } from "../../components/hr/DayEditors";
 import {
-  TeamDayBoard, TeamMonthGrid,
+  TeamDayBoard,
+  TeamMonthGrid,
 } from "../../components/hr/TeamAttendance";
 import { toast } from "../../components/Toast";
 import { blobError, downloadBlob } from "../../lib/download";
 import {
-  LEAVE_STATUS_LABELS, dayLabel, formatTime, isCurrentMonth, leaveStatusBadge,
-  monthKey, monthLabel, shiftMonth, todayKey,
+  LEAVE_STATUS_LABELS,
+  dayLabel,
+  formatTime,
+  isCurrentMonth,
+  monthKey,
+  monthLabel,
+  shiftMonth,
+  todayKey,
 } from "../../lib/hr";
 import { formatDateTime } from "../../lib/format";
 import { useAuth } from "../../store/auth";
-import type { AttendanceDay } from "../../lib/types";
-
-/*
-  Attendance — ONE page, four views.
-
-  The owner has been explicit twice about not wanting "random pages for each and
-  every shit thing", and this is the shape that answer takes here: my month,
-  today's board, the month grid and the correction queue are four questions
-  about one subject, switched with the app's own `Segmented` control exactly as
-  Employees switches between Directory and Performance.
-
-  WHAT NEEDS NO PERMISSION: "My attendance". Every employee reaches their own
-  register and the punch clock with no flag at all — the rule targets already
-  follow. The other three views need `view_attendance`, and the server refuses
-  them independently, so hiding the tab is UX rather than the gate.
-
-  The punch panel sits ABOVE the view switch, not inside "My attendance",
-  because it is the thing most people open this page to press and it should not
-  disappear when somebody glances at the team.
-*/
+import type { AttendanceCorrection, AttendanceDay } from "../../lib/types";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type View = "mine" | "today" | "month" | "corrections";
 
 const PAGE_SIZE = 25;
+
+function shiftDay(key: string, delta: number): string {
+  const d = new Date(`${key}T00:00:00`);
+  d.setDate(d.getDate() + delta);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+    d.getDate()
+  ).padStart(2, "0")}`;
+}
 
 export default function AttendancePage() {
   const { user, has } = useAuth();
@@ -66,13 +74,12 @@ export default function AttendancePage() {
   const requested = params.get("view") as View | null;
   const defaultView: View = isOwner ? "today" : "mine";
   const [view, setView] = useState<View>(
-    requested && (canSeeTeam || requested === "mine") ? requested : defaultView);
+    requested && (canSeeTeam || requested === "mine") ? requested : defaultView
+  );
   const [month, setMonth] = useState(
-    () => params.get("month") || monthKey(new Date()));
+    () => params.get("month") || monthKey(new Date())
+  );
   const [day, setDay] = useState(todayKey());
-  // Whose month is on screen. Empty = mine; set by clicking a person on the
-  // team board, which is what makes "the board" and "one person's month" one
-  // page rather than two.
   const [whose, setWhose] = useState<string>("");
 
   const [editing, setEditing] = useState<AttendanceDay | null>(null);
@@ -83,11 +90,10 @@ export default function AttendancePage() {
     setView(v);
     setWhose("");
     const next = new URLSearchParams(params);
-    if (v === "mine") next.delete("view"); else next.set("view", v);
+    if (v === "mine") next.delete("view");
+    else next.set("view", v);
     setParams(next, { replace: true });
   };
-
-  /* ------------------------------------------------------------- queries -- */
 
   const mine = useQuery({
     queryKey: ["hr", "month", month, whose],
@@ -108,16 +114,19 @@ export default function AttendancePage() {
     enabled: view === "month" && canSeeTeam,
   });
 
-  // Paginated (owner 2026-09-12) — a queue running for months easily passes 25.
   const corrections = useQuery({
     queryKey: ["hr", "corrections", canSeeTeam, correctionsPage],
-    queryFn: async () => (await attendanceApi.corrections({
-      mine: !canSeeTeam, page: correctionsPage, page_size: PAGE_SIZE })).data,
+    queryFn: async () =>
+      (
+        await attendanceApi.corrections({
+          mine: !canSeeTeam,
+          page: correctionsPage,
+          page_size: PAGE_SIZE,
+        })
+      ).data,
     enabled: view === "corrections",
   });
 
-  // My own pending corrections, so the "Ask to fix" affordance can say when a
-  // request is already in flight rather than letting somebody raise a second.
   const myPending = useQuery({
     queryKey: ["hr", "my-corrections"],
     queryFn: async () =>
@@ -125,15 +134,20 @@ export default function AttendancePage() {
   });
   const pendingDays = useMemo(
     () => new Set((myPending.data?.items ?? []).map((c) => c.day)),
-    [myPending.data]);
+    [myPending.data]
+  );
 
-  // The "Corrections" tab badge counts EVERY pending request, not just the
-  // ones on the current page — a cheap page_size:1 query for the total.
   const pendingTotal = useQuery({
     queryKey: ["hr", "corrections-pending-total", canSeeTeam],
-    queryFn: async () => (await attendanceApi.corrections({
-      mine: !canSeeTeam, status: "pending", page: 1, page_size: 1,
-    })).data.total,
+    queryFn: async () =>
+      (
+        await attendanceApi.corrections({
+          mine: !canSeeTeam,
+          status: "pending",
+          page: 1,
+          page_size: 1,
+        })
+      ).data.total,
     enabled: canSeeTeam,
   });
 
@@ -141,9 +155,9 @@ export default function AttendancePage() {
     mutationFn: async (v: { id: string; approve: boolean }) =>
       (await attendanceApi.decideCorrection(v.id, v.approve)).data,
     onSuccess: (_r, v) => {
-      toast.success(v.approve
-        ? "Approved, and the day has been updated."
-        : "Rejected.");
+      toast.success(
+        v.approve ? "Approved, and the day has been updated." : "Rejected."
+      );
       qc.invalidateQueries({ queryKey: ["hr"] });
     },
     onError: (e) => toast.error(apiError(e)),
@@ -154,306 +168,348 @@ export default function AttendancePage() {
       const res = await attendanceApi.exportRegister({ month });
       downloadBlob(res.data as Blob, `attendance-${month}.xlsx`);
     },
-    // `blobError`, not `apiError`: a request made with responseType "blob"
-    // hands the ERROR body back as a Blob too, so the usual reader finds no
-    // `detail` and every failure reports the same generic sentence.
     onError: async (e) => toast.error(await blobError(e)),
   });
 
-  /* ---------------------------------------------------------------- view -- */
-
-  const monthBar = (
-    <div className="ledger-bar">
-      <button className="icon-btn"
-        aria-label="Previous month" title="Previous month"
-        onClick={() => setMonth(shiftMonth(month, -1))}>
-        <Icon.ChevronLeft size={15} />
-      </button>
-      <span className="min-w-[9rem] text-center text-sm font-medium
-        text-slate-900">
-        {monthLabel(month)}
-      </span>
-      <button className="icon-btn"
-        aria-label="Next month" title="Next month"
-        disabled={isCurrentMonth(month)}
-        onClick={() => setMonth(shiftMonth(month, 1))}>
-        <Icon.ChevronRight size={15} />
-      </button>
-      {!isCurrentMonth(month) && (
-        <button className="btn-ghost btn-sm"
-          onClick={() => setMonth(monthKey(new Date()))}>
-          This month
-        </button>
-      )}
-      <div className="ledger-bar-end">
-        {canExport && view === "month" && (
-          <button className="btn-secondary btn-sm"
-            disabled={exportRegister.isPending}
-            onClick={() => exportRegister.mutate()}>
-            <Icon.Download size={14} />
-            {exportRegister.isPending ? "Preparing…" : "Register"}
-          </button>
-        )}
-      </div>
-    </div>
-  );
-
   const pendingCount = pendingTotal.data ?? 0;
 
+  const monthBar = (
+    <Card>
+      <CardContent className="flex flex-wrap items-center justify-between gap-3 p-3.5">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Previous month"
+            onClick={() => setMonth(shiftMonth(month, -1))}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="min-w-[9rem] text-center text-sm font-semibold text-foreground">
+            {monthLabel(month)}
+          </span>
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Next month"
+            disabled={isCurrentMonth(month)}
+            onClick={() => setMonth(shiftMonth(month, 1))}
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {!isCurrentMonth(month) && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMonth(monthKey(new Date()))}
+            >
+              This month
+            </Button>
+          )}
+        </div>
+        {canExport && view === "month" && (
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={exportRegister.isPending}
+            onClick={() => exportRegister.mutate()}
+          >
+            <Download className="mr-1.5 h-4 w-4" />
+            {exportRegister.isPending ? "Preparing..." : "Export register"}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+
+  const correctionCols: Column<AttendanceCorrection>[] = [
+    {
+      key: "who",
+      header: "Employee",
+      cell: (c) => (
+        <div>
+          <p className="font-medium text-foreground">{c.user_name}</p>
+          <p className="text-xs text-muted-foreground">
+            {formatDateTime(c.created_at)}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "day",
+      header: "Date & Reason",
+      cell: (c) => (
+        <div>
+          <p className="font-medium text-foreground">{dayLabel(c.day)}</p>
+          <p className="text-xs text-muted-foreground">{c.reason}</p>
+        </div>
+      ),
+    },
+    {
+      key: "time",
+      header: "Requested Time",
+      cell: (c) => (
+        <span className="whitespace-nowrap text-sm tabular-nums text-foreground">
+          {c.requested_clock_in ? formatTime(c.requested_clock_in) : "—"} –{" "}
+          {c.requested_clock_out ? formatTime(c.requested_clock_out) : "—"}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      cell: (c) => (
+        <div>
+          <Badge
+            variant={
+              c.status === "approved"
+                ? "default"
+                : c.status === "rejected"
+                  ? "destructive"
+                  : "secondary"
+            }
+            className={
+              c.status === "approved"
+                ? "bg-emerald-600 text-white hover:bg-emerald-600"
+                : ""
+            }
+          >
+            {LEAVE_STATUS_LABELS[c.status]}
+          </Badge>
+          {c.decided_by_name && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              by {c.decided_by_name}
+            </p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      mobileLabel: false,
+      cell: (c) =>
+        c.status === "pending" &&
+        canManage &&
+        c.user_id !== String(user?.id) ? (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={decide.isPending}
+              onClick={() => decide.mutate({ id: c.id, approve: false })}
+            >
+              <X className="mr-1 h-3.5 w-3.5" />
+              Reject
+            </Button>
+            <Button
+              size="sm"
+              disabled={decide.isPending}
+              onClick={() => decide.mutate({ id: c.id, approve: true })}
+            >
+              <Check className="mr-1 h-3.5 w-3.5" />
+              Approve
+            </Button>
+          </div>
+        ) : null,
+    },
+  ];
+
   return (
-    <div>
+    <div className="space-y-6">
       <PageHeader
-        title="Attendance"
-        subtitle={isOwner
-          ? "Team attendance register, daily clock-in logs, and correction requests."
-          : "Clock in when you start, clock out when you finish. Monthly attendance determines payroll."}
         eyebrow="Workplace HR"
+        title="Attendance"
+        subtitle={
+          isOwner
+            ? "Team attendance status, monthly register, and correction requests."
+            : "Clock in when you start and clock out when you finish."
+        }
         actions={
-          <button className="btn-secondary"
-            onClick={() => navigate("/hr/leave")}>
-            <Icon.Calendar size={15} /> Leave
-          </button>
+          <Button variant="outline" onClick={() => navigate("/hr/leave")}>
+            <Calendar className="mr-1.5 h-4 w-4" />
+            Leave
+          </Button>
         }
       />
 
-      {/* Employees see the quick punch clock; owners do not punch in. */}
+      {/* Employees see the punch panel; owners do not clock in */}
       {!isOwner && (
-        <PunchPanel onChanged={() => qc.invalidateQueries({
-          queryKey: ["hr", "month"] })} />
+        <PunchPanel
+          onChanged={() => qc.invalidateQueries({ queryKey: ["hr", "month"] })}
+        />
       )}
 
       {canSeeTeam && (
-        <div className="mt-5">
-          <Segmented
-            semantics="tabs"
-            value={view}
-            onChange={(v) => setView2(v as View)}
-            options={[
-              ...(user?.account_type !== "owner" ? [{ value: "mine", label: "My Attendance", icon: "User" as const }] : []),
-              { value: "today", label: "Today's Status", icon: "Users" },
-              { value: "month", label: "Monthly Register", icon: "Grid" },
-              {
-                value: "corrections", label: "Correction Requests",
-                icon: "CheckSquare",
-                count: pendingCount || undefined,
-              },
-            ]}
-          />
-        </div>
+        <Tabs value={view} onValueChange={(v) => setView2(v as View)}>
+          <TabsList className="w-full justify-start overflow-x-auto">
+            {!isOwner && <TabsTrigger value="mine">My Attendance</TabsTrigger>}
+            <TabsTrigger value="today">Today's Status</TabsTrigger>
+            <TabsTrigger value="month">Monthly Register</TabsTrigger>
+            <TabsTrigger value="corrections" className="gap-2">
+              Corrections
+              {pendingCount > 0 && (
+                <Badge variant="secondary" className="px-1.5 py-0 text-[11px]">
+                  {pendingCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
       )}
 
-      {/* ------------------------------------------------ my / one person -- */}
       {view === "mine" && (
-        <div className="mt-5">
+        <div className="space-y-5">
           {whose && mine.data && (
-            <div className="mb-3 flex flex-wrap items-center gap-2">
-              <PersonCell name={mine.data.user_name} />
-              <button className="btn-ghost btn-sm"
-                onClick={() => setWhose("")}>
-                Back to my own
-              </button>
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-semibold text-foreground">
+                Viewing: {mine.data.user_name}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setWhose("")}
+              >
+                Back to {isOwner ? "team" : "my attendance"}
+              </Button>
             </div>
           )}
-          {mine.data && (
-            <AttendanceSummaryTiles summary={mine.data.summary} />
+          {mine.data && <AttendanceSummaryTiles summary={mine.data.summary} />}
+          {monthBar}
+          {mine.isError ? (
+            <ErrorState onRetry={() => mine.refetch()} />
+          ) : mine.isLoading ? (
+            <TableSkeleton cols={6} />
+          ) : (
+            <AttendanceMonthTable
+              days={mine.data?.days ?? []}
+              canEdit={canManage && !!whose}
+              onEdit={canManage && whose ? (d) => setEditing(d) : undefined}
+              onRaiseCorrection={
+                whose
+                  ? undefined
+                  : (d) => {
+                      if (pendingDays.has(d.day)) {
+                        toast.info(
+                          `You already have a correction waiting for ${dayLabel(
+                            d.day
+                          )}.`
+                        );
+                        return;
+                      }
+                      setCorrecting(d);
+                    }
+              }
+            />
           )}
-          <div className="mt-5">
-            {monthBar}
-            {mine.isError ? (
-              <ErrorState onRetry={() => mine.refetch()} />
-            ) : mine.isLoading ? (
-              <TableSkeleton cols={6} />
-            ) : (
-              <AttendanceMonthTable
-                days={mine.data?.days ?? []}
-                canEdit={canManage && !!whose}
-                onEdit={canManage && whose
-                  ? (d) => setEditing(d) : undefined}
-                onRaiseCorrection={whose ? undefined : (d) => {
-                  if (pendingDays.has(d.day)) {
-                    toast.info("You already have a correction waiting for "
-                      + `${dayLabel(d.day)}.`);
-                    return;
-                  }
-                  setCorrecting(d);
-                }}
-              />
-            )}
-          </div>
         </div>
       )}
 
-      {/* --------------------------------------------------- today's board -- */}
       {view === "today" && canSeeTeam && (
-        <div className="mt-5">
-          <div className="ledger-bar mb-5">
-            <button className="icon-btn" aria-label="Previous day" title="Previous day"
-              onClick={() => setDay(shiftDay(day, -1))}>
-              <Icon.ChevronLeft size={15} />
-            </button>
-            <span className="min-w-[9rem] text-center text-sm font-medium
-              text-slate-900">
-              {dayLabel(day)} · {monthLabel(day.slice(0, 7))}
-            </span>
-            <button className="icon-btn" aria-label="Next day" title="Next day"
-              disabled={day >= todayKey()}
-              onClick={() => setDay(shiftDay(day, 1))}>
-              <Icon.ChevronRight size={15} />
-            </button>
-            {day !== todayKey() && (
-              <button className="btn-ghost btn-sm"
-                onClick={() => setDay(todayKey())}>Today</button>
-            )}
-          </div>
+        <div className="space-y-5">
+          <Card>
+            <CardContent className="flex flex-wrap items-center gap-2 p-3.5">
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Previous day"
+                onClick={() => setDay(shiftDay(day, -1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <span className="min-w-[10rem] text-center text-sm font-semibold text-foreground">
+                {dayLabel(day)} · {monthLabel(day.slice(0, 7))}
+              </span>
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Next day"
+                disabled={day >= todayKey()}
+                onClick={() => setDay(shiftDay(day, 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              {day !== todayKey() && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDay(todayKey())}
+                >
+                  Today
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+
           {today.isError ? (
             <ErrorState onRetry={() => today.refetch()} />
           ) : today.isLoading ? (
             <TableSkeleton cols={6} />
           ) : today.data ? (
-            <TeamDayBoard data={today.data} onOpen={(id) => {
-              setWhose(id);
-              setMonth(day.slice(0, 7));
-              setView2("mine");
-              setWhose(id);
-            }} />
+            <TeamDayBoard
+              data={today.data}
+              onOpen={(id) => {
+                setWhose(id);
+                setMonth(day.slice(0, 7));
+                setView2("mine");
+                setWhose(id);
+              }}
+            />
           ) : null}
         </div>
       )}
 
-      {/* ----------------------------------------------------- month grid -- */}
       {view === "month" && canSeeTeam && (
-        <div className="mt-5">
+        <div className="space-y-5">
           {monthBar}
-          <div className="mt-5">
-            {grid.isError ? (
-              <ErrorState onRetry={() => grid.refetch()} />
-            ) : grid.isLoading ? (
-              <TableSkeleton cols={8} />
-            ) : grid.data ? (
-              <TeamMonthGrid data={grid.data} onOpen={(id) => {
+          {grid.isError ? (
+            <ErrorState onRetry={() => grid.refetch()} />
+          ) : grid.isLoading ? (
+            <TableSkeleton cols={8} />
+          ) : grid.data ? (
+            <TeamMonthGrid
+              data={grid.data}
+              onOpen={(id) => {
                 setView2("mine");
                 setWhose(id);
-              }} />
-            ) : null}
-          </div>
+              }}
+            />
+          ) : null}
         </div>
       )}
 
-      {/* ----------------------------------------------------- corrections -- */}
       {view === "corrections" && (
-        <div className="mt-5">
-          {corrections.isError ? (
-            <ErrorState onRetry={() => corrections.refetch()} />
-          ) : corrections.isLoading ? (
-            <TableSkeleton cols={5} />
-          ) : (corrections.data?.items ?? []).length === 0 ? (
-            <EmptyState title="Nothing waiting"
-              icon={<Icon.Check size={20} />}
-              hint="A correction is how somebody asks for a day to be fixed —
-                a forgotten clock-out, usually. None are open." />
-          ) : (
-            <ListShell
-              bare
-              cards={(corrections.data?.items ?? []).map((c) => (
-                <MobileCard key={c.id} to="#"
-                  rail={c.status === "pending" ? "due" : undefined}
-                  title={c.user_name}
-                  meta={`${dayLabel(c.day)} · ${c.reason}`}
-                  right={
-                    <span className={leaveStatusBadge(c.status)}>
-                      {LEAVE_STATUS_LABELS[c.status]}
-                    </span>
-                  } />
-              ))}
-              table={
-                <Ledger
-                  head={
-                    <>
-                      <LTh>Who</LTh>
-                      <LTh>Day</LTh>
-                      <LTh>Asked for</LTh>
-                      <LTh>Status</LTh>
-                      <LTh />
-                    </>
-                  }>
-                  {(corrections.data?.items ?? []).map((c) => (
-                    <LedgerRow key={c.id}>
-                      <td className={c.status === "pending" ? "rail-due" : ""}>
-                        <PersonCell name={c.user_name}
-                          sub={formatDateTime(c.created_at)} />
-                      </td>
-                      <LedgerCell title={dayLabel(c.day)} sub={c.reason} />
-                      <td className="whitespace-nowrap text-[13px]
-                        tabular-nums text-slate-700">
-                        {c.requested_clock_in
-                          ? formatTime(c.requested_clock_in) : "—"}
-                        {" – "}
-                        {c.requested_clock_out
-                          ? formatTime(c.requested_clock_out) : "—"}
-                      </td>
-                      <td>
-                        <span className={leaveStatusBadge(c.status)}>
-                          {LEAVE_STATUS_LABELS[c.status]}
-                        </span>
-                        {c.decided_by_name && (
-                          <span className="mt-0.5 block text-xs
-                            text-slate-500">
-                            by {c.decided_by_name}
-                          </span>
-                        )}
-                      </td>
-                      <td>
-                        <div className="flex justify-end gap-1.5">
-                          {c.status === "pending" && canManage
-                            && c.user_id !== String(user?.id) && (
-                            <>
-                              <button className="btn-secondary btn-sm"
-                                disabled={decide.isPending}
-                                onClick={() => decide.mutate({
-                                  id: c.id, approve: false })}>
-                                Reject
-                              </button>
-                              <button className="btn-primary btn-sm"
-                                disabled={decide.isPending}
-                                onClick={() => decide.mutate({
-                                  id: c.id, approve: true })}>
-                                Approve
-                              </button>
-                            </>
-                          )}
-                        </div>
-                      </td>
-                    </LedgerRow>
-                  ))}
-                </Ledger>
-              }
-            />
-          )}
-          {(corrections.data?.total ?? 0) > PAGE_SIZE && (
-            <Pagination page={correctionsPage} pageSize={PAGE_SIZE}
-              total={corrections.data?.total ?? 0}
-              onChange={setCorrectionsPage} />
-          )}
-        </div>
+        <DataTable
+          data={corrections.data?.items ?? []}
+          columns={correctionCols}
+          keyField={(c) => c.id}
+          loading={corrections.isLoading}
+          error={
+            corrections.isError ? "Could not load correction requests." : null
+          }
+          onRetry={() => corrections.refetch()}
+          emptyTitle="No correction requests"
+          emptyDescription="When someone asks to fix a missed clock-in or clock-out, it appears here."
+          page={correctionsPage}
+          pageSize={PAGE_SIZE}
+          total={corrections.data?.total ?? 0}
+          onPageChange={setCorrectionsPage}
+        />
       )}
 
       <EditDayDialog
-        open={!!editing} onClose={() => setEditing(null)} day={editing}
+        open={!!editing}
+        onClose={() => setEditing(null)}
+        day={editing}
         userId={whose || String(user?.id ?? "")}
         userName={mine.data?.user_name ?? ""}
       />
       <RaiseCorrectionDialog
-        open={!!correcting} onClose={() => setCorrecting(null)}
+        open={!!correcting}
+        onClose={() => setCorrecting(null)}
         day={correcting}
       />
     </div>
   );
-}
-
-/** "2026-08-13" + n days, staying on the calendar. */
-function shiftDay(key: string, delta: number): string {
-  const d = new Date(`${key}T00:00:00`);
-  d.setDate(d.getDate() + delta);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${
-    String(d.getDate()).padStart(2, "0")}`;
 }
