@@ -7,7 +7,24 @@ import { PageHeader } from "../components/PageHeader";
 // The three party kinds a pending row can point at. Matches the :type segment
 // of /finance/entity/:type/:id.
 type ContactPartyType = "customer" | "partner" | "broker";
-import { ErrorState, Modal, PageLoader } from "../components/ui";
+import { ChevronRight, MoreHorizontal } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ErrorState } from "../components/shared/ErrorState";
+import { PageLoader } from "../components/ui";
 import { Icon } from "../components/Icon";
 import {
   AreaTrend, GroupedBars, PerformanceBars, C,
@@ -126,36 +143,38 @@ function TopListModal({ kind, list, onClose }: {
   kind: TopKind; list: TopPerformer[]; onClose: () => void;
 }) {
   return (
-    <Modal open onClose={onClose} title={`Top 5 — ${KIND_META[kind].title
-      .replace("Top ", "")}`} wide>
-      <div className="space-y-2">
-        {list.map((p, i) => (
-          <div key={p.key} className="rounded-card border border-line p-3">
-            <div className="flex items-center gap-3">
-              <span className={`flex h-7 w-7 shrink-0 items-center justify-center
-                rounded-full text-sm font-bold ${i === 0
-                  ? "bg-due/15 text-due"
-                  : "bg-slate-100 text-slate-500"}`}>
-                {i + 1}</span>
-              <span className="min-w-0 flex-1 truncate font-semibold text-slate-800" title={p.label}>{p.label}</span>
-              <span className="shrink-0 text-sm font-semibold tabular-nums
-                text-money-in">{formatINR(p.profit)}</span>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>
+            Top 5 — {KIND_META[kind].title.replace("Top ", "")}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-2">
+          {list.map((p, i) => (
+            <div key={p.key} className="rounded-lg border border-slate-200 p-3">
+              <div className="flex items-center gap-3">
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-sm font-bold ${i === 0 ? "bg-amber-100 text-amber-800" : "bg-slate-100 text-slate-500"}`}>
+                  {i + 1}</span>
+                <span className="min-w-0 flex-1 truncate font-semibold text-slate-800" title={p.label}>{p.label}</span>
+                <span className="shrink-0 text-sm font-semibold tabular-nums text-emerald-700">{formatINR(p.profit)}</span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 pl-10 text-xs">
+                {metricsFor(kind, p).map((m) => (
+                  <span key={m.label} className="text-slate-500">{m.label}:{" "}
+                    <b className="font-medium text-slate-600">
+                      {m.value}</b></span>
+                ))}
+              </div>
             </div>
-            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 pl-10 text-xs">
-              {metricsFor(kind, p).map((m) => (
-                <span key={m.label} className="text-slate-500">{m.label}:{" "}
-                  <b className="font-medium text-slate-600">
-                    {m.value}</b></span>
-              ))}
-            </div>
-          </div>
-        ))}
-        {list.length === 0 && (
-          <p className="py-6 text-center text-sm text-slate-500">
-            No data for this period.</p>
-        )}
-      </div>
-    </Modal>
+          ))}
+          {list.length === 0 && (
+            <p className="py-6 text-center text-sm text-slate-500">
+              No data for this period.</p>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -174,7 +193,7 @@ function EmployeePerformance({ rows, metricLabel, format, periodLabel }: {
     (r) => r.has_target && r.attainment_pct >= 100).length;
 
   return (
-    <div className="card card-body">
+    <Card className="p-4 sm:p-5">
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="text-sm font-semibold text-slate-700">
@@ -200,7 +219,7 @@ function EmployeePerformance({ rows, metricLabel, format, periodLabel }: {
           {expanded ? "Show less" : `Show all ${rows.length}`}
         </button>
       )}
-    </div>
+    </Card>
   );
 }
 
@@ -288,73 +307,68 @@ function PendingModal({ title, items, tone, chipTone, onClose, onOpenParty }: {
   const othersTotal = otherItems.reduce((s, i) => s + i.amount, 0);
   const nothingListed = groups.length === 0 && otherItems.length === 0;
   return (
-    <Modal open onClose={onClose} title={title} wide>
-      <div className="space-y-5">
-        {groups.map((g) => (
-          <div key={g.type}>
-            <div className="mb-2 flex items-center justify-between">
-              <span className={`rounded-full px-2.5 py-0.5 text-[11px]
-                font-semibold uppercase tracking-wide ${chipTone}`}>
-                {PARTY_LABEL[g.type]}s · {g.rows.length}</span>
-              <p className="text-xs font-medium tabular-nums text-slate-500">
-                {formatINR(g.rows.reduce((s, r) => s + r.amount, 0))}</p>
-            </div>
-            <div className="overflow-hidden rounded-card border border-line
-              shadow-sm">
-              {g.rows.map((r, i) => (
-                <PendingRow key={r.party_id + i} r={r} tone={tone}
-                  showBreakdown onOpenParty={onOpenParty} />
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Collapsible bucket for sub-₹100 balances — amounts only. */}
-        {otherItems.length > 0 && (
-          <div>
-            <button type="button" onClick={() => setShowOthers((v) => !v)}
-              className="flex w-full items-center justify-between gap-3 rounded-card
-                border border-line px-4 py-3 text-left transition
-                hover:bg-slate-50/70">
-              <span className="flex items-center gap-2">
-                <Icon.ChevronRight size={16}
-                  className={`text-slate-500 transition-transform
-                    ${showOthers ? "rotate-90" : ""}`} />
-                <span className="text-sm font-medium text-slate-600">Others</span>
-                <span className="rounded-full bg-slate-100 px-2 py-0.5
-                  text-[11px] font-semibold text-slate-500">{otherItems.length}</span>
-                <span className="text-xs text-slate-500">under ₹100</span>
-              </span>
-              <span className={`text-sm font-semibold tabular-nums ${tone}`}>
-                {formatINR(othersTotal)}</span>
-            </button>
-            {showOthers && (
-              <div className="mt-2 overflow-hidden rounded-card border
-                border-line shadow-sm">
-                {otherItems.map((r, i) => (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-h-[85vh] max-w-xl overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          {groups.map((g) => (
+            <div key={g.type}>
+              <div className="mb-2 flex items-center justify-between">
+                <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${chipTone}`}>
+                  {PARTY_LABEL[g.type]}s · {g.rows.length}</span>
+                <p className="text-xs font-medium tabular-nums text-slate-500">
+                  {formatINR(g.rows.reduce((s, r) => s + r.amount, 0))}</p>
+              </div>
+              <div className="overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+                {g.rows.map((r, i) => (
                   <PendingRow key={r.party_id + i} r={r} tone={tone}
-                    showBreakdown={false} onOpenParty={onOpenParty} />
+                    showBreakdown onOpenParty={onOpenParty} />
                 ))}
               </div>
-            )}
-          </div>
-        )}
+            </div>
+          ))}
 
-        {nothingListed && (
-          <p className="py-6 text-center text-sm text-slate-500">
-            {items.length === 0
-              ? "Nothing pending."
-              : "Only minor balances under ₹10 remain."}</p>
-        )}
-        <div className="flex items-center justify-between rounded-card bg-slate-50
-          px-4 py-3">
-          <span className="text-sm font-medium text-slate-600">
-            Total</span>
-          <span className={`text-metric-sm tabular-nums ${tone}`}>
-            {formatINR(total)}</span>
+          {otherItems.length > 0 && (
+            <div>
+              <button type="button" onClick={() => setShowOthers((v) => !v)}
+                className="flex w-full items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-3 text-left transition hover:bg-slate-50/70">
+                <span className="flex items-center gap-2">
+                  <ChevronRight className={`h-4 w-4 text-slate-500 transition-transform ${showOthers ? "rotate-90" : ""}`} />
+                  <span className="text-sm font-medium text-slate-600">Others</span>
+                  <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">{otherItems.length}</span>
+                  <span className="text-xs text-slate-500">under ₹100</span>
+                </span>
+                <span className={`text-sm font-semibold tabular-nums ${tone}`}>
+                  {formatINR(othersTotal)}</span>
+              </button>
+              {showOthers && (
+                <div className="mt-2 overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+                  {otherItems.map((r, i) => (
+                    <PendingRow key={r.party_id + i} r={r} tone={tone}
+                      showBreakdown={false} onOpenParty={onOpenParty} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {nothingListed && (
+            <p className="py-6 text-center text-sm text-slate-500">
+              {items.length === 0
+                ? "Nothing pending."
+                : "Only minor balances under ₹10 remain."}</p>
+          )}
+          <div className="flex items-center justify-between rounded-lg bg-slate-50 px-4 py-3">
+            <span className="text-sm font-medium text-slate-600">
+              Total</span>
+            <span className={`text-base font-semibold tabular-nums ${tone}`}>
+              {formatINR(total)}</span>
+          </div>
         </div>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -467,33 +481,41 @@ export default function FinanceOverviewPage() {
               </div>
             </div>
 
-            <div className="card p-5 lg:col-span-3">
-              <div className="mb-3 flex items-center justify-between gap-3">
-                <select value={graph}
-                  onChange={(e) => setGraph(e.target.value as GraphType)}
-                  className="select h-8 max-w-[70%] py-0 text-sm font-medium">
-                  {GRAPHS.map((g) => (
-                    <option key={g.value} value={g.value}>{g.label}</option>
-                  ))}
-                </select>
+            <Card className="p-4 sm:p-5 lg:col-span-3">
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                <Select value={graph} onValueChange={(v) => setGraph(v as GraphType)}>
+                  <SelectTrigger className="h-8 w-auto min-w-[200px] text-sm font-medium">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {GRAPHS.map((g) => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
                 {graph === "target" ? (
-                  <div className="flex items-center gap-3">
-                    <select value={targetWho} title="Whose target to plot"
-                      onChange={(e) => setTargetWho(e.target.value)}
-                      className="select h-8 max-w-[130px] py-0 text-xs">
-                      <option value="">Company</option>
-                      {(d.employee_targets ?? []).map((e) => (
-                        <option key={e.key} value={e.key}>{e.label}</option>
-                      ))}
-                    </select>
-                    <select value={targetMetric} title="Which goal to plot"
-                      onChange={(e) =>
-                        setTargetMetric(e.target.value as TargetMetric)}
-                      className="select h-8 py-0 text-xs">
-                      {TARGET_METRICS.map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Select value={targetWho || "__company__"} onValueChange={(v) => setTargetWho(v === "__company__" ? "" : v)}>
+                      <SelectTrigger className="h-8 w-[140px] text-xs">
+                        <SelectValue placeholder="Company" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__company__">Company</SelectItem>
+                        {(d.employee_targets ?? []).map((e) => (
+                          <SelectItem key={e.key} value={e.key}>{e.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={targetMetric} onValueChange={(v) => setTargetMetric(v as TargetMetric)}>
+                      <SelectTrigger className="h-8 w-[130px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {TARGET_METRICS.map((m) => (
+                          <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <p className="flex items-center gap-3 text-xs text-slate-500">
                       <span className="flex items-center gap-1">
                         <span className="inline-block h-2 w-3 rounded-sm"
@@ -527,7 +549,7 @@ export default function FinanceOverviewPage() {
               {graph === "renewal_rate" && (
                 <AreaTrend data={renewalTrend} valueLabel="Renewal rate"
                   color={C.amber} format={(n) => `${n}%`} />)}
-            </div>
+            </Card>
           </div>
 
           {/* Top performers (accrual profit — booked, not yet received) */}
@@ -546,31 +568,32 @@ export default function FinanceOverviewPage() {
 
           {/* Outstanding — always current, not affected by the filter */}
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="card flex items-center justify-between p-5">
+            <Card className="flex items-center justify-between p-4 sm:p-5">
               <div>
                 <p className="text-sm font-medium text-slate-600">Pending to Collect</p>
-                <p className="mt-1 text-metric tabular-nums
-                  text-money-in">{formatINR(d.pending.to_collect)}</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-emerald-700">
+                  {formatINR(d.pending.to_collect)}
+                </p>
               </div>
-              <button onClick={() => setPendingModal("collect")}
+              <Button variant="ghost" size="icon" onClick={() => setPendingModal("collect")}
                 title="View breakdown"
-                className="rounded-card bg-money-in/10 p-3 text-money-in
-                  hover:bg-money-in/15">
-                <Icon.More size={22} /></button>
-            </div>
-            <div className="card flex items-center justify-between p-5">
+                className="h-10 w-10 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </Card>
+            <Card className="flex items-center justify-between p-4 sm:p-5">
               <div>
                 <p className="text-sm font-medium text-slate-600">Pending to Pay</p>
-                <p className="mt-1 text-metric tabular-nums
-                  text-money-out">
-                  {d.pending.to_pay > 0 ? "−" : ""}{formatINR(d.pending.to_pay)}</p>
+                <p className="mt-1 text-xl font-semibold tabular-nums text-red-600">
+                  {d.pending.to_pay > 0 ? "−" : ""}{formatINR(d.pending.to_pay)}
+                </p>
               </div>
-              <button onClick={() => setPendingModal("pay")}
+              <Button variant="ghost" size="icon" onClick={() => setPendingModal("pay")}
                 title="View breakdown"
-                className="rounded-card bg-money-out/10 p-3 text-money-out
-                  hover:bg-money-out/15">
-                <Icon.More size={22} /></button>
-            </div>
+                className="h-10 w-10 rounded-lg bg-red-50 text-red-600 hover:bg-red-100">
+                <MoreHorizontal className="h-5 w-5" />
+              </Button>
+            </Card>
           </div>
         </div>
       )}

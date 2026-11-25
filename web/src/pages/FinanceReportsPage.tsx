@@ -7,9 +7,21 @@ import {
 import { blobError, downloadBlob, filenameFromResponse } from "../lib/download";
 import { toast } from "../components/Toast";
 import { useAuth } from "../store/auth";
+import { Check, Download, Filter, TrendingUp } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card as ShadCard } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { PageHeader } from "../components/PageHeader";
-import { Icon } from "../components/Icon";
-import { ErrorState, EmptyState, PageLoader, InfoTooltip } from "../components/ui";
+import { InfoTooltip } from "../components/shared/InfoTooltip";
+import { EmptyState } from "../components/shared/EmptyState";
+import { ErrorState } from "../components/shared/ErrorState";
+import { PageLoader } from "../components/ui";
 import {
   AreaTrend, Donut, RankedBars, SegmentBar, StackedBars,
   C, catColor,
@@ -32,19 +44,19 @@ function Card({ title, sub, tooltip, right, children, className = "" }: {
   children: React.ReactNode; className?: string;
 }) {
   return (
-    <div className={`card p-5 ${className}`}>
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <ShadCard className={`p-4 sm:p-5 ${className}`}>
+      <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-1.5">
             <p className="text-sm font-semibold text-slate-700">{title}</p>
-            {tooltip && <InfoTooltip text={tooltip} />}
+            {tooltip && <InfoTooltip content={tooltip} />}
           </div>
           {sub && <p className="text-xs text-slate-500">{sub}</p>}
         </div>
         {right}
       </div>
       {children}
-    </div>
+    </ShadCard>
   );
 }
 
@@ -159,10 +171,9 @@ export default function FinanceReportsPage() {
           neighbours (owner 2026-07-25: "why is one black and the other grey?").
           Long lists get a type-to-search dropdown; the category list is short so
           it stays a plain select, restyled to match. */}
-      <div className="card mb-5 flex flex-wrap items-center gap-2 p-3">
-        <span className="inline-flex items-center gap-1.5 text-xs font-medium
-          uppercase tracking-wide text-slate-500">
-          <Icon.Filter size={14} /> Filters</span>
+      <div className="mb-4 flex flex-wrap items-center gap-2 border-b border-slate-200 pb-3">
+        <span className="inline-flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-500">
+          <Filter className="h-3.5 w-3.5" /> Filters</span>
         <div className="w-44">
           <DateFilter value={period} onChange={setPeriod} variant="field" />
         </div>
@@ -214,28 +225,28 @@ export default function FinanceReportsPage() {
               tone={moneyTone(d.kpis.net_profit)}
               tooltip="Total cash received minus cash paid out during the selected period"
               sub="cash in − cash out · selected period" />
-            <div className="relative overflow-hidden rounded-card border
-              border-line bg-white p-4 shadow-card">
+            <ShadCard className="relative overflow-hidden p-4">
               <div className="flex items-center gap-1.5">
-                <p className="truncate text-xs font-semibold uppercase
-                  tracking-wide text-slate-500">Pending to Collect &amp; Pay</p>
-                <InfoTooltip text="Outstanding balances across customers, insurers, and partner commissions" />
+                <p className="truncate text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  Pending to Collect &amp; Pay
+                </p>
+                <InfoTooltip content="Outstanding balances across customers, insurers, and partner commissions" />
               </div>
               <div className="mt-1 flex flex-wrap items-baseline gap-x-5">
                 <div>
-                  <p className="text-metric tabular-nums
-                    text-money-in">
-                    {formatINR(d.kpis.pending_to_collect)}</p>
+                  <p className="text-xl font-semibold tabular-nums text-emerald-700">
+                    {formatINR(d.kpis.pending_to_collect)}
+                  </p>
                   <p className="text-xs text-slate-500">to collect</p>
                 </div>
                 <div>
-                  <p className="text-metric tabular-nums
-                    text-money-out">
-                    −{formatINR(d.kpis.pending_to_pay)}</p>
+                  <p className="text-xl font-semibold tabular-nums text-red-600">
+                    −{formatINR(d.kpis.pending_to_pay)}
+                  </p>
                   <p className="text-xs text-slate-500">to pay</p>
                 </div>
               </div>
-            </div>
+            </ShadCard>
             <KpiTile label="Total policies" accent={C.count}
               value={String(d.kpis.policies)}
               tooltip="All policies booked during the period and the average gross premium"
@@ -486,26 +497,35 @@ function DetailTable({ dateFrom, dateTo, periodName }: {
   };
 
   return (
-    <div className="card">
-      <div className="filter-bar">
+    <ShadCard className="overflow-hidden">
+      <div className="flex flex-wrap items-center gap-2 border-b border-slate-200 px-4 py-3">
         <p className="mr-2 text-sm font-semibold text-slate-700">
           Explore &amp; export</p>
-        <select className="select h-9 max-w-[190px] text-sm" value={dimension}
-          onChange={(e) => setDimension(e.target.value)}>
-          {DIMENSIONS.map((x) => (
-            <option key={x.value} value={x.value}>By {x.label}</option>))}
-        </select>
+        <Select value={dimension} onValueChange={setDimension}>
+          <SelectTrigger className="h-8 w-[190px] text-sm">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {DIMENSIONS.map((x) => (
+              <SelectItem key={x.value} value={x.value}>By {x.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <span className="text-xs text-slate-500">{periodName}</span>
         <div className="ml-auto flex gap-2">
-          <button className="btn-secondary" onClick={exportCsv}
-            disabled={rows.length === 0}><Icon.Download size={16} /> CSV</button>
-          <button className="btn-secondary" onClick={exportPdf}
-            disabled={rows.length === 0}><Icon.Download size={16} /> PDF</button>
+          <Button variant="outline" size="sm" onClick={exportCsv}
+            disabled={rows.length === 0}>
+            <Download className="mr-1.5 h-3.5 w-3.5" /> CSV
+          </Button>
+          <Button variant="outline" size="sm" onClick={exportPdf}
+            disabled={rows.length === 0}>
+            <Download className="mr-1.5 h-3.5 w-3.5" /> PDF
+          </Button>
         </div>
       </div>
       {report.isError ? <ErrorState onRetry={() => report.refetch()} /> : report.isLoading ? <PageLoader /> : rows.length === 0 ? (
         <EmptyState title="No data"
-          hint="No policies match this dimension / period yet." />
+          description="No policies match this dimension / period yet." />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm table-sticky">
@@ -534,9 +554,9 @@ function DetailTable({ dateFrom, dateTo, periodName }: {
                   <td className="px-5 py-3 text-right">
                     {r.growth_pct == null ? <span className="text-slate-300">—</span>
                       : <span className={`inline-flex items-center gap-1 ${
-                          r.growth_pct >= 0 ? "text-money-in" : "text-money-out"}`}>
-                          <Icon.Trend size={14}
-                            className={r.growth_pct >= 0 ? "" : "-scale-y-100"} />
+                          r.growth_pct >= 0 ? "text-emerald-700" : "text-red-600"}`}>
+                          <TrendingUp
+                            className={`h-3.5 w-3.5 ${r.growth_pct >= 0 ? "" : "-scale-y-100"}`} />
                           {Math.abs(r.growth_pct)}%</span>}
                   </td>
                 </tr>
@@ -545,7 +565,7 @@ function DetailTable({ dateFrom, dateTo, periodName }: {
           </table>
         </div>
       )}
-    </div>
+    </ShadCard>
   );
 }
 
@@ -591,7 +611,7 @@ function ReportDownload() {
   };
 
   return (
-    <div className="card card-body">
+    <ShadCard className="p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h2 className="text-card-title text-slate-900">
@@ -616,36 +636,32 @@ function ReportDownload() {
           "Outstanding, bank and cash",
         ].map((line) => (
           <li key={line} className="flex items-center gap-2">
-            <Icon.Check size={14} className="shrink-0 text-money-in" />
+            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-600" />
             {line}
           </li>
         ))}
       </ul>
 
       {!canExport ? (
-        <p className="mt-4 rounded-control bg-slate-50 p-3 text-sm
-          text-slate-500">
+        <p className="mt-4 rounded-md bg-slate-50 p-3 text-sm text-slate-500">
           You need the export permission to download the report.
         </p>
       ) : (
-        <div className="mt-5 flex flex-wrap items-center gap-2 border-t
-          border-line pt-4">
-          <button className="btn-primary" disabled={!!busy}
-            onClick={() => download("excel")}>
-            <Icon.Download size={16} />
+        <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
+          <Button size="sm" disabled={!!busy} onClick={() => download("excel")}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />
             {busy === "excel" ? "Building…" : "Download Excel"}
-          </button>
-          <button className="btn-secondary" disabled={!!busy}
-            onClick={() => download("pdf")}>
-            <Icon.Download size={16} />
+          </Button>
+          <Button variant="outline" size="sm" disabled={!!busy} onClick={() => download("pdf")}>
+            <Download className="mr-1.5 h-3.5 w-3.5" />
             {busy === "pdf" ? "Building…" : "Download PDF"}
-          </button>
+          </Button>
           <p className="text-xs text-slate-500">
             Excel has every row and every sheet. The PDF is the one you print
             and hand over.
           </p>
         </div>
       )}
-    </div>
+    </ShadCard>
   );
 }

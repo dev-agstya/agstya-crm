@@ -3,9 +3,20 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { financeApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
+import { Check, ChevronRight, Edit, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { FormField } from "../../components/shared/FormSection";
 import { RecordPage } from "../../components/RecordPage";
-import { Icon } from "../../components/Icon";
-import { Field, Segmented, Spinner } from "../../components/ui";
 import {
   BankAccountSelect,
 } from "../../components/finance/BankAccountSelect";
@@ -322,22 +333,16 @@ export default function StatementImportPage() {
               )))}
             </div>
 
-            <div className="sticky bottom-0 flex flex-wrap items-center gap-3
-              border-t border-line bg-canvas/95 px-1 py-3 backdrop-blur">
+            <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-slate-200 bg-white/95 px-1 py-3 backdrop-blur">
               <span className="text-sm text-slate-600">
                 <b className="text-slate-900">{toPost.length}</b> to record
                 {toPark.length > 0 && <>, {toPark.length} held as pending</>}
                 {toSkip.length > 0 && <>, {toSkip.length} skipped</>}
               </span>
-              <button className="btn-primary ml-auto"
+              <Button className="ml-auto" size="sm"
                 disabled={commit.isPending
                   || (toPost.length === 0 && toPark.length === 0)}
                 onClick={async () => {
-                  // A money write that cannot be undone in one action deserves
-                  // a sentence saying what is about to happen — and the pending
-                  // rows are named in the same breath, because a row parked
-                  // into a queue nobody mentions is a row thrown away with
-                  // extra steps.
                   if (await confirmDialog({
                     title: toPost.length
                       ? `Record ${toPost.length} transaction${
@@ -345,25 +350,20 @@ export default function StatementImportPage() {
                       : `Hold ${toPark.length} transaction${
                         toPark.length === 1 ? "" : "s"} as pending?`,
                     message: (toPost.length
-                      ? "They post to the selected account and every balance "
-                        + "updates. Each one can be edited or reversed "
-                        + "afterwards from the Transactions page."
+                      ? "They post to the selected account and every balance updates. Each one can be edited or reversed afterwards from the Transactions page."
                       : "")
                       + (toPark.length
-                        ? `${toPost.length ? "\n\n" : ""}${toPark.length} `
-                          + "will be held as pending — nothing posts for those, "
-                          + "and they wait in the Pending list on Transactions "
-                          + "until somebody finishes them."
+                        ? `${toPost.length ? "\n\n" : ""}${toPark.length} will be held as pending — nothing posts for those, and they wait in the Pending list on Transactions until somebody finishes them.`
                         : ""),
                     confirmLabel: toPost.length ? "Record them" : "Hold them",
                   })) commit.mutate();
                 }}>
                 {commit.isPending
-                  ? <Spinner className="h-4 w-4" />
-                  : <><Icon.Check size={16} />{" "}
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <><Check className="mr-1.5 h-3.5 w-3.5" />
                     {toPost.length ? `Record ${toPost.length}`
                       : `Hold ${toPark.length}`}</>}
-              </button>
+              </Button>
             </div>
           </>
         )}
@@ -400,11 +400,10 @@ function Steps({ step }: { step: Step }) {
     <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
       {items.map((i, n) => (
         <li key={i.key} className="flex items-center gap-2">
-          {n > 0 && <Icon.ChevronRight size={14} className="text-slate-400" />}
+          {n > 0 && <ChevronRight className="h-3.5 w-3.5 text-slate-400" />}
           <span className={n === at ? "font-semibold text-slate-900"
             : n < at ? "text-slate-500" : "text-slate-400"}>
-            {n < at && <Icon.Check size={13} className="mr-1 inline
-              align-[-1px] text-money-in" />}
+            {n < at && <Check className="mr-1 inline h-3.5 w-3.5 align-[-2px] text-emerald-600" />}
             {i.label}
           </span>
         </li>
@@ -425,34 +424,24 @@ function UploadStep({
   onNext: () => void;
 }) {
   return (
-    <div className="card card-body space-y-5">
-      {/*
-        The ACCOUNT is chosen once, for the whole file.
-
-        A bank statement does not name the account inside its rows — the account
-        is what the file IS. Asking per row would be asking the same question
-        two hundred times, and getting one row wrong would put money in an
-        account it never reached.
-      */}
+    <Card className="space-y-4 p-4 sm:p-5">
       <BankAccountSelect value={accountId} onChange={onAccount}
         label="Which account is this statement for?"
         hint="Every transaction in the file posts to this account." />
 
-      <Field label="Statement file" required
+      <FormField label="Statement file" required
         hint="CSV or Excel, straight from your bank. Up to 2,000 rows.">
-        <input ref={fileRef} type="file" className="input py-1.5"
+        <Input ref={fileRef} type="file" className="h-9 py-1.5"
           accept=".csv,.xlsx,.xls,text/csv"
           onChange={(e) => onFile(e.target.files?.[0] ?? null)} />
         {file && (
-          <span className="inline-flex items-center gap-1 text-xs font-medium
-            text-money-in">
-            <Icon.Check size={13} /> {file.name}
+          <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-emerald-700">
+            <Check className="h-3.5 w-3.5" /> {file.name}
           </span>
         )}
-      </Field>
+      </FormField>
 
-      <div className="rounded-control border border-line bg-slate-50 px-3 py-2.5
-        text-xs text-slate-600">
+      <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 text-xs text-slate-600">
         <p className="font-medium text-slate-700">
           You do not need to reformat anything.</p>
         <p className="mt-1">
@@ -464,13 +453,13 @@ function UploadStep({
       </div>
 
       <div className="flex justify-end">
-        <button className="btn-primary" disabled={!file || !accountId || busy}
+        <Button size="sm" disabled={!file || !accountId || busy}
           onClick={onNext}>
-          {busy ? <Spinner className="h-4 w-4" />
-            : <>Read the file <Icon.ChevronRight size={16} /></>}
-        </button>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <>Read the file <ChevronRight className="ml-1 h-4 w-4" /></>}
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -494,9 +483,9 @@ function MapStep({
     : !!(mapping.amount_col && mapping.dr_cr_col));
 
   return (
-    <div className="card card-body space-y-5">
+    <Card className="space-y-4 p-4 sm:p-5">
       <div>
-        <p className="text-section text-slate-900">
+        <p className="text-base font-semibold text-slate-900">
           Does this look right?</p>
         <p className="mt-0.5 text-sm text-slate-500">
           We read {preview.total_rows} row
@@ -506,40 +495,41 @@ function MapStep({
         </p>
       </div>
 
-      {/* Two shapes, and a statement is one or the other. Asked explicitly
-          rather than inferred, because the two produce different questions and
-          a half-guessed mapping is harder to correct than a chosen one. */}
-      <Field label="How does this statement show the amount?">
-        <Segmented<"split" | "single">
-          value={shape} onChange={onShape}
-          options={[
-            { value: "split", label: "Separate debit and credit columns" },
-            { value: "single", label: "One amount column + Dr/Cr" },
-          ]} />
-      </Field>
+      <FormField label="How does this statement show the amount?">
+        <Tabs value={shape} onValueChange={(v) => onShape(v as "split" | "single")}>
+          <TabsList>
+            <TabsTrigger value="split">Separate debit and credit columns</TabsTrigger>
+            <TabsTrigger value="single">One amount column + Dr/Cr</TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </FormField>
 
       <div className="grid gap-4 sm:grid-cols-2">
         {fields.map((f) => (
-          <Field key={f.key} label={f.label} hint={f.hint}>
-            <select className="select" value={mapping[f.key] ?? ""}
-              onChange={(e) => set(f.key, e.target.value)}>
-              <option value="">— Not in this file —</option>
-              {preview.columns.map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
+          <FormField key={f.key} label={f.label} hint={f.hint}>
+            <Select
+              value={mapping[f.key] || "__none__"}
+              onValueChange={(v) => set(f.key, v === "__none__" ? "" : v)}
+            >
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="— Not in this file —" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">— Not in this file —</SelectItem>
+                {preview.columns.map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
         ))}
       </div>
 
-      {/* The file's own first rows. This is what makes the mapping CHECKABLE
-          rather than merely confirmable — you can see that the column you
-          picked as the date really does hold dates. */}
       {preview.sample.length > 0 && (
         <div>
-          <p className="mb-2 text-caption uppercase text-slate-500">
+          <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
             First {preview.sample.length} rows of your file</p>
-          <div className="overflow-x-auto rounded-control border border-line">
+          <div className="overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full text-xs">
               <thead>
                 <tr>
@@ -551,7 +541,7 @@ function MapStep({
               </thead>
               <tbody>
                 {preview.sample.map((row, i) => (
-                  <tr key={i} className="border-t border-line-soft">
+                  <tr key={i} className="border-t border-slate-100">
                     {preview.columns.map((_, j) => (
                       <td key={j} className="whitespace-nowrap px-2 py-1.5
                         text-slate-600">{row[j] ?? ""}</td>
@@ -565,14 +555,13 @@ function MapStep({
       )}
 
       <div className="flex justify-between gap-2">
-        <button className="btn-secondary" onClick={onBack}>Back</button>
-        <button className="btn-primary" disabled={!ready || busy}
-          onClick={onNext}>
-          {busy ? <Spinner className="h-4 w-4" />
-            : <>Read the transactions <Icon.ChevronRight size={16} /></>}
-        </button>
+        <Button variant="outline" size="sm" onClick={onBack}>Back</Button>
+        <Button size="sm" disabled={!ready || busy} onClick={onNext}>
+          {busy ? <Loader2 className="h-4 w-4 animate-spin" />
+            : <>Read the transactions <ChevronRight className="ml-1 h-4 w-4" /></>}
+        </Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
@@ -589,7 +578,7 @@ function AssignSummary({
 }) {
   const unreadable = preview.rows.length - usable - removed;
   return (
-    <div className="card card-body space-y-3">
+    <Card className="space-y-3 p-4">
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
         <span><b className="text-slate-900">{preview.rows.length}</b> rows read</span>
         <span className="text-slate-500">·</span>
@@ -597,7 +586,7 @@ function AssignSummary({
         {toPark > 0 && (
           <>
             <span className="text-slate-500">·</span>
-            <span className="text-due"><b>{toPark}</b> pending</span>
+            <span className="text-amber-700"><b>{toPark}</b> pending</span>
           </>
         )}
         {removed > 0 && (
@@ -609,7 +598,7 @@ function AssignSummary({
         {preview.duplicates > 0 && (
           <>
             <span className="text-slate-500">·</span>
-            <span className="text-due">
+            <span className="text-amber-700">
               <b>{preview.duplicates}</b> look already recorded
             </span>
           </>
@@ -617,12 +606,12 @@ function AssignSummary({
         {unreadable > 0 && (
           <>
             <span className="text-slate-500">·</span>
-            <span className="text-money-out"><b>{unreadable}</b> unreadable</span>
+            <span className="text-red-600"><b>{unreadable}</b> unreadable</span>
           </>
         )}
-        <button className="btn-secondary btn-sm ml-auto" onClick={onRemap}>
-          <Icon.Edit size={13} /> Change the columns
-        </button>
+        <Button variant="outline" size="sm" className="ml-auto h-7 text-xs" onClick={onRemap}>
+          <Edit className="mr-1 h-3 w-3" /> Change the columns
+        </Button>
       </div>
 
       {toPost > 0 && (
@@ -648,12 +637,12 @@ function AssignSummary({
         that clear or people will assume an undecided row is lost.
       */}
       <p className="text-xs text-slate-500">
-        Every row starts as <b>Pending</b>. Choose who a transaction was with to
+        A Row starts as Pending. Choose who a transaction was with to
         record it now; leave it Pending and it waits in the Pending list on
         Transactions until somebody works out what it was. Use the cross to drop
         a row from this import altogether. Nothing is saved until you press the
         button at the bottom.
       </p>
-    </div>
+    </Card>
   );
 }

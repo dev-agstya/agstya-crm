@@ -11,8 +11,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { pendingTxnsApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
 import { RecordPage } from "../../components/RecordPage";
-import { Icon } from "../../components/Icon";
-import { EmptyState, ErrorState, Segmented, Spinner } from "../../components/ui";
 import {
   StatementRowCard, type RowDecision,
 } from "../../components/finance/StatementRow";
@@ -152,65 +150,84 @@ export default function PendingTransactionsPage() {
         with and it posts exactly as it would have on import."
     >
       <div className="space-y-4">
-        <Segmented
-          semantics="tabs"
+        <Tabs
           value={view}
-          onChange={(v) => { setView(v as View); setDecisions({}); }}
-          options={[
-            { value: "open", label: "Waiting", icon: "Clock",
-              count: totals?.open_count || undefined },
-            { value: "closed", label: "Dealt with", icon: "CheckSquare" },
-          ]} />
+          onValueChange={(v) => {
+            setView(v as View);
+            setDecisions({});
+          }}
+        >
+          <TabsList>
+            <TabsTrigger value="open" className="gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              Waiting
+              {totals?.open_count ? (
+                <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                  {totals.open_count}
+                </Badge>
+              ) : null}
+            </TabsTrigger>
+            <TabsTrigger value="closed" className="gap-1.5">
+              <CheckSquare className="h-3.5 w-3.5" />
+              Dealt with
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        {/* What is actually outstanding, in and out. NEVER netted: a Rs 50,000
-            receipt and a Rs 50,000 payment net to zero, which would read as
-            "nothing outstanding" while two real transactions are missing from
-            the books. */}
         {view === "open" && (totals?.open_count ?? 0) > 0 && (
-          <div className="card card-body flex flex-wrap items-center gap-x-5
-            gap-y-1 text-sm">
+          <Card className="flex flex-wrap items-center gap-x-5 gap-y-2 px-4 py-3 text-sm">
             <span>
               <b className="text-slate-900">{totals!.open_count}</b> waiting
             </span>
             {totals!.in_paise > 0 && (
-              <span className="text-money-in">
+              <span className="text-emerald-700">
                 +{formatINR(totals!.in_paise)} received
               </span>
             )}
             {totals!.out_paise > 0 && (
-              <span className="text-money-out">
+              <span className="text-red-600">
                 −{formatINR(totals!.out_paise)} paid
               </span>
             )}
-            <button className="btn-secondary btn-sm ml-auto"
-              onClick={() => navigate("/finance/transactions/import")}>
-              <Icon.Upload size={14} /> Import another statement
-            </button>
-          </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+              onClick={() => navigate("/finance/transactions/import")}
+            >
+              <Upload className="mr-1.5 h-3.5 w-3.5" />
+              Import another statement
+            </Button>
+          </Card>
         )}
 
-        {/* The batches. One import is one task. */}
         {view === "open" && (totals?.batches.length ?? 0) > 1 && (
           <div className="flex flex-wrap gap-2">
-            <button
-              className={`chip ${batch === ""
-                ? "ring-1 ring-ink text-slate-900" : ""}`}
-              onClick={() => { setBatch(""); syncBatch(params, setParams, ""); }}>
+            <Button
+              variant={batch === "" ? "default" : "outline"}
+              size="sm"
+              className="h-7 rounded-full text-xs"
+              onClick={() => {
+                setBatch("");
+                syncBatch(params, setParams, "");
+              }}
+            >
               All imports
-            </button>
+            </Button>
             {totals!.batches.map((b) => (
-              <button key={b.import_batch_id}
-                className={`chip ${batch === b.import_batch_id
-                  ? "ring-1 ring-ink text-slate-900" : ""}`}
+              <Button
+                key={b.import_batch_id}
+                variant={batch === b.import_batch_id ? "default" : "outline"}
+                size="sm"
+                className="h-7 rounded-full text-xs"
                 onClick={() => {
                   setBatch(b.import_batch_id);
                   syncBatch(params, setParams, b.import_batch_id);
-                }}>
+                }}
+              >
                 {b.source_file || b.bank_account_name || "Import"}
-                <span className="ml-1.5 text-slate-500">
-                  {b.open_count}
-                </span>
-              </button>
+                <span className="ml-1.5 opacity-70">{b.open_count}</span>
+              </Button>
             ))}
           </div>
         )}
@@ -218,23 +235,34 @@ export default function PendingTransactionsPage() {
         {list.isError ? (
           <ErrorState onRetry={() => list.refetch()} />
         ) : list.isLoading ? (
-          <div className="card card-body"><Spinner className="h-5 w-5" /></div>
+          <Card className="flex items-center justify-center p-8">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-400" />
+          </Card>
         ) : rows.length === 0 ? (
           <EmptyState
-            icon={<Icon.Check size={20} />}
-            title={view === "open"
-              ? "Nothing waiting" : "Nothing has been dealt with yet"}
-            hint={view === "open"
-              ? "Rows you mark as Pending while importing a bank statement land "
-                + "here."
-              : "Rows you record or remove from the list show up here, so a "
-                + "dismissed transaction can always be found again."}
-            action={view === "open" ? (
-              <button className="btn-secondary"
-                onClick={() => navigate("/finance/transactions/import")}>
-                <Icon.Upload size={15} /> Import a statement
-              </button>
-            ) : undefined} />
+            title={
+              view === "open"
+                ? "Nothing waiting"
+                : "Nothing has been dealt with yet"
+            }
+            description={
+              view === "open"
+                ? "Rows you mark as Pending while importing a bank statement land here."
+                : "Rows you record or remove from the list show up here, so a dismissed transaction can always be found again."
+            }
+            action={
+              view === "open" ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate("/finance/transactions/import")}
+                >
+                  <Upload className="mr-1.5 h-3.5 w-3.5" />
+                  Import a statement
+                </Button>
+              ) : undefined
+            }
+          />
         ) : (
           <div className="space-y-2">
             {rows.map((r) => (
@@ -271,28 +299,38 @@ export default function PendingTransactionsPage() {
         )}
 
         {view === "open" && rows.length > 0 && canManage && (
-          <div className="sticky bottom-0 flex flex-wrap items-center gap-3
-            border-t border-line bg-canvas/95 px-1 py-3 backdrop-blur">
+          <div className="sticky bottom-0 flex flex-wrap items-center gap-3 border-t border-slate-200 bg-white/95 px-1 py-3 backdrop-blur">
             <span className="text-sm text-slate-600">
               <b className="text-slate-900">{ready.length}</b> of {rows.length}{" "}
               ready to record
             </span>
-            <button className="btn-primary ml-auto"
+            <Button
+              className="ml-auto"
+              size="sm"
               disabled={record.isPending || ready.length === 0}
               onClick={async () => {
-                if (await confirmDialog({
-                  title: `Record ${ready.length} transaction${
-                    ready.length === 1 ? "" : "s"}?`,
-                  message: "They post to the account each one came from and "
-                    + "every balance updates. Each can be edited or reversed "
-                    + "afterwards from the Transactions page.",
-                  confirmLabel: "Record them",
-                })) record.mutate();
-              }}>
-              {record.isPending
-                ? <Spinner className="h-4 w-4" />
-                : <><Icon.Check size={16} /> Record {ready.length}</>}
-            </button>
+                if (
+                  await confirmDialog({
+                    title: `Record ${ready.length} transaction${
+                      ready.length === 1 ? "" : "s"
+                    }?`,
+                    message:
+                      "They post to the account each one came from and every balance updates. Each can be edited or reversed afterwards from the Transactions page.",
+                    confirmLabel: "Record them",
+                  })
+                ) {
+                  record.mutate();
+                }
+              }}
+            >
+              {record.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <>
+                  <Check className="mr-1.5 h-3.5 w-3.5" /> Record {ready.length}
+                </>
+              )}
+            </Button>
           </div>
         )}
       </div>
@@ -331,22 +369,22 @@ function RowFooter({ row, canManage, onRestore }: {
         <span className="text-slate-600">· “{row.note}”</span>
       )}
       {row.status === "recorded" && (
-        <span className="badge-in">
-          <Icon.Check size={11} /> Recorded
+        <Badge variant="secondary" className="gap-1 bg-emerald-50 text-emerald-700">
+          <Check className="h-3 w-3" /> Recorded
           {row.resolved_by_name ? ` by ${row.resolved_by_name}` : ""}
-        </span>
+        </Badge>
       )}
       {row.status === "discarded" && (
         <>
-          <span className="badge-neutral">
+          <Badge variant="secondary">
             Removed{row.discarded_by_name
               ? ` by ${row.discarded_by_name}` : ""}
             {row.discard_reason ? ` — ${row.discard_reason}` : ""}
-          </span>
+          </Badge>
           {canManage && (
-            <button className="btn-ghost btn-sm ml-auto" onClick={onRestore}>
-              <Icon.Refresh size={13} /> Put it back
-            </button>
+            <Button variant="ghost" size="sm" className="ml-auto h-7 text-xs" onClick={onRestore}>
+              <RefreshCw className="mr-1 h-3 w-3" /> Put it back
+            </Button>
           )}
         </>
       )}

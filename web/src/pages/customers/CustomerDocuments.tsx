@@ -1,4 +1,14 @@
 import { useRef, useState } from "react";
+import { FileText, Loader2, Trash2, Upload, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import axios from "axios";
 import { documentsApi } from "../../api/endpoints";
 import { apiError } from "../../api/client";
@@ -104,13 +114,12 @@ export function CustomerDocuments({
             No other documents uploaded.
           </p>
         ) : (
-          <ul className="divide-y divide-line/70 rounded-control border
-            border-line">
+          <ul className="divide-y divide-slate-200 rounded-lg border border-slate-200">
             {other.map((d) => (
               <li key={d.id}
                 className="flex items-center justify-between gap-3 px-4 py-2.5">
                 <div className="flex min-w-0 items-center gap-3">
-                  <span className="text-slate-400"><Icon.Policy size={18} /></span>
+                  <span className="text-slate-400"><FileText className="h-4 w-4" /></span>
                   <div className="min-w-0">
                     <p className="truncate text-sm font-medium text-slate-800">
                       {d.label}</p>
@@ -119,10 +128,11 @@ export function CustomerDocuments({
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
-                  <button className="btn-ghost btn-sm"
-                    onClick={() => download(d.id)}>Download</button>
+                  <Button variant="ghost" size="sm"
+                    onClick={() => download(d.id)}>Download</Button>
                   {canEdit && (
-                    <button className="icon-btn icon-btn-danger"
+                    <Button variant="ghost" size="icon"
+                      className="h-8 w-8 text-red-600 hover:bg-red-50 hover:text-red-700"
                       aria-label={`Delete ${d.label}`} title={`Delete ${d.label}`}
                       onClick={async () => {
                         if (!(await confirmDialog({
@@ -131,8 +141,8 @@ export function CustomerDocuments({
                         await documentsApi.remove(d.id);
                         onChanged();
                       }}>
-                      <Icon.Trash size={15} />
-                    </button>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
                   )}
                 </div>
               </li>
@@ -191,18 +201,20 @@ function KycSlots({ customerId, docs, canEdit, loading, onChanged }: {
               )}
             </div>
             {canEdit && (
-              <label className="btn-secondary btn-sm shrink-0 cursor-pointer">
-                {busyKey === slot.key ? <Spinner className="h-4 w-4" />
-                  : doc ? "Replace" : "Upload"}
-                <input type="file" className="hidden"
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  disabled={busyKey === slot.key}
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) upload(slot.key, slot.label, f);
-                    e.currentTarget.value = "";
-                  }} />
-              </label>
+              <Button variant="outline" size="sm" asChild className="shrink-0 cursor-pointer">
+                <label>
+                  {busyKey === slot.key ? <Loader2 className="h-4 w-4 animate-spin" />
+                    : doc ? "Replace" : "Upload"}
+                  <input type="file" className="hidden"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    disabled={busyKey === slot.key}
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) upload(slot.key, slot.label, f);
+                      e.currentTarget.value = "";
+                    }} />
+                </label>
+              </Button>
             )}
           </div>
         );
