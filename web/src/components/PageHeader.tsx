@@ -47,7 +47,7 @@ export function PageHeader({
           : "text-foreground";
 
   const hasContent =
-    !!backTo || !duplicatesCrumb || !!subtitle || !!info || !!actions || !!figure;
+    !!backTo || !duplicatesCrumb || !!info || !!actions || !!figure;
   if (!hasContent) return null;
 
   return (
@@ -71,7 +71,11 @@ export function PageHeader({
             {title}
           </h1>
           {subtitle && (
-            <span className="truncate text-xs text-muted-foreground">
+            <span
+              className={`truncate text-xs text-muted-foreground ${
+                duplicatesCrumb ? "lg:hidden" : ""
+              }`}
+            >
               {subtitle}
             </span>
           )}
