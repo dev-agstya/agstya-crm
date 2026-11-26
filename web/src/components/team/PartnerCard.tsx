@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Icon } from "../Icon";
+import { AlertCircle, Clock, Plus, Target } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Avatar, Meter } from "../ui";
 import { TargetRing } from "../TargetProgress";
 import { formatDate, formatINR } from "../../lib/format";
@@ -124,42 +125,34 @@ export function PartnerCard({ row, peak, onSetTarget, onLogFollowUp }: {
       </div>
 
       {reason && (
-        <p className="relative flex items-center gap-1.5 text-xs font-medium
-          text-due">
-          <Icon.Alert size={12} /> {reason}
+        <p className="relative flex items-center gap-1.5 text-xs font-medium text-amber-700">
+          <AlertCircle className="h-3.5 w-3.5" /> {reason}
         </p>
       )}
 
-      {/* Actions sit ABOVE the overlay link, so a click on one of them does not
-          also navigate. */}
       {(onSetTarget || onLogFollowUp) && (
         <div className="relative flex flex-wrap gap-1.5">
           {onSetTarget && (
-            <button type="button" className="btn-secondary btn-sm"
+            <Button type="button" variant="outline" size="sm"
+              className="h-7 px-2.5 text-xs"
               onClick={() => onSetTarget(row)}>
-              <Icon.Target size={13} />
+              <Target className="mr-1 h-3 w-3" />
               {row.has_target ? "Change target" : "Set target"}
-            </button>
+            </Button>
           )}
-          {/*
-            F15 — a flag you can ACT on.
-
-            "Quiet for 61 days" was drawn in amber and led nowhere: no way to
-            record that you had rung them, so the same partner was flagged again
-            tomorrow with no memory of yesterday. Reminders already work against
-            any entity; this just points one at the partner.
-          */}
           {onLogFollowUp && reason && (
-            <button type="button" className="btn-secondary btn-sm"
+            <Button type="button" variant="outline" size="sm"
+              className="h-7 px-2.5 text-xs"
               onClick={() => onLogFollowUp(row)}>
-              <Icon.Clock size={13} /> Log a follow-up
-            </button>
+              <Clock className="mr-1 h-3 w-3" /> Log a follow-up
+            </Button>
           )}
-          <button type="button" className="btn-secondary btn-sm"
+          <Button type="button" variant="outline" size="sm"
+            className="h-7 px-2.5 text-xs"
             title={`Book a policy for ${row.partner_name}`}
             onClick={() => navigate(`/policies/new?partner=${row.partner_id}`)}>
-            <Icon.Plus size={13} /> Policy
-          </button>
+            <Plus className="mr-1 h-3 w-3" /> Policy
+          </Button>
         </div>
       )}
     </div>

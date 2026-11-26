@@ -1,9 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { Badge } from "@/components/ui/badge";
+import { DataTable, type Column } from "../shared/DataTable";
 import { managersApi } from "../../api/endpoints";
 import { Icon } from "../Icon";
 import {
-  EmptyState, ErrorState, Ledger, LedgerCell, LedgerFigure, LedgerRow,
-  ListShell, LTh, MobileCard, PersonCell, TableSkeleton,
+  EmptyState, ErrorState, PersonCell, TableSkeleton,
 } from "../ui";
 import { formatDate, formatINR } from "../../lib/format";
 import { periodParams, type PeriodValue } from "../finance/DateFilter";
@@ -84,72 +85,102 @@ export function TeamPolicies({ managerId, period }: {
         </p>
       )}
 
-      <ListShell
-        bare
-        cards={rows.map((r) => (
-          <MobileCard key={r.policy_id} to={`/policies/${r.policy_id}`}
-            title={r.customer_name || r.code}
-            meta={<>{r.partner_name} · {r.category_label}</>}
-            right={
-              <span className="block whitespace-nowrap text-metric-sm
-                tabular-nums text-slate-900">
-                {formatINR(r.premium)}
-              </span>
-            }
-            footer={
-              <span className="flex items-center justify-between gap-2">
-                <span>{formatDate(r.booked_at)}</span>
-                <span className="font-semibold text-money-in">
-                  {formatINR(r.their_reward)}
+      <DataTable
+        data={rows}
+        columns={[
+          {
+            key: "policy",
+            header: "Policy",
+            cell: (r) => (
+              <div>
+                <p className="font-medium text-slate-900">
+                  {r.policy_number || r.code}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {r.customer_name || "—"}
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "partner",
+            header: "Channel partner",
+            cell: (r) =>
+              r.partner_name ? (
+                <PersonCell name={r.partner_name} size="xs" />
+              ) : (
+                <span className="text-slate-500">—</span>
+              ),
+          },
+          {
+            key: "type",
+            header: "Type",
+            cell: (r) => (
+              <div className="text-[13px]">
+                <span className="text-slate-700">{r.category_label}</span>
+                <span className="block text-xs text-slate-500">
+                  {r.insurer_name || "—"}
+                  {r.is_renewal && (
+                    <Badge variant="secondary" className="ml-1.5 text-[10px]">
+                      renewal
+                    </Badge>
+                  )}
                 </span>
+              </div>
+            ),
+          },
+          {
+            key: "premium",
+            header: "Premium",
+            align: "right",
+            cell: (r) => (
+              <div className="text-right tabular-nums">
+                <p className="font-medium text-slate-900">
+                  {formatINR(r.premium)}
+                </p>
+                <p className="text-xs text-slate-500">
+                  {formatDate(r.booked_at)}
+                </p>
+              </div>
+            ),
+          },
+          {
+            key: "earning",
+            header: "They earn",
+            align: "right",
+            cell: (r) => (
+              <span className="font-semibold tabular-nums text-emerald-700">
+                {formatINR(r.their_reward)}
               </span>
-            } />
-        ))}
-        table={
-          <Ledger
-            head={
-              <>
-                <LTh>Policy</LTh>
-                <LTh>Channel partner</LTh>
-                <LTh>Type</LTh>
-                <LTh align="right">Premium</LTh>
-                <LTh align="right">They earn</LTh>
-              </>
-            }
-          >
-            {rows.map((r) => (
-              <LedgerRow key={r.policy_id}>
-                {/* Customer stacked under the policy number rather than given a
-                    column of its own — related facts stack (CLAUDE.md). */}
-                <LedgerCell
-                  to={`/policies/${r.policy_id}`}
-                  title={r.policy_number || r.code}
-                  sub={r.customer_name || "—"}
-                />
-                <td>
-                  {r.partner_name
-                    ? <PersonCell name={r.partner_name} size="xs" />
-                    : <span className="text-slate-500">—</span>}
-                </td>
-                <td className="text-[13px]">
-                  <span className="text-slate-700">{r.category_label}</span>
-                  <span className="block text-xs text-slate-500">
-                    {r.insurer_name || "—"}
-                    {r.is_renewal && (
-                      <span className="ml-1.5 chip">renewal</span>
-                    )}
-                  </span>
-                </td>
-                {/* LedgerFigure renders its own <td> — wrapping it in one
-                    would nest a cell inside a cell. */}
-                <LedgerFigure className="num" value={formatINR(r.premium)}
-                  sub={formatDate(r.booked_at)} />
-                <LedgerFigure className="num" tone="in"
-                  value={formatINR(r.their_reward)} />
-              </LedgerRow>
-            ))}
-          </Ledger>
-        } />
+            ),
+          },
+        ] as Column<(typeof rows)[number]>[]}
+        keyField={(r) => r.policy_id}
+        onRowClick={(r) => window.location.assign(`/policies/${r.policy_id}`)}
+        renderMobileCard={(r) => (
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 space-y-1">
+              <p className="truncate font-medium text-slate-900">
+                {r.customer_name || r.code}
+              </p>
+              <p className="text-xs text-slate-500">
+                {r.partner_name} · {r.category_label}
+              </p>
+              <p className="text-xs text-slate-500">
+                {formatDate(r.booked_at)}
+              </p>
+            </div>
+            <div className="text-right tabular-nums">
+              <p className="font-semibold text-slate-900">
+                {formatINR(r.premium)}
+              </p>
+              <p className="text-xs font-semibold text-emerald-700">
+                {formatINR(r.their_reward)}
+              </p>
+            </div>
+          </div>
+        )}
+      />
     </div>
   );
 }

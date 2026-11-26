@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { targetsApi } from "../api/endpoints";
 import { apiError } from "../api/client";
+import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Avatar } from "./ui";
 import { Icon } from "./Icon";
 import { toast } from "./Toast";
@@ -291,16 +293,16 @@ export function TargetGoalsForm({
           Target month
         </p>
         <div className="flex items-center gap-2">
-          <button type="button" className="icon-btn" title="Previous month"
+          <Button type="button" variant="outline" size="icon" className="h-8 w-8" title="Previous month"
             onClick={() => setMonth((m) => shiftMonth(m, -1))}>
-            <Icon.ChevronLeft size={16} />
-          </button>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
           <span className="min-w-[140px] text-center text-sm font-semibold
             text-slate-800">{monthLabel(month)}</span>
-          <button type="button" className="icon-btn" title="Next month"
+          <Button type="button" variant="outline" size="icon" className="h-8 w-8" title="Next month"
             onClick={() => setMonth((m) => shiftMonth(m, 1))}>
-            <Icon.ChevronRight size={16} />
-          </button>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
           <span className="ml-1 text-xs text-slate-500">
             Targets run for one calendar month.
           </span>
@@ -386,18 +388,19 @@ export function TargetGoalsForm({
 
       <div className="flex items-center justify-end gap-2 pt-1">
         {onDelete && (
-          <button type="button" className="btn-secondary mr-auto text-money-out"
+          <Button type="button" variant="outline" size="sm"
+            className="mr-auto border-red-200 text-red-700 hover:bg-red-50 hover:text-red-800"
             onClick={onDelete}>
-            <Icon.Trash size={16} /> Remove target
-          </button>
+            <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Remove target
+          </Button>
         )}
-        <button type="button" className="btn-secondary" onClick={onCancel}>
-          Cancel</button>
-        <button type="submit" className="btn-primary"
+        <Button type="button" variant="outline" size="sm" onClick={onCancel}>
+          Cancel</Button>
+        <Button type="submit" size="sm"
           disabled={!canSave || save.isPending}>
           {save.isPending ? "Saving…"
             : seed.length ? "Save changes" : "Set target"}
-        </button>
+        </Button>
       </div>
     </form>
   );

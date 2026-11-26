@@ -2,7 +2,9 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { targetsApi } from "../api/endpoints";
 import { apiError } from "../api/client";
-import { Icon } from "./Icon";
+import { Edit, Plus, Target as TargetIcon, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { ErrorState, EmptyState, PageLoader } from "./ui";
 import { MetricBars, TargetRing, toneFor } from "./TargetProgress";
 import { TargetGoalsForm } from "./TargetGoalsForm";
@@ -89,9 +91,9 @@ export function TargetsBody({ user }: { user: UserRow }) {
           {rows.length} {rows.length === 1 ? "month" : "months"} set
         </p>
         {canManage && (
-          <button className="btn-primary" onClick={() => setEditing("new")}>
-            <Icon.Plus size={16} /> Set target
-          </button>
+          <Button size="sm" onClick={() => setEditing("new")}>
+            <Plus className="mr-1.5 h-3.5 w-3.5" /> Set target
+          </Button>
         )}
       </div>
 
@@ -99,14 +101,14 @@ export function TargetsBody({ user }: { user: UserRow }) {
         : targets.isLoading ? <PageLoader />
           : rows.length === 0 ? (
             <EmptyState title="No targets yet"
-              icon={<Icon.Target size={22} />}
+              icon={<TargetIcon className="h-5 w-5" />}
               hint={canManage
                 ? "Set a target to start tracking performance. You can give several numbers — policies, premium, profit — in one go."
                 : "No targets have been set for this person."}
               action={canManage ? (
-                <button className="btn-primary" onClick={() => setEditing("new")}>
-                  <Icon.Plus size={16} /> Set the first target
-                </button>
+                <Button size="sm" onClick={() => setEditing("new")}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> Set the first target
+                </Button>
               ) : undefined} />
           ) : (
             <div className="space-y-2.5">
@@ -126,18 +128,13 @@ function TargetRow({ t, canManage, onEdit, onDelete }: {
 }) {
   const done = toneFor(t.attainment_pct) === "done";
   return (
-    <div className="rounded-card border border-line p-4">
+    <Card className="p-4">
       <div className="flex items-start gap-4">
-        {/* The ring is the headline. Down a list of months, a shape is
-            comparable at a glance in a way a column of percentages is not —
-            same rounding and same three tones as everywhere else. */}
         <TargetRing pct={t.attainment_pct} size={56} stroke={5} />
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
             <div>
-              {/* Every target is monthly now, so the period_label ("Jul 2026")
-                  says everything — no "· month" suffix to repeat it. */}
               <p className="font-semibold text-slate-800">{t.period_label}</p>
               <p className="text-xs text-slate-500">
                 {done ? "Target achieved" : `${t.metrics.length} `
@@ -146,20 +143,19 @@ function TargetRow({ t, canManage, onEdit, onDelete }: {
             </div>
             {canManage && (
               <div className="flex shrink-0 items-center gap-1">
-                <button className="icon-btn" title="Edit" onClick={onEdit}>
-                  <Icon.Edit size={14} /></button>
-                <button className="icon-btn text-money-out" title="Delete"
-                  onClick={onDelete}><Icon.Trash size={14} /></button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit" onClick={onEdit}>
+                  <Edit className="h-3.5 w-3.5" /></Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete"
+                  onClick={onDelete}><Trash2 className="h-3.5 w-3.5" /></Button>
               </div>
             )}
           </div>
 
-          {/* One bar per metric that was given a number. */}
           <div className="mt-3">
             <MetricBars rows={t.metrics} compact />
           </div>
         </div>
       </div>
-    </div>
+    </Card>
   );
 }

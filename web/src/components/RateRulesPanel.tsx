@@ -2,8 +2,18 @@ import { useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { categoriesApi, insurersApi, rateRulesApi } from "../api/endpoints";
 import { apiError } from "../api/client";
-import { Icon } from "./Icon";
-import { ErrorState, EmptyState, Field, PageLoader } from "./ui";
+import { Edit, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { FormField } from "./shared/FormSection";
+import { ErrorState, EmptyState, PageLoader } from "./ui";
 import { toast } from "./Toast";
 import { confirmDialog } from "./Confirm";
 import { describePath, pathLevels } from "../lib/rating";
@@ -190,14 +200,14 @@ export function RateRulesPanel({ broker, canManage, onClose }: {
                   </td>
                   {canManage && (
                     <td className="px-5 py-3">
-                      <div className="flex justify-end gap-1.5">
-                        <button className="icon-btn" title="Edit"
-                          onClick={() => startEdit(r)}><Icon.Edit size={15} /></button>
-                        <button className="icon-btn text-money-out" title="Delete"
+                      <div className="flex justify-end gap-1">
+                        <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit"
+                          onClick={() => startEdit(r)}><Edit className="h-3.5 w-3.5" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-600 hover:bg-red-50 hover:text-red-700" title="Delete"
                           onClick={async () => {
                             if (await confirmDialog({ message: "Delete this rate?",
                               danger: true })) del.mutate(r.id); }}>
-                          <Icon.Trash size={15} /></button>
+                          <Trash2 className="h-3.5 w-3.5" /></Button>
                       </div>
                     </td>
                   )}
@@ -210,57 +220,72 @@ export function RateRulesPanel({ broker, canManage, onClose }: {
 
       {canManage && (
         <form onSubmit={(e) => { e.preventDefault(); if (canSave) save.mutate(); }}
-          className="mt-4 space-y-3 rounded-control bg-white p-4">
+          className="mt-4 space-y-3 rounded-lg border border-slate-200 bg-white p-4">
           <p className="text-sm font-medium text-slate-600">
             {editing ? "Edit rate" : "Add a rate"}
           </p>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <Field label="Policy type" required>
-              <select className="select" value={f.category_key}
-                onChange={(e) =>
-                  setF((s) => ({ ...s, category_key: e.target.value, path: [] }))}>
-                <option value="">Select…</option>
-                {cats.data?.map((c) => (
-                  <option key={c.key} value={c.key}>{c.label}</option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Insurer company"
-              hint="Leave as Any to apply to every insurer.">
-              <select className="select" value={f.insurer_id}
-                onChange={(e) => set("insurer_id", e.target.value)}>
-                <option value="">Any insurer</option>
-                {insurers.data?.items.map((i) => (
-                  <option key={i.id} value={i.id}>{i.name}</option>
-                ))}
-              </select>
-            </Field>
-            {levels.map((lvl, i) => (
-              <Field key={i} label={i === 0 ? "Sub-type" : `Sub-type ${i + 1}`}>
-                <select className="select" value={lvl.value}
-                  onChange={(e) => setLevel(i, e.target.value)}>
-                  <option value="">Any / whole level</option>
-                  {lvl.options.map((n) => (
-                    <option key={n.key} value={n.key}>{n.label}</option>
+            <FormField label="Policy type" required>
+              <Select value={f.category_key || "__none__"}
+                onValueChange={(v) =>
+                  setF((s) => ({ ...s, category_key: v === "__none__" ? "" : v, path: [] }))}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select…" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Select…</SelectItem>
+                  {cats.data?.map((c) => (
+                    <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
                   ))}
-                </select>
-              </Field>
+                </SelectContent>
+              </Select>
+            </FormField>
+            <FormField label="Insurer company"
+              hint="Leave as Any to apply to every insurer.">
+              <Select value={f.insurer_id || "__any__"}
+                onValueChange={(v) => set("insurer_id", v === "__any__" ? "" : v)}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Any insurer" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__any__">Any insurer</SelectItem>
+                  {insurers.data?.items.map((i) => (
+                    <SelectItem key={i.id} value={i.id}>{i.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+            {levels.map((lvl, i) => (
+              <FormField key={i} label={i === 0 ? "Sub-type" : `Sub-type ${i + 1}`}>
+                <Select value={lvl.value || "__any__"}
+                  onValueChange={(v) => setLevel(i, v === "__any__" ? "" : v)}>
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Any / whole level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__any__">Any / whole level</SelectItem>
+                    {lvl.options.map((n) => (
+                      <SelectItem key={n.key} value={n.key}>{n.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
             ))}
-            <Field label="Label">
-              <input className="input" value={f.label}
+            <FormField label="Label">
+              <Input value={f.label}
                 onChange={(e) => set("label", e.target.value)}
                 placeholder="e.g. Zone A package" />
-            </Field>
-            <Field label="Agency % (from broker)" required>
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Agency % (from broker)" required>
+              <Input type="number" step="0.01" min="0"
                 value={f.agency_pct} placeholder="e.g. 30"
                 onChange={(e) => set("agency_pct", e.target.value)} />
-            </Field>
-            <Field label="Channel partner %">
-              <input type="number" step="0.01" min="0" className="input"
+            </FormField>
+            <FormField label="Channel partner %">
+              <Input type="number" step="0.01" min="0"
                 value={f.partner_pct} placeholder="e.g. 20"
                 onChange={(e) => set("partner_pct", e.target.value)} />
-            </Field>
+            </FormField>
           </div>
           <p className="text-xs text-slate-500">
             Applied to the reward-base (GST-net) premium. TDS is deducted
@@ -268,14 +293,14 @@ export function RateRulesPanel({ broker, canManage, onClose }: {
           </p>
           <div className="flex justify-end gap-2">
             {editing && (
-              <button type="button" className="btn-secondary" onClick={reset}>
+              <Button type="button" variant="outline" size="sm" onClick={reset}>
                 Cancel edit
-              </button>
+              </Button>
             )}
-            <button type="submit" className="btn-primary"
+            <Button type="submit" size="sm"
               disabled={!canSave || save.isPending}>
               {save.isPending ? "Saving…" : editing ? "Save changes" : "Add rate"}
-            </button>
+            </Button>
           </div>
         </form>
       )}
