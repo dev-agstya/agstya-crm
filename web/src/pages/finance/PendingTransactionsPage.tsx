@@ -83,12 +83,12 @@ export default function PendingTransactionsPage() {
     [list.data, view]);
 
   const decisionFor = (r: PendingTxn): RowDecision =>
-    decisions[r.id] ?? { action: "pending", key: r.id };
+    decisions[r.id] ?? { action: "party", key: r.id };
 
   const setDecision = (id: string, patch: Partial<RowDecision>) =>
     setDecisions((s) => ({
       ...s,
-      [id]: { ...(s[id] ?? { action: "pending", key: id }), ...patch },
+      [id]: { ...(s[id] ?? { action: "party", key: id }), ...patch },
     }));
 
   const ready = rows.filter((r) => {

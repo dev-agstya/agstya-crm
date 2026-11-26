@@ -70,7 +70,7 @@ export default function RenewPolicyPage() {
 
   if (loaded.isLoading) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="space-y-4">
         <PageHeader
           backTo="/renewals"
           backLabel="Back to renewals"
@@ -83,7 +83,7 @@ export default function RenewPolicyPage() {
 
   if (missing) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="space-y-4">
         <PageHeader
           backTo="/renewals"
           backLabel="Back to renewals"
@@ -99,7 +99,7 @@ export default function RenewPolicyPage() {
 
   if (loaded.isError || !policy) {
     return (
-      <div className="mx-auto max-w-6xl space-y-6">
+      <div className="space-y-4">
         <PageHeader
           backTo="/renewals"
           backLabel="Back to renewals"
@@ -332,7 +332,7 @@ function RenewForm({
   };
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6">
+    <div className="space-y-4">
       <PageHeader
         backTo="/renewals"
         backLabel="Back to renewals"

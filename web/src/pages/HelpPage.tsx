@@ -39,7 +39,7 @@ export default function HelpPage() {
   const content = (docs[lang] as any)[role] || docs.en.employee;
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="space-y-4">
       <PageHeader
         title="Help Center"
         subtitle="Step-by-step guide for your role"

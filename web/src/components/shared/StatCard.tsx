@@ -31,9 +31,9 @@ export function StatCard({
   return (
     <Card
       onClick={onClick}
-      className={`transition-colors ${onClick ? "cursor-pointer hover:border-primary/40 hover:bg-accent/30" : ""} ${className}`}
+      className={`h-full transition-colors ${onClick ? "cursor-pointer hover:border-primary/40 hover:bg-accent/30" : ""} ${className}`}
     >
-      <CardContent className="p-3.5">
+      <CardContent className="flex h-full flex-col justify-between p-4">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
             <p className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

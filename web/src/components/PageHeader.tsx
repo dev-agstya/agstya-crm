@@ -1,7 +1,8 @@
 import { ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
+import { crumbsForPath } from "../lib/access";
 import { InfoTooltip } from "./shared/InfoTooltip";
 
 export function PageHeader({
@@ -31,6 +32,11 @@ export function PageHeader({
   };
 }) {
   useDocumentTitle(documentTitle ?? title);
+  const { pathname } = useLocation();
+  const crumbs = crumbsForPath(pathname);
+  const lastCrumb = crumbs[crumbs.length - 1]?.label?.trim().toLowerCase();
+  const duplicatesCrumb = !backTo && lastCrumb === title.trim().toLowerCase();
+
   const figureTone =
     figure?.tone === "in"
       ? "text-emerald-600"
@@ -39,6 +45,10 @@ export function PageHeader({
         : figure?.tone === "due"
           ? "text-amber-600"
           : "text-foreground";
+
+  const hasContent =
+    !!backTo || !duplicatesCrumb || !!subtitle || !!info || !!actions || !!figure;
+  if (!hasContent) return null;
 
   return (
     <div className="mb-3">
@@ -53,7 +63,11 @@ export function PageHeader({
       )}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-          <h1 className="text-lg font-bold tracking-tight text-foreground sm:text-xl">
+          <h1
+            className={`text-lg font-bold tracking-tight text-foreground sm:text-xl ${
+              duplicatesCrumb ? "lg:hidden" : ""
+            }`}
+          >
             {title}
           </h1>
           {subtitle && (

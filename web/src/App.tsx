@@ -11,6 +11,7 @@ import { PageLoader } from "./components/ui";
 import { canAccess, gateForPath, lockedFeatureAt } from "./lib/access";
 import { AppLayout } from "./components/layout/AppLayout";
 import LoginPage from "./pages/auth/LoginPage";
+import HomePage from "./pages/HomePage";
 import ForgotPasswordPage from "./pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/auth/ResetPasswordPage";
 import ChangePasswordPage from "./pages/auth/ChangePasswordPage";
@@ -178,6 +179,7 @@ export default function App() {
   return (
     <TooltipProvider delayDuration={200}>
       <Routes>
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -192,7 +194,6 @@ export default function App() {
             </Protected>
           }
         >
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/customers"
             element={<Guard path="/customers"><CustomersListPage /></Guard>} />

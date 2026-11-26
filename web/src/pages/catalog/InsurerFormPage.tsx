@@ -34,7 +34,7 @@ export default function InsurerFormPage() {
     queryKey: ["insurers", "all-for-edit"],
     enabled: editing,
     queryFn: async () =>
-      (await insurersApi.list({ page_size: 500, active_only: 0 })).data,
+      (await insurersApi.list({ page_size: 200, active_only: 0 })).data,
   });
   const record: Insurer | undefined = list.data?.items.find((i) => i.id === id);
 
@@ -134,7 +134,9 @@ export default function InsurerFormPage() {
       submitting={save.isPending}
       disabled={!form.name.trim() || !shortOk}
       loading={editing && list.isLoading}
-      notFound={editing && !list.isLoading && !record}
+      error={editing ? list.error : undefined}
+      onRetry={() => list.refetch()}
+      notFound={editing && !list.isLoading && !list.isError && !record}
       secondaryAction={
         editing &&
         record && (

@@ -91,11 +91,13 @@ export default function DocumentsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-4">
+    <div className="space-y-4">
       <PageHeader
         title="My Documents"
         subtitle="Personal KYC & certificates (max 10 MB each)"
       />
+
+      <div className="grid gap-4 lg:grid-cols-2">
 
       <Card>
         <CardHeader className="px-4 py-3 pb-2">
@@ -276,6 +278,7 @@ export default function DocumentsPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

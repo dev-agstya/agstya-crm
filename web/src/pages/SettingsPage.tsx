@@ -22,7 +22,7 @@ export default function SettingsPage() {
   if (!user) return null;
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-4">
       <PageHeader
         title="Settings"
         subtitle="Manage your profile, sign-in credentials, and agency preferences."

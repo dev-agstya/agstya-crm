@@ -197,12 +197,14 @@ export default function BanksPage() {
           <div className="grid gap-3 sm:grid-cols-3">
             <KpiTile
               label="Cash + bank in hand"
+              tooltip="Total balance across all active bank, cash, and UPI accounts."
               value={data ? formatINR(data.totals.cash_in_hand) : "—"}
               sub="across every active bank, cash and UPI account"
               accent={C.green}
             />
             <KpiTile
               label="Owed on credit cards"
+              tooltip="Credit card balances are liability accounts tracked separately from cash in hand."
               value={data ? formatINR(data.totals.credit_outstanding) : "—"}
               sub="reported separately — this is money you owe"
             />
@@ -305,7 +307,7 @@ function AccountCard({
 
   return (
     <Card
-      className={`group flex flex-col p-4 transition-shadow hover:shadow-md ${
+      className={`group flex flex-col p-4 transition-colors hover:border-primary/40 ${
         a.active ? "" : "bg-muted/40"
       }`}
     >

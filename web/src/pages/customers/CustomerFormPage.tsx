@@ -93,7 +93,7 @@ export default function CustomerFormPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-6">
+    <div className="space-y-4">
       <PageHeader
         backTo={editing ? `/customers/${id}` : "/customers"}
         backLabel={editing ? "Back to customer" : "Back to customers"}

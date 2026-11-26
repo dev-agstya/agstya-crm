@@ -25,6 +25,9 @@
     --ring: 221.2 83.2% 53.3%;
     --radius: 0.5rem;
   }
+  .theme {
+    --animate-gradient: gradient 8s linear infinite;
+  }
 }
 
 /*
@@ -688,5 +691,15 @@ select::-ms-expand,
   *::after {
     animation-duration: 0.01ms !important;
     transition-duration: 0.01ms !important;
+  }
+}
+/*
+  ---break---
+*/
+@theme inline {
+  @keyframes gradient {
+  to {
+    background-position: var(--bg-size, 300%) 0;
+    }
   }
 }

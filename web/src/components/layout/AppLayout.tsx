@@ -17,52 +17,33 @@ import { toast } from "../Toast";
 
 export { SEARCH_SHORTCUT } from "./TopBar";
 
-export function AppLayout() {
-  const { user, has } = useAuth();
-  const location = useLocation();
+interface NavSectionData {
+  title: string;
+  items: NavItem[];
+}
 
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(
-    () => localStorage.getItem("crm.sidebar.collapsed") === "1"
-  );
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [location.pathname, location.search]);
-
-  const toggleCollapsed = () => {
-    setCollapsed((c) => {
-      const next = !c;
-      localStorage.setItem("crm.sidebar.collapsed", next ? "1" : "0");
-      return next;
-    });
-  };
-
-  const canSee = (g: Gate): boolean =>
-    canAccess(g, user?.account_type, has);
-
-  const sections = NAV.map((s) => ({
-    title: s.title,
-    items: s.items
-      .filter(canSee)
-      .map((item) => {
-        if (!item.children) return item;
-        const children = item.children.filter(canSee);
-        return children.length > 0 ? { ...item, children } : null;
-      })
-      .filter(Boolean) as NavItem[],
-  })).filter((s) => s.items.length > 0);
-
+function SidebarNav({
+  isRail = false,
+  sections,
+  pathname,
+  expanded,
+  onToggleExpand,
+  onToggleCollapsed,
+}: {
+  isRail?: boolean;
+  sections: NavSectionData[];
+  pathname: string;
+  expanded: Record<string, boolean>;
+  onToggleExpand: (label: string, current: boolean) => void;
+  onToggleCollapsed: () => void;
+}) {
   const isActive = (to: string) => {
     const clean = to.split("?")[0];
-    if (clean === "/dashboard") return location.pathname === "/dashboard";
-    return (
-      location.pathname === clean || location.pathname.startsWith(clean + "/")
-    );
+    if (clean === "/dashboard") return pathname === "/dashboard";
+    return pathname === clean || pathname.startsWith(clean + "/");
   };
 
-  const NavContent = ({ isRail = false }: { isRail?: boolean }) => (
+  return (
     <div className="flex h-full flex-col bg-card">
       {/* Brand header */}
       <div
@@ -84,7 +65,7 @@ export function AppLayout() {
         </Link>
       </div>
 
-      {/* Navigation */}
+      {/* Navigation — stays mounted across route changes so scroll position is preserved */}
       <nav
         aria-label="Primary"
         className="flex-1 space-y-5 overflow-y-auto px-3 py-4"
@@ -100,8 +81,7 @@ export function AppLayout() {
               const IconComp = Icon[item.icon];
               const hasChildren = !!item.children?.length;
               const childActive =
-                hasChildren &&
-                item.children!.some((c) => isActive(c.to));
+                hasChildren && item.children!.some((c) => isActive(c.to));
               const active = isActive(item.to) || childActive;
               const isExpanded =
                 expanded[item.label] ?? (childActive && !isRail);
@@ -113,7 +93,9 @@ export function AppLayout() {
                     type="button"
                     title={isRail ? `${item.label} (Coming soon)` : undefined}
                     onClick={() =>
-                      toast.info(`${item.label} isn't available yet — coming soon.`)
+                      toast.info(
+                        `${item.label} isn't available yet — coming soon.`
+                      )
                     }
                     className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground/60 transition-colors hover:bg-muted/50 ${
                       isRail ? "justify-center px-0" : ""
@@ -137,12 +119,7 @@ export function AppLayout() {
                   <div key={item.label} className="space-y-0.5">
                     <button
                       type="button"
-                      onClick={() =>
-                        setExpanded((prev) => ({
-                          ...prev,
-                          [item.label]: !isExpanded,
-                        }))
-                      }
+                      onClick={() => onToggleExpand(item.label, isExpanded)}
                       className={`flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-sm font-medium transition-colors ${
                         active
                           ? "bg-primary/10 text-primary"
@@ -228,7 +205,7 @@ export function AppLayout() {
           type="button"
           variant="ghost"
           size="sm"
-          onClick={toggleCollapsed}
+          onClick={onToggleCollapsed}
           className={`w-full text-muted-foreground hover:text-foreground ${
             isRail ? "justify-center px-0" : "justify-start gap-2"
           }`}
@@ -246,6 +223,51 @@ export function AppLayout() {
       </div>
     </div>
   );
+}
+
+export function AppLayout() {
+  const { user, has } = useAuth();
+  const location = useLocation();
+
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem("crm.sidebar.collapsed") === "1"
+  );
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname, location.search]);
+
+  const toggleCollapsed = () => {
+    setCollapsed((c) => {
+      const next = !c;
+      localStorage.setItem("crm.sidebar.collapsed", next ? "1" : "0");
+      return next;
+    });
+  };
+
+  const toggleExpand = (label: string, current: boolean) => {
+    setExpanded((prev) => ({
+      ...prev,
+      [label]: !current,
+    }));
+  };
+
+  const canSee = (g: Gate): boolean =>
+    canAccess(g, user?.account_type, has);
+
+  const sections: NavSectionData[] = NAV.map((s) => ({
+    title: s.title,
+    items: s.items
+      .filter(canSee)
+      .map((item) => {
+        if (!item.children) return item;
+        const children = item.children.filter(canSee);
+        return children.length > 0 ? { ...item, children } : null;
+      })
+      .filter(Boolean) as NavItem[],
+  })).filter((s) => s.items.length > 0);
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -256,7 +278,14 @@ export function AppLayout() {
         }`}
       >
         <div className="sticky top-0 h-screen">
-          <NavContent isRail={collapsed} />
+          <SidebarNav
+            isRail={collapsed}
+            sections={sections}
+            pathname={location.pathname}
+            expanded={expanded}
+            onToggleExpand={toggleExpand}
+            onToggleCollapsed={toggleCollapsed}
+          />
         </div>
       </aside>
 
@@ -264,14 +293,21 @@ export function AppLayout() {
       <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
         <SheetContent side="left" className="w-72 p-0">
           <SheetTitle className="sr-only">Navigation menu</SheetTitle>
-          <NavContent isRail={false} />
+          <SidebarNav
+            isRail={false}
+            sections={sections}
+            pathname={location.pathname}
+            expanded={expanded}
+            onToggleExpand={toggleExpand}
+            onToggleCollapsed={toggleCollapsed}
+          />
         </SheetContent>
       </Sheet>
 
       {/* Main column */}
       <div className="flex min-w-0 flex-1 flex-col overflow-x-hidden">
         <TopBar onOpenNav={() => setMobileOpen(true)} />
-        <main className="mx-auto w-full max-w-[1440px] flex-1 px-4 py-3 sm:px-5 lg:px-6">
+        <main className="w-full max-w-[1440px] flex-1 px-4 py-3 sm:px-5 lg:px-6">
           <Outlet />
         </main>
       </div>

@@ -64,9 +64,11 @@ export default function PolicyTypesPage() {
       key: "label",
       header: "Policy Type",
       cell: (c) => (
-        <div>
-          <p className="font-medium text-foreground">{c.label}</p>
-          <p className="font-mono text-xs text-muted-foreground">{c.key}</p>
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-foreground">{c.label}</span>
+          <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-[11px] text-muted-foreground">
+            {c.key}
+          </span>
         </div>
       ),
     },
@@ -76,20 +78,27 @@ export default function PolicyTypesPage() {
       cell: (c) => {
         const cnt = countNodes(c.children);
         return cnt === 0 ? (
-          <span className="text-muted-foreground">None</span>
+          <span className="text-xs text-muted-foreground">—</span>
         ) : (
-          <Badge variant="secondary">{cnt} sub-types</Badge>
+          <Badge variant="secondary" className="h-5 px-2 text-[11px] font-medium">
+            {cnt}
+          </Badge>
         );
       },
     },
     {
       key: "fields",
       header: "Custom Fields",
-      cell: (c) => (
-        <span className="text-sm text-muted-foreground">
-          {c.custom_fields?.length ?? 0} fields
-        </span>
-      ),
+      cell: (c) => {
+        const n = c.custom_fields?.length ?? 0;
+        return n === 0 ? (
+          <span className="text-xs text-muted-foreground">—</span>
+        ) : (
+          <span className="text-xs font-medium tabular-nums text-foreground">
+            {n}
+          </span>
+        );
+      },
     },
     ...(canManage
       ? [
@@ -156,14 +165,19 @@ export default function PolicyTypesPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="Policy Types"
-        subtitle="Manage insurance categories, sub-type trees, custom fields, and booking field order."
+        subtitle="Insurance categories & booking fields"
+        info="Manage insurance categories, sub-type trees, custom fields, and booking field order."
         actions={
           canManage && (
-            <Button onClick={() => navigate("/insurance/policy-types/new")}>
-              <Plus className="mr-1.5 h-4 w-4" />
+            <Button
+              size="sm"
+              className="h-8"
+              onClick={() => navigate("/insurance/policy-types/new")}
+            >
+              <Plus className="mr-1 h-3.5 w-3.5" />
               Add policy type
             </Button>
           )

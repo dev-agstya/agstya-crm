@@ -35,18 +35,19 @@ from fpdf.fonts import FontFace
 
 from app.services import company
 
-# --- Palette (near-monochrome; prints cleanly on a mono printer) --------------
-BLACK = (17, 24, 39)          # slate-900 — body text, table headings
+# --- Palette (minimal executive slate & indigo; prints cleanly) ---------------
+BLACK = (15, 23, 42)          # slate-900 — body text, headings
+ACCENT = (37, 99, 235)        # blue-600 — subtle brand accent line
 GREY = (100, 116, 139)        # slate-500 — labels, secondary lines
 FAINT = (148, 163, 184)       # slate-400 — footnotes
-LIGHT = (243, 244, 246)       # slate-100 — summary tiles
-ZEBRA = (242, 244, 247)       # alternating table rows (visible, still light)
-RULE = (209, 213, 219)        # slate-300 — hairlines
-SUBTOTAL = (233, 236, 240)    # group subtotal band
+LIGHT = (248, 250, 252)       # slate-50 — minimal summary tiles
+ZEBRA = (249, 250, 251)       # alternating table rows (ultra-light)
+RULE = (226, 232, 240)        # slate-200 — crisp hairlines
+SUBTOTAL = (241, 245, 249)    # slate-100 — group subtotal band
 GREEN = (21, 128, 61)         # positive closing figure
 RED = (185, 28, 28)           # negative closing figure
 
-PAGE_MARGIN = 9               # mm — narrow, to fit the wide policy tables
+PAGE_MARGIN = 11              # mm — balanced margins while fitting wide tables
 BOTTOM_MARGIN = 16
 
 _KIND_TITLE = {
@@ -384,20 +385,27 @@ class _Statement(FPDF):
         self.set_y(y + h + 4)
 
     def section(self, title: str, note: Optional[str] = None) -> None:
-        """A black section bar — the strongest divider on the page."""
-        self._space(11)
-        self.set_fill_color(*BLACK)
-        self.set_text_color(255, 255, 255)
-        self.font("B", 8.5)
-        self.cell(self.content_width, 6.4, f"  {title}", fill=True,
+        """A clean minimal section header with a crisp bottom rule."""
+        self._space(12)
+        self.ln(1.5)
+        self.font("B", 9.2)
+        self.set_text_color(*BLACK)
+        self.cell(self.content_width, 5.5, title.upper(),
                   new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+        self.set_draw_color(*ACCENT)
+        self.set_line_width(0.45)
+        y = self.get_y()
+        self.line(self.l_margin, y, self.l_margin + 22, y)
+        self.set_draw_color(*RULE)
+        self.set_line_width(0.2)
+        self.line(self.l_margin + 22, y, self.w - self.r_margin, y)
         if note:
-            self.font("", 6.8)
-            self.set_text_color(*FAINT)
-            self.ln(0.8)
-            self.cell(self.content_width, 3.4, note, new_x=XPos.LMARGIN,
+            self.font("", 7)
+            self.set_text_color(*GREY)
+            self.ln(1.2)
+            self.cell(self.content_width, 3.6, note, new_x=XPos.LMARGIN,
                       new_y=YPos.NEXT)
-        self.ln(1.2)
+        self.ln(1.8)
 
     def note(self, text: str) -> None:
         self.font("I", 7)
@@ -439,28 +447,35 @@ class _Statement(FPDF):
                 *, positive_is_good: bool = True) -> None:
         """The single figure the whole document exists to communicate."""
         self._space(16)
-        self.ln(1)
-        h = 12
+        self.ln(1.5)
+        h = 13
         y = self.get_y()
-        self.set_fill_color(*BLACK)
-        self.rect(self.l_margin, y, self.content_width, h, style="F")
-        self.set_xy(self.l_margin + 3, y + 1.4)
-        self.font("B", 10)
-        self.set_text_color(255, 255, 255)
-        self.cell(self.content_width * 0.6, 5, label)
-        self.set_xy(self.l_margin + 3, y + 6.4)
-        self.font("", 7.2)
-        self.set_text_color(200, 205, 215)
-        self.cell(self.content_width * 0.6, 4, caption)
+        self.set_fill_color(*LIGHT)
+        self.set_draw_color(*RULE)
+        self.set_line_width(0.25)
+        self.rect(self.l_margin, y, self.content_width, h, style="DF")
 
-        tone = (255, 255, 255)
+        tone = BLACK
         if value:
             good = value > 0 if positive_is_good else value < 0
-            tone = (134, 239, 172) if good else (252, 165, 165)
-        self.set_xy(self.l_margin + self.content_width * 0.6, y + 3)
-        self.font("B", 14)
+            tone = GREEN if good else RED
+
+        self.set_fill_color(*tone)
+        self.rect(self.l_margin, y, 1.4, h, style="F")
+
+        self.set_xy(self.l_margin + 4, y + 2)
+        self.font("B", 9.5)
+        self.set_text_color(*BLACK)
+        self.cell(self.content_width * 0.6, 4.5, label)
+        self.set_xy(self.l_margin + 4, y + 6.8)
+        self.font("", 7.2)
+        self.set_text_color(*GREY)
+        self.cell(self.content_width * 0.6, 4, caption)
+
+        self.set_xy(self.l_margin + self.content_width * 0.6, y + 3.2)
+        self.font("B", 13.5)
         self.set_text_color(*tone)
-        self.cell(self.content_width * 0.4 - 3,
+        self.cell(self.content_width * 0.4 - 4,
                   6, self.money(abs(value)), align="R")
         self.set_y(y + h)
 
@@ -488,8 +503,8 @@ def _table(pdf: _Statement, headings: list[str], widths: list[float],
         pdf.muted("No records in this period.")
         return
 
-    heading_style = FontFace(emphasis="BOLD", color=(255, 255, 255),
-                             fill_color=BLACK, size_pt=font_size + 0.4)
+    heading_style = FontFace(emphasis="BOLD", color=BLACK,
+                             fill_color=SUBTOTAL, size_pt=font_size + 0.4)
     group_style = FontFace(emphasis="BOLD", color=BLACK, fill_color=SUBTOTAL)
     total_style = FontFace(emphasis="BOLD", color=BLACK, fill_color=LIGHT)
     groups = group_rows or set()
@@ -497,17 +512,14 @@ def _table(pdf: _Statement, headings: list[str], widths: list[float],
     pdf.font("", font_size)
     pdf.set_text_color(*BLACK)
     pdf.set_draw_color(*RULE)
-    pdf.set_line_width(0.1)
-    # fpdf2 2.8 ignores the table's own `cell_fill_color` and stripes with the
-    # document's CURRENT fill colour — which is black right after a section bar.
-    # Setting it here is what actually makes the zebra light.
+    pdf.set_line_width(0.15)
     pdf.set_fill_color(*ZEBRA)
     with pdf.table(
         col_widths=widths,
         text_align=aligns,
         headings_style=heading_style,
-        line_height=3.6,
-        padding=(1.1, 1.2, 1.1, 1.2),
+        line_height=3.9,
+        padding=(1.4, 1.3, 1.4, 1.3),
         cell_fill_color=ZEBRA,
         # Zebra only on the plain rows; group/total bands paint themselves.
         cell_fill_mode=TableCellFillMode.EVEN_ROWS,
