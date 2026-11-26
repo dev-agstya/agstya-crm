@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { PageHeader } from "./PageHeader";
+import { Button } from "@/components/ui/button";
 import {
   EmptyState, ErrorState, Ledger, ListShell, Pagination, SearchInput,
   TableSkeleton,
@@ -141,9 +142,9 @@ export function ListPage<T extends { id: string }>({
               ?? "Try widening the date range or clearing a filter.")
             : empty.hint}
           action={filtered && onClearFilters ? (
-            <button className="btn-secondary" onClick={onClearFilters}>
+            <Button variant="outline" size="sm" onClick={onClearFilters}>
               Clear filters
-            </button>
+            </Button>
           ) : empty.action}
         />
       ) : (

@@ -60,6 +60,7 @@ export function TeamDayBoard({
     {
       key: "employee",
       header: "Employee",
+      className: "w-[30%] min-w-[200px]",
       cell: (m) => (
         <div className="flex items-center gap-2.5">
           <Avatar className="h-7 w-7">
@@ -79,6 +80,7 @@ export function TeamDayBoard({
     {
       key: "status",
       header: "Status",
+      className: "w-[20%] min-w-[140px]",
       cell: (m) => (
         <div className="flex flex-wrap items-center gap-1">
           <span className={statusBadge(m.status)}>
@@ -104,6 +106,7 @@ export function TeamDayBoard({
       key: "in",
       header: "In",
       align: "center",
+      className: "w-[15%] text-center",
       cell: (m) => (
         <span className="whitespace-nowrap tabular-nums text-foreground">
           {formatTime(m.clock_in) || "—"}
@@ -114,6 +117,7 @@ export function TeamDayBoard({
       key: "out",
       header: "Out",
       align: "center",
+      className: "w-[15%] text-center",
       cell: (m) => (
         <span className="whitespace-nowrap tabular-nums text-foreground">
           {m.clock_in && !m.clock_out ? (
@@ -128,6 +132,7 @@ export function TeamDayBoard({
       key: "worked",
       header: "Worked",
       align: "right",
+      className: "w-[12%] text-right",
       cell: (m) => (
         <span className="font-medium tabular-nums text-foreground">
           {formatDuration(m.worked_minutes) || "—"}
@@ -136,14 +141,15 @@ export function TeamDayBoard({
     },
     {
       key: "actions",
-      header: "",
+      header: "History",
       align: "right",
+      className: "w-[8%] text-right",
       mobileLabel: false,
       cell: (m) => (
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-xs"
+          className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
           onClick={(e) => {
             e.stopPropagation();
             onOpen(m.user_id);

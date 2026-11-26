@@ -1,32 +1,28 @@
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { Bell, Check, ExternalLink, X } from "lucide-react";
 import { notificationsApi } from "../../api/endpoints";
-import { Icon } from "../Icon";
-import { Modal } from "../ui";
 import { useAuth } from "../../store/auth";
 import { formatDateTime } from "../../lib/format";
 import { useSessionNotifications } from "../../lib/sessionNotifications";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 /*
   THE BELL, AND ITS PANEL (2026-08-07).
 
-  This used to be a Facebook-style floating circle pinned to the BOTTOM-RIGHT of
-  the viewport, which opened a panel above itself. So the control lived in the
-  top bar and the thing it opened appeared at the other end of the screen — you
-  clicked up here and the answer arrived down there, over whatever you were
-  reading.
-
-  It is now a normal popover hanging off the bell that opened it.
-
-  THE PANEL IS A FIXED SIZE and that is deliberate, not incidental:
-
-    * the list area is a fixed height (~7 rows) whatever it contains. A panel
-      that shrinks as you dismiss things moves the row under your cursor, so
-      clearing four notifications means chasing the list up the screen.
-    * past that it SCROLLS. It does not grow.
-    * empty, it stays the same size and centres its message, so opening the bell
-      always produces the same shape in the same place.
+  A clean popover hanging off the bell that opened it.
+  Compact and fast:
+    * Compact list area with scroll for longer notification feeds.
+    * Empty state fits its content neatly without wasting screen real estate.
 */
 
 type Row = {
@@ -41,9 +37,6 @@ type Row = {
 
 // Anything can open the panel: window.dispatchEvent(new Event("notifications:open"))
 const OPEN_EVENT = "notifications:open";
-
-// Compact height when populated; empty state fits its content.
-const LIST_HEIGHT = "max-h-[22rem]";
 
 export function NotificationBell() {
   const { user } = useAuth();
@@ -82,20 +75,7 @@ export function NotificationBell() {
   }, []);
 
   /*
-    Outside click / Escape. BOTH are suspended while a detail dialog is up, and
-    the mousedown half of that is not optional (2026-08-21).
-
-    The dialog is `Modal`, which now portals to <body> — it had to, or it
-    rendered behind this panel (see the note in components/ui.tsx). That moves
-    it OUT of `ref.current`, so every click inside the dialog — its buttons, its
-    text, its backdrop — became an "outside" click and slammed the panel shut
-    behind the thing you had just opened. Reading it as outside is technically
-    correct about the DOM and wrong about the app: the dialog IS this panel's
-    own, and closing its owner while it is up leaves you looking at a dialog
-    that came from nowhere.
-
-    Escape was already guarded on `active` for the same reason — the dialog owns
-    that key while it is open. This is the mouse saying the same thing.
+    Outside click / Escape handling. Suspended while a detail dialog is open.
   */
   useEffect(() => {
     if (!open) return;
@@ -120,7 +100,8 @@ export function NotificationBell() {
   // newest first. Session ones (local: true) are read / dismissed locally.
   const server: Row[] = (list.data ?? []) as Row[];
   const items: Row[] = [...server, ...session.items].sort((a, b) =>
-    b.created_at.localeCompare(a.created_at));
+    b.created_at.localeCompare(a.created_at)
+  );
   const unread = items.filter((n) => !n.is_read).length;
 
   const openDetail = (n: Row) => {
@@ -146,102 +127,118 @@ export function NotificationBell() {
 
   return (
     <div className="relative" ref={ref}>
-      <button
+      <Button
+        variant="ghost"
+        size="icon"
         type="button"
         aria-label={unread ? `Notifications (${unread} unread)` : "Notifications"}
         title={unread ? `Notifications (${unread} unread)` : "Notifications"}
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
-        className={`icon-btn relative border-transparent
-          ${open ? "bg-slate-100 text-slate-900" : ""}`}
+        className={`relative h-9 w-9 ${open ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
       >
-        <Icon.Bell size={19} />
+        <Bell className="h-4 w-4" />
         {unread > 0 && (
-          // A count, not a dot: "three things happened" and "one thing
-          // happened" are different amounts of urgency.
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4
-            items-center justify-center rounded-full bg-money-out px-1
-            text-[10px] font-bold leading-none text-white ring-2 ring-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-background">
             {unread > 9 ? "9+" : unread}
           </span>
         )}
-      </button>
+      </Button>
 
       {open && (
         <div
           role="dialog"
           aria-label="Notifications"
-          className="absolute right-0 top-full z-panel mt-1.5 flex w-[24rem]
-            max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-card
-            border border-line bg-white shadow-pop animate-slide-up"
+          className="absolute right-0 top-full z-50 mt-1.5 flex w-80 sm:w-[22rem] max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden rounded-lg border border-border bg-popover text-popover-foreground shadow-lg animate-in fade-in-50 zoom-in-95"
         >
-          <div className="flex shrink-0 items-center justify-between border-b
-            border-line px-4 py-3">
-            <h2 className="text-card-title text-slate-900">
-              Notifications
+          <div className="flex shrink-0 items-center justify-between border-b border-border px-3.5 py-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-foreground">Notifications</span>
               {unread > 0 && (
-                <span className="ml-2 text-secondary font-normal
-                  text-slate-500">{unread} unread</span>
+                <Badge variant="secondary" className="h-4 px-1.5 text-[10px] font-medium">
+                  {unread} unread
+                </Badge>
               )}
-            </h2>
+            </div>
             {unread > 0 && (
-              <button className="btn-ghost btn-sm" onClick={markAllRead}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-[11px] text-muted-foreground hover:text-foreground"
+                onClick={markAllRead}
+              >
+                <Check className="mr-1 h-3 w-3" />
                 Mark all read
-              </button>
+              </Button>
             )}
           </div>
 
-          {/* FIXED height, always. Scrolls past seven; centres when empty. */}
-          <div className={`${LIST_HEIGHT} shrink-0 overflow-y-auto
-            scrollbar-light`}>
+          <div className="max-h-72 overflow-y-auto">
             {items.length === 0 ? (
-              <div className="flex flex-col items-center justify-center px-6 py-7 text-center">
-                <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                  <Icon.Bell size={16} />
+              <div className="flex flex-col items-center justify-center px-4 py-6 text-center">
+                <div className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                  <Bell className="h-4 w-4" />
                 </div>
-                <p className="text-sm font-medium text-foreground">
+                <p className="text-xs font-semibold text-foreground">
                   You're all caught up
                 </p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  New alerts land here.
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  New alerts will appear here.
                 </p>
               </div>
             ) : (
-              /*
-                TWO SIBLING BUTTONS, not a button inside a button. Nested
-                interactive elements are invalid HTML: the inner control is not
-                reliably keyboard-reachable however many tabIndexes it claims,
-                and a screen reader announces one control where there are two.
-              */
               items.map((n) => (
-                <div key={n.id}
-                  className={`flex w-full items-start gap-2.5 border-b
-                    border-line-soft px-4 py-3 text-left transition-colors
-                    last:border-0 ${n.is_read
-                      ? "hover:bg-slate-50" : "bg-slate-50/70 hover:bg-slate-100"}`}>
-                  <span aria-hidden="true"
-                    className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                      n.is_read ? "bg-transparent" : "bg-ink"}`} />
-                  <button type="button" onClick={() => openDetail(n)}
-                    className="min-w-0 flex-1 rounded text-left">
-                    <span title={n.title} className={`block truncate text-sm ${n.is_read
-                      ? "text-slate-700" : "font-medium text-slate-900"}`}>
+                <div
+                  key={n.id}
+                  className={`flex w-full items-start gap-2.5 border-b border-border/50 px-3.5 py-2.5 text-left transition-colors last:border-0 ${
+                    n.is_read
+                      ? "hover:bg-muted/50"
+                      : "bg-muted/30 hover:bg-muted/70 font-medium"
+                  }`}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${
+                      n.is_read ? "bg-transparent" : "bg-primary"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openDetail(n)}
+                    className="min-w-0 flex-1 text-left"
+                  >
+                    <span
+                      title={n.title}
+                      className={`block truncate text-xs ${
+                        n.is_read ? "text-muted-foreground" : "font-semibold text-foreground"
+                      }`}
+                    >
                       {n.title}
                     </span>
                     {n.body && (
-                      <span title={n.body} className="mt-0.5 block truncate text-secondary
-                        text-slate-500">{n.body}</span>
+                      <span
+                        title={n.body}
+                        className="mt-0.5 block truncate text-[11px] text-muted-foreground"
+                      >
+                        {n.body}
+                      </span>
                     )}
-                    <span className="mt-1 block text-[11px] text-slate-500">
-                      {formatDateTime(n.created_at)}</span>
+                    <span className="mt-1 block text-[10px] text-muted-foreground/80 tabular-nums">
+                      {formatDateTime(n.created_at)}
+                    </span>
                   </button>
-                  <button type="button" title="Dismiss" aria-label="Dismiss"
-                    className="icon-btn shrink-0 border-transparent
-                      hover:text-money-out"
-                    onClick={() => dismiss(n)}>
-                    <Icon.X size={14} />
-                  </button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    type="button"
+                    title="Dismiss"
+                    aria-label="Dismiss"
+                    className="h-6 w-6 shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={() => dismiss(n)}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
                 </div>
               ))
             )}
@@ -250,22 +247,41 @@ export function NotificationBell() {
       )}
 
       {active && (
-        <Modal open title={active.title} onClose={() => setActive(null)}>
-          <div className="space-y-4">
-            <p className="text-xs text-slate-500">
-              {formatDateTime(active.created_at)}</p>
-            <p className="whitespace-pre-wrap text-sm text-slate-700">
-              {active.body || "There are no further details for this notification."}</p>
-            <div className="flex justify-end gap-2">
-              {active.link && (
-                <button className="btn-primary" onClick={() => goToLink(active)}>
-                  Open</button>
-              )}
-              <button className="btn-secondary" onClick={() => setActive(null)}>
-                Close</button>
+        <Dialog open={!!active} onOpenChange={(v) => !v && setActive(null)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-base font-semibold leading-snug">
+                {active.title}
+              </DialogTitle>
+              <p className="text-xs text-muted-foreground">
+                {formatDateTime(active.created_at)}
+              </p>
+            </DialogHeader>
+            <div className="py-2 text-xs leading-relaxed text-foreground whitespace-pre-wrap">
+              {active.body || "There are no further details for this notification."}
             </div>
-          </div>
-        </Modal>
+            <DialogFooter className="gap-2 sm:gap-0">
+              {active.link && (
+                <Button
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => goToLink(active)}
+                >
+                  <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                  Open
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => setActive(null)}
+              >
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );

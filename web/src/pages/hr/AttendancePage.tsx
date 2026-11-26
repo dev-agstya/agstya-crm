@@ -350,7 +350,7 @@ export default function AttendancePage() {
       {canSeeTeam && (
         <div className="flex flex-wrap items-center justify-between gap-2">
           <Tabs value={view} onValueChange={(v) => setView2(v as View)}>
-            <TabsList className="h-8 flex-wrap">
+            <TabsList className="h-8">
               {!isOwner && (
                 <TabsTrigger value="mine" className="h-6 px-2.5 text-xs">
                   My Attendance

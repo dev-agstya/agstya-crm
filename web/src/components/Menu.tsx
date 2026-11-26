@@ -20,13 +20,10 @@ import { useClickOutside } from "../lib/useClickOutside";
 type MenuVariant = "primary" | "secondary" | "field" | "ghost";
 
 const TRIGGER_CLASS: Record<MenuVariant, string> = {
-  primary: "btn-primary",
-  secondary: "btn-secondary",
-  field: "input flex h-10 w-full items-center justify-between gap-2 font-normal "
-    + "text-slate-700",
-  // For a menu sitting in a row of borderless actions (a card footer), where a
-  // bordered button would read as the important one.
-  ghost: "btn-ghost btn-sm",
+  primary: "inline-flex items-center justify-center rounded-md text-xs font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-8 px-3 gap-1.5 transition-colors",
+  secondary: "inline-flex items-center justify-center rounded-md text-xs font-medium border border-input bg-background hover:bg-accent hover:text-accent-foreground h-8 px-3 gap-1.5 transition-colors",
+  field: "inline-flex h-8 w-full items-center justify-between gap-2 rounded-md border border-input bg-background px-3 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring",
+  ghost: "inline-flex items-center justify-center rounded-md text-xs font-medium hover:bg-accent hover:text-accent-foreground h-8 px-2 gap-1.5 transition-colors",
 };
 
 export function Menu({
@@ -87,8 +84,8 @@ export function Menu({
       {open && (
         <div
           role="menu"
-          className={`absolute z-menu mt-1.5 ${width} overflow-hidden rounded-card
-            border border-line bg-white p-1 shadow-pop
+          className={`absolute z-50 mt-1.5 ${width} overflow-hidden rounded-md
+            border border-border bg-popover p-1 text-popover-foreground shadow-md
             ${align === "right" ? "right-0" : "left-0"} ${panelClassName}`}
         >
           {typeof children === "function" ? children(close) : children}
@@ -115,11 +112,11 @@ export function MenuItem({
       role="menuitem"
       disabled={disabled}
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-control px-3 py-2
-        text-left text-sm transition-colors disabled:cursor-not-allowed
+      className={`flex w-full items-center gap-2 rounded-sm px-2.5 py-1.5
+        text-left text-xs transition-colors disabled:cursor-not-allowed
         disabled:opacity-50 ${danger
-          ? "text-money-out hover:bg-money-out/10"
-          : "text-slate-700 hover:bg-slate-100"}`}
+          ? "text-destructive hover:bg-destructive/10"
+          : "text-foreground hover:bg-accent hover:text-accent-foreground"}`}
     >
       {icon}
       <span className="min-w-0 flex-1 truncate">{children}</span>

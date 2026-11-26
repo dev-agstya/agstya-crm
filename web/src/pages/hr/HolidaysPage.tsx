@@ -192,7 +192,7 @@ export default function HolidaysPage() {
   ];
 
   return (
-    <div>
+    <div className="space-y-3">
       <PageHeader
         title="Holidays"
         subtitle="Paid non-working days"

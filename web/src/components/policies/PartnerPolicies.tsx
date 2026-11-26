@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { policiesApi } from "../../api/endpoints";
 import { Icon } from "../Icon";
 import {
-  EmptyState, ErrorState, SearchInput, StatCard, StatRow,
+  EmptyState, ErrorState, SearchInput,
   TableSkeleton,
 } from "../ui";
 import { ExpiryChip } from "../PolicyDetailBody";
@@ -62,31 +62,41 @@ export function PartnerPolicies({ partnerId, partnerName }: {
     (p) => p.status === "active" || p.status === "renewal_due").length;
 
   return (
-    <div className="space-y-4">
-      <StatRow cols={3}>
-        <StatCard label="Policies" value={String(total)}
-          hint={`booked by ${partnerName}`} />
-        <StatCard label="Live on this page" value={String(live)}
-          hint={`of ${rows.length} shown`} />
-        <StatCard label="Premium on this page"
-          value={formatINR(pagePremium)}
-          hint={total > rows.length
-            ? `${rows.length} of ${total} policies` : undefined} />
-      </StatRow>
+    <div className="space-y-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 rounded-md border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground">
+          <span>
+            Policies: <strong className="text-foreground tabular-nums">{total}</strong>
+          </span>
+          <span>
+            Live: <strong className="text-foreground tabular-nums">{live}</strong>
+          </span>
+          <span>
+            Premium:{" "}
+            <strong className="text-emerald-700 font-semibold tabular-nums">
+              {formatINR(pagePremium)}
+            </strong>
+          </span>
+        </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <SearchInput value={q}
-          onChange={(v) => { setPage(1); setQ(v); }}
-          placeholder="Search policy number or customer…"
-          className="w-64" />
-        <select className="select w-40" value={status}
-          onChange={(e) => { setPage(1); setStatus(e.target.value); }}>
-          <option value="">All statuses</option>
-          {["active", "renewal_due", "renewed", "expired", "lapsed",
-            "cancelled"].map((s) => (
-            <option key={s} value={s}>{titleCase(s)}</option>
-          ))}
-        </select>
+        <div className="flex flex-wrap items-center gap-2">
+          <SearchInput
+            value={q}
+            onChange={(v) => { setPage(1); setQ(v); }}
+            placeholder="Search policy or customer…"
+            className="w-56"
+          />
+          <select
+            className="h-8 rounded-md border border-input bg-background px-2.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+            value={status}
+            onChange={(e) => { setPage(1); setStatus(e.target.value); }}
+          >
+            <option value="">All statuses</option>
+            {["active", "renewal_due", "renewed", "expired", "lapsed", "cancelled"].map((s) => (
+              <option key={s} value={s}>{titleCase(s)}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {/* Error FIRST, before loading and before empty — both of those are
@@ -99,7 +109,7 @@ export function PartnerPolicies({ partnerId, partnerName }: {
         <EmptyState
           icon={<Icon.Policy size={20} />}
           title={q || status
-            ? "No policies match" : "No policies from this partner yet"}
+            ? "No policies match" : `No policies from ${partnerName} yet`}
           hint={q || status
             ? "Clear the search or the status filter."
             : "Anything booked against this partner appears here — including "
