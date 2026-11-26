@@ -146,7 +146,7 @@ export function DateInput({
 // clipped (owner 2026-08-04). Widening the field is the fix — the width of a
 // native control's internals is not something CSS can reach into.
 export function DateTimeInput({
-  value, onChange, className = "input", disabled, minDate,
+  value, onChange, className = "h-9 rounded-md border border-input bg-background text-sm", disabled, minDate,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -157,9 +157,9 @@ export function DateTimeInput({
 }) {
   const { date, time } = splitLocalDateTime(value);
   return (
-    <div className="flex gap-2">
+    <div className="flex min-w-0 gap-2">
       <DateInput
-        className={`${className} flex-1`}
+        className={`${className} min-w-0 flex-1`}
         value={date}
         min={minDate}
         disabled={disabled}
@@ -167,7 +167,7 @@ export function DateTimeInput({
       />
       <input
         type="time"
-        className={`${className} w-[150px] shrink-0`}
+        className={`${className} w-[124px] shrink-0 px-2`}
         value={time}
         disabled={disabled}
         aria-label="Time"

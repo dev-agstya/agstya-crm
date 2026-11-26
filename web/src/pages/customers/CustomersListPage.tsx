@@ -122,7 +122,7 @@ export default function CustomersListPage() {
       header: "Mobile",
       cell: (c) => (
         <span className="tabular-nums text-foreground">
-          {c.mobile || "—"}
+          {c.mobile ? (c.mobile.startsWith("+") ? c.mobile : `+91 ${c.mobile}`) : "—"}
         </span>
       ),
     },
@@ -135,8 +135,8 @@ export default function CustomersListPage() {
           <span className="font-semibold text-foreground tabular-nums">
             {c.active_policies ?? 0}
           </span>
-          <span className="ml-1 text-xs text-muted-foreground">
-            of {c.total_policies ?? 0}
+          <span className="text-xs text-muted-foreground">
+            {" "}of {c.total_policies ?? 0}
           </span>
         </div>
       ),
@@ -152,10 +152,21 @@ export default function CustomersListPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Customers"
-        subtitle="Policyholders & contact directory"
-        actions={
+      <PageHeader title="Customers" />
+
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: (v) => {
+            setPage(1);
+            setQ(v);
+          },
+          placeholder: "Search name, mobile, email...",
+        }}
+        moreCount={moreCount}
+        chips={chips}
+        onClearAll={clearAll}
+        right={
           <>
             <ExportButton
               filename="customers"
@@ -179,20 +190,6 @@ export default function CustomersListPage() {
             )}
           </>
         }
-      />
-
-      <FilterToolbar
-        search={{
-          value: q,
-          onChange: (v) => {
-            setPage(1);
-            setQ(v);
-          },
-          placeholder: "Search name, mobile, email...",
-        }}
-        moreCount={moreCount}
-        chips={chips}
-        onClearAll={clearAll}
         moreFilters={
           <>
             <div className="space-y-1">

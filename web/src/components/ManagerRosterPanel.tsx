@@ -116,56 +116,64 @@ export function ManagerRosterPanel({ managerId }: { managerId?: string }) {
               <p className="text-[11px] font-medium text-muted-foreground">
                 Partners
               </p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
-                {d?.partners ?? 0}
+              <div className="mt-0.5 flex items-baseline gap-2">
+                <span className="text-lg font-semibold tabular-nums text-foreground">
+                  {d?.partners ?? 0}
+                </span>
                 {d && (
-                  <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+                  <span className="text-[11px] font-normal text-muted-foreground">
                     {d.active_partners} wrote business
                   </span>
                 )}
-              </p>
+              </div>
             </div>
             <div className="px-3.5 py-2.5">
               <p className="text-[11px] font-medium text-muted-foreground">
                 Quiet
               </p>
-              <p
-                className={`mt-0.5 text-lg font-semibold tabular-nums ${
-                  d?.quiet_partners ? "text-amber-700" : "text-foreground"
-                }`}
-              >
-                {d?.quiet_partners ?? 0}
-                <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+              <div className="mt-0.5 flex items-baseline gap-2">
+                <span
+                  className={`text-lg font-semibold tabular-nums ${
+                    d?.quiet_partners ? "text-amber-700" : "text-foreground"
+                  }`}
+                >
+                  {d?.quiet_partners ?? 0}
+                </span>
+                <span className="text-[11px] font-normal text-muted-foreground">
                   60d no policy
                 </span>
-              </p>
+              </div>
             </div>
             <div className="px-3.5 py-2.5">
               <p className="text-[11px] font-medium text-muted-foreground">
                 Premium
               </p>
-              <p className="mt-0.5 text-lg font-semibold tabular-nums text-foreground">
-                {formatINR(d?.premium)}
-                <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+              <div className="mt-0.5 flex items-baseline gap-2">
+                <span className="text-lg font-semibold tabular-nums text-foreground">
+                  {formatINR(d?.premium)}
+                </span>
+                <span className="text-[11px] font-normal text-muted-foreground">
                   {d?.policies ?? 0}{" "}
                   {d?.policies === 1 ? "policy" : "policies"}
                 </span>
-              </p>
+              </div>
             </div>
             <div className="px-3.5 py-2.5">
               <p className="text-[11px] font-medium text-muted-foreground">
                 Renewals due
               </p>
-              <p
-                className={`mt-0.5 text-lg font-semibold tabular-nums ${
-                  d?.renewals_due ? "text-amber-700" : "text-foreground"
-                }`}
-              >
-                {d?.renewals_due ?? 0}
-                <span className="ml-1.5 text-[11px] font-normal text-muted-foreground">
+              <div className="mt-0.5 flex items-baseline gap-2">
+                <span
+                  className={`text-lg font-semibold tabular-nums ${
+                    d?.renewals_due ? "text-amber-700" : "text-foreground"
+                  }`}
+                >
+                  {d?.renewals_due ?? 0}
+                </span>
+                <span className="text-[11px] font-normal text-muted-foreground">
                   next 30 days
                 </span>
-              </p>
+              </div>
             </div>
           </div>
 

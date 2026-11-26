@@ -204,7 +204,7 @@ export function EditEmailPage() {
                 value={password}
                 required
                 className="h-9 text-sm"
-                placeholder="••••••••"
+                placeholder="Enter current password"
                 onChange={(e) => setPassword(e.target.value)}
               />
             </FormField>
@@ -287,7 +287,7 @@ export function ChangePasswordSettingsPage() {
                 autoFocus
                 required
                 className="h-9 text-sm"
-                placeholder="••••••••"
+                placeholder="Enter current password"
                 onChange={(e) => setCurrent(e.target.value)}
               />
             </FormField>
@@ -303,7 +303,7 @@ export function ChangePasswordSettingsPage() {
                 value={pw}
                 required
                 className="h-9 text-sm"
-                placeholder="••••••••"
+                placeholder="Enter new password"
                 onChange={(e) => setPw(e.target.value)}
               />
             </FormField>
@@ -319,7 +319,7 @@ export function ChangePasswordSettingsPage() {
                 value={confirm}
                 required
                 className="h-9 text-sm"
-                placeholder="••••••••"
+                placeholder="Re-enter new password"
                 onChange={(e) => setConfirm(e.target.value)}
               />
             </FormField>

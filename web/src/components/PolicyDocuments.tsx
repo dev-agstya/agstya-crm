@@ -184,13 +184,13 @@ function DocumentRow({ row, busy, canManage, onOpen, onUpload, onDelete }: {
           <FileText className="h-4 w-4" />
         </span>
         <div className="min-w-0">
-          <p className="flex items-center gap-2 truncate text-sm font-medium text-slate-800">
-            {row.label}
+          <div className="flex items-center gap-2 truncate text-sm font-medium text-slate-800">
+            <span>{row.label}</span>
             {isPdf && <Badge variant="secondary" className="text-[11px]">Policy</Badge>}
             {!row.doc && row.required && (
               <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-800 text-[11px]">required</Badge>
             )}
-          </p>
+          </div>
           {row.doc ? (
             <button type="button" onClick={onOpen}
               className="block max-w-full truncate text-left text-xs

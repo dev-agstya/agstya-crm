@@ -18,6 +18,7 @@ const PARTY_WORD: Record<string, string> = {
   customer: "Customer",
   broker: "Broker",
   expense: "House",
+  custom: "Khata Party",
 };
 export function txnLabel(txnType: string, partyType?: string): string {
   const party = PARTY_WORD[partyType || ""] || "Party";
@@ -35,7 +36,10 @@ export function txnLabel(txnType: string, partyType?: string): string {
     case "discount": return "Discount";
     case "adjustment": return "Adjustment";
     case "expense": return "Expense";
-    default: return txnType;
+    case "custom_payment_in": return `Received from ${party}`;
+    case "custom_payment_out": return `Paid to ${party}`;
+    case "transfer": return "Account Transfer";
+    default: return txnType.replace(/_/g, " ");
   }
 }
 // Generic labels for the type filter dropdown (no single party there).
@@ -131,14 +135,18 @@ export const LOCKED_TYPES = new Set([
 // with a +, outgoing money is RED with a −. Derived from each type's stored
 // sign convention, so a reversal (opposite sign) flips direction too.
 // Non-cash rows (adjustment / discount / reward-cancelled info) return 0.
-const CASH_IN_WHEN_NEGATIVE = new Set(["premium_collected", "reward_received"]);
+const CASH_IN_WHEN_NEGATIVE = new Set([
+  "premium_collected", "reward_received", "custom_payment_in",
+]);
 const CASH_OUT_WHEN_NEGATIVE = new Set([
-  "premium_paid_by_agency", "partner_payout", "expense",
+  "premium_paid_by_agency", "partner_payout", "expense", "custom_payment_out",
 ]);
 const CASH_OUT_WHEN_POSITIVE = new Set([
   "partner_advance", "refund", "premium_to_insurer",
 ]);
 export function cashDirection(txnType: string, amountPaise: number): 1 | -1 | 0 {
+  if (txnType === "custom_payment_in") return 1;
+  if (txnType === "custom_payment_out") return -1;
   if (CASH_IN_WHEN_NEGATIVE.has(txnType))
     return amountPaise <= 0 ? 1 : -1;
   if (CASH_OUT_WHEN_NEGATIVE.has(txnType))
@@ -172,6 +180,9 @@ const TYPE_TONE: Record<string, string> = {
   premium_paid_by_agency: "bg-slate-100 text-slate-600",
   reward_cancelled: "bg-money-out/10 text-money-out",
   expense: "bg-money-out/10 text-money-out",
+  custom_payment_in: "bg-money-in/10 text-money-in",
+  custom_payment_out: "bg-money-out/10 text-money-out",
+  transfer: "bg-blue-50 text-blue-700",
 };
 export function TypeTag({ t, party }: { t: string; party?: string }) {
   return (

@@ -79,10 +79,11 @@ export function PageHeader({
               {subtitle}
             </span>
           )}
-          {info && <InfoTooltip content={info} />}
+          {info && !duplicatesCrumb && <InfoTooltip content={info} />}
         </div>
-        {(actions || figure) && (
+        {(actions || figure || (duplicatesCrumb && info)) && (
           <div className="flex shrink-0 flex-wrap items-center gap-2">
+            {duplicatesCrumb && info && <InfoTooltip content={info} />}
             {figure && (
               <div className="flex items-baseline gap-2 rounded-md border border-border bg-card px-2.5 py-1">
                 <span className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">

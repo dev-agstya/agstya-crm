@@ -633,7 +633,7 @@ function EditTypeForm({ category, qc, navigate }: {
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    5. Documents to Collect at Booking
+                    3. Documents to Collect at Booking
                   </h3>
                   <p className="mt-1 text-xs text-slate-500">
                     Supporting files uploaded on the policy form (e.g. RC book, previous policy).
@@ -656,7 +656,7 @@ function EditTypeForm({ category, qc, navigate }: {
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    6. Documents to Collect on a Claim
+                    4. Documents to Collect on a Claim
                   </h3>
                   <p className="mt-1 text-xs text-slate-500">
                     Checklist presented to clients and partners when filing a claim for this type.
@@ -682,7 +682,7 @@ function EditTypeForm({ category, qc, navigate }: {
               <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                    3. Custom Fields Configuration
+                    5. Custom Fields Configuration
                   </h3>
                   <p className="mt-1 text-xs text-slate-500">
                     Add custom fields prompted when booking this policy type.
@@ -722,7 +722,7 @@ function EditTypeForm({ category, qc, navigate }: {
             {/* Section 4: Default Reward Base */}
             <div className="rounded-control border border-line bg-slate-50/40 p-5">
               <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">
-                4. Default Commission Reward Base
+                6. Default Commission Reward Base
               </h3>
               <FormField
                 label="Reward calculated on"

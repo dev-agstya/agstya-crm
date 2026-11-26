@@ -108,11 +108,11 @@ export default function BrokersPage() {
   ];
 
   return (
-    <div className="space-y-4">
-      <PageHeader
-        title="Brokers"
-        subtitle="Brokerages & commission rate cards"
-        actions={
+    <div className="space-y-3">
+      <PageHeader title="Brokers" />
+
+      <FilterToolbar
+        right={
           canManage && (
             <Button
               size="sm"
@@ -124,9 +124,6 @@ export default function BrokersPage() {
             </Button>
           )
         }
-      />
-
-      <FilterToolbar
         search={{
           value: q,
           onChange: setQ,

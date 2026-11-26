@@ -100,10 +100,10 @@ export default function InsurersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Insurers"
-        subtitle="Insurance companies"
-        actions={
+      <PageHeader title="Insurers" />
+
+      <FilterToolbar
+        right={
           canManage && (
             <Button
               size="sm"
@@ -115,9 +115,6 @@ export default function InsurersPage() {
             </Button>
           )
         }
-      />
-
-      <FilterToolbar
         search={{
           value: q,
           onChange: setQ,

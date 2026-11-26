@@ -87,7 +87,7 @@ export function DataTable<T>({
     <div className={`space-y-2.5 ${className}`}>
       {/* Desktop Table */}
       <Card className="hidden overflow-hidden md:block">
-        <div className="max-h-[calc(100vh-195px)] overflow-auto">
+        <div className="overflow-x-auto">
           <Table>
             <TableHeader className="sticky top-0 z-raised bg-muted/80 backdrop-blur-sm">
               <TableRow className="border-b border-border hover:bg-transparent">

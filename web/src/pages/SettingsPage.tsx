@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import {
-  Bell,
   ChevronRight,
   Clock,
   Lock,
+  Mail,
   Settings,
   Shield,
   User,
@@ -73,7 +73,7 @@ export default function SettingsPage() {
             onClick={() => navigate("/settings/profile")}
           />
           <SettingRow
-            icon={Bell}
+            icon={Mail}
             title="Email address"
             desc="Change your sign-in email address"
             onClick={() => navigate("/settings/email")}

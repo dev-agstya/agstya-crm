@@ -345,10 +345,20 @@ export default function PoliciesPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Policies"
-        subtitle="Booked insurance policies & renewals"
-        actions={
+      <PageHeader title="Policies" />
+
+      <PolicyScopeNote />
+
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: setQ,
+          placeholder: "Search policy #, customer, vehicle...",
+        }}
+        moreCount={moreCount}
+        chips={chips}
+        onClearAll={clearFilters}
+        right={
           <>
             {has("manage_policy_access") && (
               <Button
@@ -378,19 +388,6 @@ export default function PoliciesPage() {
             {bookBtn}
           </>
         }
-      />
-
-      <PolicyScopeNote />
-
-      <FilterToolbar
-        search={{
-          value: q,
-          onChange: setQ,
-          placeholder: "Search policy #, customer, vehicle...",
-        }}
-        moreCount={moreCount}
-        chips={chips}
-        onClearAll={clearFilters}
         moreFilters={
           <>
             <div className="space-y-1">

@@ -173,10 +173,20 @@ export default function LeadsListPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Leads"
-        subtitle="Prospective customers & follow-ups"
-        actions={
+      <PageHeader title="Leads" />
+
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: (v) => {
+            setPage(1);
+            setQ(v);
+          },
+          placeholder: "Search name, mobile, email...",
+        }}
+        chips={chips}
+        onClearAll={reset}
+        right={
           <>
             <ExportButton
               filename="leads"
@@ -205,19 +215,6 @@ export default function LeadsListPage() {
             )}
           </>
         }
-      />
-
-      <FilterToolbar
-        search={{
-          value: q,
-          onChange: (v) => {
-            setPage(1);
-            setQ(v);
-          },
-          placeholder: "Search name, mobile, email...",
-        }}
-        chips={chips}
-        onClearAll={reset}
       >
         <Select
           value={type}

@@ -36,14 +36,14 @@ export default function TdsPage() {
       header: "TDS %",
       cell: (b) => (
         <Badge variant="secondary" className="tabular-nums">
-          {(b.tds_bps / 100).toFixed(2)}%
+          {((b.tds_percent ?? 0) / 100).toFixed(2)}%
         </Badge>
       ),
     },
     {
       key: "events",
       header: "Transactions",
-      cell: (b) => <span className="tabular-nums">{b.count}</span>,
+      cell: (b) => <span className="tabular-nums">{b.entries ?? 0}</span>,
     },
     {
       key: "gross",
@@ -57,7 +57,7 @@ export default function TdsPage() {
       align: "right",
       cell: (b) => (
         <span className="font-semibold tabular-nums text-amber-600">
-          {formatINR(b.tds)}
+          {formatINR(b.tds_deducted)}
         </span>
       ),
     },
@@ -69,15 +69,6 @@ export default function TdsPage() {
         title="TDS Summary"
         subtitle="Tax deducted at source by brokers when settling agency commissions."
         actions={<DateFilter value={period} onChange={setPeriod} />}
-        figure={
-          d
-            ? {
-                label: "Total TDS deducted",
-                value: formatINR(d.total_tds),
-                tone: "due",
-              }
-            : undefined
-        }
       />
 
       {q.isError ? (

@@ -460,31 +460,35 @@ export function RecordPaymentForm({
         )}
 
         {/* Step 3 — Amount, Date & Bank Account */}
-        <div className="grid gap-4 sm:grid-cols-3">
-          <FormField
-            label="Amount (₹)"
-            required
-            error={touched ? errors.amount : undefined}
-          >
-            <Input
-              type="number"
-              step="0.01"
-              min="0.01"
-              className="h-9 text-sm tabular-nums"
-              value={amount}
-              placeholder="e.g. 10000"
-              onChange={(e) => setAmount(e.target.value)}
-            />
-          </FormField>
+        <div className="grid gap-4 sm:grid-cols-12">
+          <div className="sm:col-span-3">
+            <FormField
+              label="Amount (₹)"
+              required
+              error={touched ? errors.amount : undefined}
+            >
+              <Input
+                type="number"
+                step="0.01"
+                min="0.01"
+                className="h-9 text-sm tabular-nums"
+                value={amount}
+                placeholder="e.g. 10000"
+                onChange={(e) => setAmount(e.target.value)}
+              />
+            </FormField>
+          </div>
 
-          <FormField
-            label="Transaction Date & Time"
-            tooltip="When the money actually moved. Reports and statements use this date."
-          >
-            <DateTimeInput value={occurred} onChange={setOccurred} />
-          </FormField>
+          <div className="sm:col-span-5">
+            <FormField
+              label="Transaction Date & Time"
+              tooltip="When the money actually moved. Reports and statements use this date."
+            >
+              <DateTimeInput value={occurred} onChange={setOccurred} />
+            </FormField>
+          </div>
 
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 sm:col-span-4">
             <BankAccountSelect
               value={accountId}
               onChange={setAccountId}

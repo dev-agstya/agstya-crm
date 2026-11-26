@@ -69,9 +69,9 @@ export function FormField({
   className?: string;
 }) {
   return (
-    <div className={`space-y-1 ${className}`}>
-      <div className="flex items-center gap-1">
-        <Label htmlFor={htmlFor} className="text-xs font-medium text-foreground">
+    <div className={`flex flex-col space-y-1.5 ${className}`}>
+      <div className="flex min-h-[20px] items-center gap-1">
+        <Label htmlFor={htmlFor} className="text-xs font-medium leading-tight text-foreground">
           {label}
           {required && <span className="ml-0.5 text-destructive">*</span>}
         </Label>

@@ -39,7 +39,9 @@ function SidebarNav({
 }) {
   const isActive = (to: string) => {
     const clean = to.split("?")[0];
-    if (clean === "/dashboard") return pathname === "/dashboard";
+    if (clean === "/dashboard" || clean === "/finance") {
+      return pathname === clean;
+    }
     return pathname === clean || pathname.startsWith(clean + "/");
   };
 

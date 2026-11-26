@@ -349,10 +349,21 @@ export default function TransactionsPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Transactions"
-        subtitle="Money received, paid out & expenses"
-        actions={
+      <PageHeader title="Transactions" />
+
+      <FilterToolbar
+        search={{
+          value: q,
+          onChange: (v) => {
+            setPage(1);
+            setQ(v);
+          },
+          placeholder: "Search reference or note...",
+        }}
+        moreCount={moreCount}
+        chips={chips}
+        onClearAll={reset}
+        right={
           <>
             <ExportButton
               filename="transactions"
@@ -405,20 +416,6 @@ export default function TransactionsPage() {
             )}
           </>
         }
-      />
-
-      <FilterToolbar
-        search={{
-          value: q,
-          onChange: (v) => {
-            setPage(1);
-            setQ(v);
-          },
-          placeholder: "Search reference or note...",
-        }}
-        moreCount={moreCount}
-        chips={chips}
-        onClearAll={reset}
         moreFilters={
           <>
             <div className="space-y-1">
